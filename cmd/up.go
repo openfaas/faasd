@@ -20,14 +20,27 @@ func runUp(_ *cobra.Command, _ []string) error {
 		pkg.Service{
 			Name:  "faas-containerd",
 			Env:   []string{},
-			Image: "docker.io/functions/figlet:latest",
+			Image: "docker.io/alexellis2/faas-containerd:0.2.0",
 			Mounts: []pkg.Mount{
 				pkg.Mount{
 					Src:  "/run/containerd/containerd.sock",
 					Dest: "/run/containerd/containerd.sock",
 				},
 			},
-		}}
+		},
+		pkg.Service{
+			Name:   "gateway",
+			Env:    []string{},
+			Image:  "docker.io/openfaas/gateway:0.18.7",
+			Mounts: []pkg.Mount{},
+		},
+		pkg.Service{
+			Name:   "prometheus",
+			Env:    []string{},
+			Image:  "docker.io/prom/prometheus:v2.14.0",
+			Mounts: []pkg.Mount{},
+		},
+	}
 
 	start := time.Now()
 	supervisor, err := pkg.NewSupervisor("/run/containerd/containerd.sock")
