@@ -23,7 +23,7 @@ func runUp(_ *cobra.Command, _ []string) error {
 		pkg.Service{
 			Name:  "faas-containerd",
 			Env:   []string{},
-			Image: "docker.io/alexellis2/faas-containerd:0.3.0",
+			Image: "docker.io/alexellis2/faas-containerd:0.3.1",
 			Mounts: []pkg.Mount{
 				pkg.Mount{
 					Src:  "/run/containerd/containerd.sock",
