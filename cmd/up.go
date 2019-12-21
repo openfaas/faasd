@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"log"
+	"os"
+	"path"
 	"time"
 
 	"github.com/alexellis/faasd/pkg"
@@ -16,6 +18,7 @@ var upCmd = &cobra.Command{
 
 func runUp(_ *cobra.Command, _ []string) error {
 
+	wd, _ := os.Getwd()
 	svcs := []pkg.Service{
 		pkg.Service{
 			Name:  "faas-containerd",
@@ -27,18 +30,33 @@ func runUp(_ *cobra.Command, _ []string) error {
 					Dest: "/run/containerd/containerd.sock",
 				},
 			},
+			Caps: []string{"CAP_SYS_ADMIN", "CAP_NET_RAW"},
 		},
 		pkg.Service{
-			Name:   "gateway",
-			Env:    []string{},
-			Image:  "docker.io/openfaas/gateway:0.18.7",
-			Mounts: []pkg.Mount{},
+			Name:  "prometheus",
+			Env:   []string{},
+			Image: "docker.io/prom/prometheus:v2.14.0",
+			Mounts: []pkg.Mount{
+				pkg.Mount{
+					Src:  path.Join(wd, "prometheus.yml"),
+					Dest: "/etc/prometheus/prometheus.yml",
+				},
+			},
+			Caps: []string{"CAP_NET_RAW"},
 		},
 		pkg.Service{
-			Name:   "prometheus",
-			Env:    []string{},
-			Image:  "docker.io/prom/prometheus:v2.14.0",
+			Name: "gateway",
+			Env: []string{
+				"basic_auth=false",
+				"functions_provider_url=http://faas-containerd:8081/",
+				"direct_functions=false",
+				"read_timeout=60s",
+				"write_timeout=60s",
+				"upstream_timeout=65s",
+			},
+			Image:  "docker.io/openfaas/gateway:0.17.4",
 			Mounts: []pkg.Mount{},
+			Caps:   []string{"CAP_NET_RAW"},
 		},
 	}
 
@@ -66,4 +84,3 @@ func runUp(_ *cobra.Command, _ []string) error {
 
 	return nil
 }
-

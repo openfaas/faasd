@@ -35,3 +35,13 @@ Other operations are pending development in the provider.
 * Bundle/package/automate installation of containerd - [see bootstrap from k3s](https://github.com/rancher/k3s)
 * Create [faasd.service](https://github.com/rancher/k3s/blob/master/k3s.service)
 
+
+Hacking:
+
+```sh
+echo faas-containerd gateway prometheus |xargs sudo ctr task rm -f
+
+echo faas-containerd gateway prometheus |xargs sudo ctr container rm
+
+echo faas-containerd gateway prometheus |xargs sudo ctr snapshot rm
+```

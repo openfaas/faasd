@@ -290,6 +290,25 @@
   revision = "d98352740cb2c55f81556b63d4a1ec64c5a319c2"
 
 [[projects]]
+  digest = "1:2d9d06cb9d46dacfdbb45f8575b39fc0126d083841a29d4fbf8d97708f43107e"
+  name = "github.com/vishvananda/netlink"
+  packages = [
+    ".",
+    "nl",
+  ]
+  pruneopts = "UT"
+  revision = "a2ad57a690f3caf3015351d2d6e1c0b95c349752"
+  version = "v1.0.0"
+
+[[projects]]
+  branch = "master"
+  digest = "1:975cb0c04431bf92e60b636a15897c4a3faba9f7dc04da505646630ac91d29d3"
+  name = "github.com/vishvananda/netns"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "0a2b9b5464df8343199164a0321edf3313202f7e"
+
+[[projects]]
   digest = "1:aed53a5fa03c1270457e331cf8b7e210e3088a2278fec552c5c5d29c1664e161"
   name = "go.opencensus.io"
   packages = [
@@ -422,8 +441,16 @@
   analyzer-version = 1
   input-imports = [
     "github.com/containerd/containerd",
+    "github.com/containerd/containerd/cio",
+    "github.com/containerd/containerd/containers",
+    "github.com/containerd/containerd/errdefs",
+    "github.com/containerd/containerd/namespaces",
+    "github.com/containerd/containerd/oci",
     "github.com/morikuni/aec",
+    "github.com/opencontainers/runtime-spec/specs-go",
     "github.com/spf13/cobra",
+    "github.com/vishvananda/netlink",
+    "github.com/vishvananda/netns",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

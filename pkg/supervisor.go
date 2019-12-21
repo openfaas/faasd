@@ -3,6 +3,7 @@ package pkg
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -10,14 +11,18 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/alexellis/faasd/pkg/weave"
 	"github.com/containerd/containerd"
-	"github.com/containerd/containerd/api/services/tasks/v1"
 	"github.com/containerd/containerd/cio"
 	"github.com/containerd/containerd/containers"
+	"github.com/containerd/containerd/errdefs"
+
 	"github.com/containerd/containerd/namespaces"
 	"github.com/containerd/containerd/oci"
 	"github.com/opencontainers/runtime-spec/specs-go"
 )
+
+const defaultSnapshotter = "overlayfs"
 
 type Supervisor struct {
 	client *containerd.Client
@@ -41,69 +46,74 @@ func (s *Supervisor) Close() {
 func (s *Supervisor) Start(svcs []Service) error {
 	ctx := namespaces.WithNamespace(context.Background(), "default")
 
+	wd, _ := os.Getwd()
+
+	writeHostsErr := ioutil.WriteFile(path.Join(wd, "hosts"),
+		[]byte(`127.0.0.1	localhost`), 0644)
+
+	if writeHostsErr != nil {
+		return fmt.Errorf("cannot write hosts file: %s", writeHostsErr)
+	}
+	// os.Chown("hosts", 101, 101)
+
 	images := map[string]containerd.Image{}
 
 	for _, svc := range svcs {
 		fmt.Printf("Preparing: %s", svc.Name)
 
-		fmt.Printf("Pulling: %s\n", svc.Image)
-		img, err := pullImage(ctx, s.client, svc.Image)
+		img, err := prepareImage(ctx, s.client, svc.Image)
 		if err != nil {
 			return err
 		}
 		images[svc.Name] = img
 		size, _ := img.Size(ctx)
-		fmt.Printf("Pull done for: %s, %d bytes\n", svc.Image, size)
+		fmt.Printf("Prepare done for: %s, %d bytes\n", svc.Image, size)
 
 	}
 
 	for _, svc := range svcs {
-		fmt.Printf("Starting: %s\n", svc.Name)
+		fmt.Printf("Reconciling: %s\n", svc.Name)
 
 		image := images[svc.Name]
 
-		container, containerErr := s.client.ContainerService().Get(ctx, svc.Name)
+		container, containerErr := s.client.LoadContainer(ctx, svc.Name)
 
 		if containerErr == nil {
-			taskReq := &tasks.GetRequest{
-				ContainerID: container.ID,
+			found := true
+			t, err := container.Task(ctx, nil)
+			if err != nil {
+				if errdefs.IsNotFound(err) {
+					found = false
+				} else {
+					return fmt.Errorf("unable to get task %s: ", err)
+				}
 			}
 
-			task, err := s.client.TaskService().Get(ctx, taskReq)
+			if found {
+				status, _ := t.Status(ctx)
+				fmt.Println("Status:", status.Status)
 
-			if task != nil && task.Process != nil {
-				zero := time.Time{}
-				fmt.Println(task.Process.ExitedAt, "=", zero)
-
-				if task.Process.ExitedAt == zero {
+				if status.Status == containerd.Running {
 					log.Println("need to kill", svc.Name)
-					killReq := tasks.KillRequest{
-						ContainerID: container.ID,
-						Signal:      uint32(syscall.SIGTERM),
-					}
-					em, err := s.client.TaskService().Kill(ctx, &killReq)
-					if err != nil {
-						return fmt.Errorf("error killing task %s, %s, %s", container.ID, svc.Name, err)
-					}
-					time.Sleep(1 * time.Second)
-					log.Println("em", em)
-				}
 
-				deleteReq := tasks.DeleteTaskRequest{
-					ContainerID: container.ID,
+					err = t.Kill(ctx, syscall.SIGTERM)
+					if err != nil {
+						return fmt.Errorf("error killing task %s, %s, %s", container.ID(), svc.Name, err)
+					}
+					time.Sleep(5 * time.Second)
 				}
-				_, err = s.client.TaskService().Delete(ctx, &deleteReq)
+				_, err = t.Delete(ctx)
 				if err != nil {
-					return fmt.Errorf("error deleting task %s, %s, %s", container.ID, svc.Name, err)
+					return fmt.Errorf("error deleting task %s, %s, %s", container.ID(), svc.Name, err)
 				}
 
 			}
 
-			err = s.client.ContainerService().Delete(ctx, svc.Name)
-			fmt.Println(err)
+			err = container.Delete(ctx, containerd.WithSnapshotCleanup)
+			if err != nil {
+				return fmt.Errorf("error deleting container %s, %s, %s", container.ID(), svc.Name, err)
+			}
 
-			err = s.client.SnapshotService("").Remove(ctx, svc.Name+"-snapshot")
-			fmt.Println(err)
 		}
 
 		mounts := []specs.Mount{}
@@ -119,13 +129,17 @@ func (s *Supervisor) Start(svcs []Service) error {
 
 		}
 
-		wd, _ := os.Getwd()
-		resolv := path.Join(wd, "resolv.conf")
-		log.Println("Using ", resolv)
 		mounts = append(mounts, specs.Mount{
 			Destination: "/etc/resolv.conf",
 			Type:        "bind",
-			Source:      resolv,
+			Source:      path.Join(wd, "resolv.conf"),
+			Options:     []string{"rbind", "ro"},
+		})
+
+		mounts = append(mounts, specs.Mount{
+			Destination: "/etc/hosts",
+			Type:        "bind",
+			Source:      path.Join(wd, "hosts"),
 			Options:     []string{"rbind", "ro"},
 		})
 
@@ -155,13 +169,18 @@ func (s *Supervisor) Start(svcs []Service) error {
 			svc.Name,
 			containerd.WithImage(image),
 			containerd.WithNewSnapshot(svc.Name+"-snapshot", image),
-			containerd.WithNewSpec(oci.WithImageConfig(image), oci.WithCapabilities([]string{"CAP_NET_RAW"}), oci.WithMounts(mounts), hook),
+			containerd.WithNewSpec(oci.WithImageConfig(image),
+				oci.WithCapabilities(svc.Caps),
+				oci.WithMounts(mounts),
+				hook,
+				oci.WithEnv(svc.Env)),
 		)
 
 		if containerCreateErr != nil {
 			log.Println(containerCreateErr)
 			return containerCreateErr
 		}
+
 		fmt.Println("created", newContainer.ID())
 
 		task, err := newContainer.NewTask(ctx, cio.NewCreator(cio.WithStdio))
@@ -169,6 +188,20 @@ func (s *Supervisor) Start(svcs []Service) error {
 			log.Println(err)
 			return err
 		}
+
+		ip := getIP(container.ID(), task.Pid())
+
+		hosts, _ := ioutil.ReadFile("hosts")
+
+		hosts = []byte(string(hosts) + fmt.Sprintf(`
+%s	%s
+`, ip, svc.Name))
+		writeErr := ioutil.WriteFile("hosts", hosts, 0644)
+
+		if writeErr != nil {
+			fmt.Println("Error writing hosts file")
+		}
+		// os.Chown("hosts", 101, 101)
 
 		exitStatusC, err := task.Wait(ctx)
 		if err != nil {
@@ -187,15 +220,54 @@ func (s *Supervisor) Start(svcs []Service) error {
 	return nil
 }
 
-func pullImage(ctx context.Context, client *containerd.Client, image string) (containerd.Image, error) {
+func prepareImage(ctx context.Context, client *containerd.Client, imageName string) (containerd.Image, error) {
+	snapshotter := defaultSnapshotter
 
-	pulled, err := client.Pull(ctx, image, containerd.WithPullUnpack)
-
+	var empty containerd.Image
+	image, err := client.GetImage(ctx, imageName)
 	if err != nil {
-		return nil, err
+		if !errdefs.IsNotFound(err) {
+			return empty, err
+		}
+
+		img, err := client.Pull(ctx, imageName, containerd.WithPullUnpack)
+		if err != nil {
+			return empty, fmt.Errorf("cannot pull: %s", err)
+		}
+		image = img
 	}
 
-	return pulled, nil
+	unpacked, err := image.IsUnpacked(ctx, snapshotter)
+	if err != nil {
+		return empty, fmt.Errorf("cannot check if unpacked: %s", err)
+	}
+
+	if !unpacked {
+		if err := image.Unpack(ctx, snapshotter); err != nil {
+			return empty, fmt.Errorf("cannot unpack: %s", err)
+		}
+	}
+
+	return image, nil
+}
+
+func getIP(containerID string, taskPID uint32) string {
+	// https://github.com/weaveworks/weave/blob/master/net/netdev.go
+
+	peerIDs, err := weave.ConnectedToBridgeVethPeerIds("netns0")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	addrs, addrsErr := weave.GetNetDevsByVethPeerIds(int(taskPID), peerIDs)
+	if addrsErr != nil {
+		log.Fatal(addrsErr)
+	}
+	if len(addrs) > 0 {
+		return addrs[0].CIDRs[0].IP.String()
+	}
+
+	return ""
 }
 
 type Service struct {
@@ -203,6 +275,7 @@ type Service struct {
 	Env    []string
 	Name   string
 	Mounts []Mount
+	Caps   []string
 }
 
 type Mount struct {
