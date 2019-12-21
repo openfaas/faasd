@@ -20,18 +20,18 @@ func runUp(_ *cobra.Command, _ []string) error {
 
 	wd, _ := os.Getwd()
 	svcs := []pkg.Service{
-		pkg.Service{
-			Name:  "faas-containerd",
-			Env:   []string{},
-			Image: "docker.io/alexellis2/faas-containerd:0.3.2",
-			Mounts: []pkg.Mount{
-				pkg.Mount{
-					Src:  "/run/containerd/containerd.sock",
-					Dest: "/run/containerd/containerd.sock",
-				},
-			},
-			Caps: []string{"CAP_SYS_ADMIN", "CAP_NET_RAW"},
-		},
+		// pkg.Service{
+		// 	Name:  "faas-containerd",
+		// 	Env:   []string{"snapshotter=overlayfs"},
+		// 	Image: "docker.io/alexellis2/faas-containerd:0.3.2",
+		// 	Mounts: []pkg.Mount{
+		// 		pkg.Mount{
+		// 			Src:  "/run/containerd/containerd.sock",
+		// 			Dest: "/run/containerd/containerd.sock",
+		// 		},
+		// 	},
+		// 	Caps: []string{"CAP_SYS_ADMIN", "CAP_NET_RAW"},
+		// },
 		pkg.Service{
 			Name:  "prometheus",
 			Env:   []string{},

@@ -49,7 +49,8 @@ func (s *Supervisor) Start(svcs []Service) error {
 	wd, _ := os.Getwd()
 
 	writeHostsErr := ioutil.WriteFile(path.Join(wd, "hosts"),
-		[]byte(`127.0.0.1	localhost`), 0644)
+		[]byte(`127.0.0.1	localhost
+172.19.0.1	faas-containerd`), 0644)
 
 	if writeHostsErr != nil {
 		return fmt.Errorf("cannot write hosts file: %s", writeHostsErr)

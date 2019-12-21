@@ -36,7 +36,35 @@ Other operations are pending development in the provider.
 * Create [faasd.service](https://github.com/rancher/k3s/blob/master/k3s.service)
 
 
-Hacking:
+## Hacking
+
+First run faas-containerd
+
+```sh
+cd $GOPATH/src/github.com/alexellis/faas-containerd
+go build && sudo ./faas-containerd
+```
+
+Then run faasd, which brings up the gateway and Prometheus as containers
+
+```sh
+cd $GOPATH/src/github.com/alexellis/faasd
+go build && sudo ./faasd
+```
+
+Look in `hosts` in the current working folder to get the IP for the gateway or Prometheus
+
+```sh
+127.0.0.1       localhost
+172.19.0.1      faas-containerd
+172.19.0.2      prometheus
+
+172.19.0.3      gateway
+```
+
+Since faas-containerd uses containerd heavily it is not running as a container, but as a stand-alone process. Its port is available via the bridge interface, i.e. netns0.
+
+Removing containers:
 
 ```sh
 echo faas-containerd gateway prometheus |xargs sudo ctr task rm -f
