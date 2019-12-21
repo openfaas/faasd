@@ -80,7 +80,7 @@ func runUp(_ *cobra.Command, _ []string) error {
 
 	log.Printf("Supervisor init done in: %s\n", time.Since(start).String())
 
-	time.Sleep(time.Minute * 5)
+	time.Sleep(time.Minute * 120)
 
 	return nil
 }
