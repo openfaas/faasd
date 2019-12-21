@@ -20,7 +20,7 @@ func runUp(_ *cobra.Command, _ []string) error {
 		pkg.Service{
 			Name:  "faas-containerd",
 			Env:   []string{},
-			Image: "docker.io/alexellis2/faas-containerd:0.2.0",
+			Image: "docker.io/alexellis2/faas-containerd:0.3.0",
 			Mounts: []pkg.Mount{
 				pkg.Mount{
 					Src:  "/run/containerd/containerd.sock",
@@ -57,6 +57,7 @@ func runUp(_ *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
+
 	defer supervisor.Close()
 
 	log.Printf("Supervisor init done in: %s\n", time.Since(start).String())
@@ -65,3 +66,4 @@ func runUp(_ *cobra.Command, _ []string) error {
 
 	return nil
 }
+
