@@ -25,6 +25,12 @@ You can use the standard [faas-cli](https://github.com/openfaas/faas-cli) with f
 
 Other operations are pending development in the provider.
 
+### Pre-reqs
+
+* Linux - ideally Ubuntu, which is used for testing.
+* Installation steps as per [faas-containerd](https://github.com/alexellis/faas-containerd) for building and for development
+* [faas-cli](https://github.com/openfaas/faas-cli) (optional)
+
 ## Backlog
 
 * Use CNI to create network namespaces and adapters
@@ -63,6 +69,8 @@ Look in `hosts` in the current working folder to get the IP for the gateway or P
 ```
 
 Since faas-containerd uses containerd heavily it is not running as a container, but as a stand-alone process. Its port is available via the bridge interface, i.e. netns0.
+
+Now go to the gateway's IP address as shown above on port 8080, i.e. http://172.19.0.3:8080 - you can also use this address to deploy OpenFaaS Functions via the `faas-cli`. 
 
 Removing containers:
 
