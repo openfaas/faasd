@@ -95,13 +95,13 @@ func (s *Supervisor) Start(svcs []Service) error {
 				status, _ := t.Status(ctx)
 				fmt.Println("Status:", status.Status)
 
-				if status.Status == containerd.Running {
-					log.Println("need to kill", svc.Name)
-					err := killTask(ctx, t)
-					if err != nil {
-						return fmt.Errorf("error killing task %s, %s, %s", container.ID(), svc.Name, err)
-					}
+				// if status.Status == containerd.Running {
+				log.Println("need to kill", svc.Name)
+				err := killTask(ctx, t)
+				if err != nil {
+					return fmt.Errorf("error killing task %s, %s, %s", container.ID(), svc.Name, err)
 				}
+				// }
 			}
 
 			err = container.Delete(ctx, containerd.WithSnapshotCleanup)
