@@ -8,8 +8,12 @@ deploy:
   provider: releases
   api_key:
     secure: bccOSB+Mbk5ZJHyJfX82Xg/3/7mxiAYHx7P5m5KS1ncDuRpJBFjDV8Nx2PWYg341b5SMlCwsS3IJ9NkoGvRSKK+3YqeNfTeMabVNdKC2oL1i+4pdxGlbl57QXkzT4smqE8AykZEo4Ujk42rEr3e0gSHT2rXkV+Xt0xnoRVXn2tSRUDwsmwANnaBj6KpH2SjJ/lsfTifxrRB65uwcePaSjkqwR6htFraQtpONC9xYDdek6EoVQmoft/ONZJqi7HR+OcA1yhSt93XU6Vaf3678uLlPX9c/DxgIU9UnXRaOd0UUEiTHaMMWDe/bJSrKmgL7qY05WwbGMsXO/RdswwO1+zwrasrwf86SjdGX/P9AwobTW3eTEiBqw2J77UVbvLzDDoyJ5KrkbHRfPX8aIPO4OG9eHy/e7C3XVx4qv9bJBXQ3qD9YJtei9jmm8F/MCdPWuVYC0hEvHtuhP/xMm4esNUjFM5JUfDucvAuLL34NBYHBDP2XNuV4DkgQQPakfnlvYBd7OqyXCU6pzyWSasXpD1Rz8mD/x8aTUl2Ya4bnXQ8qAa5cnxfPqN2ADRlTw1qS7hl6LsXzNQ6r1mbuh/uFi67ybElIjBTfuMEeJOyYHkkLUHIBpooKrPyr0luAbf0By2D2N/eQQnM/RpixHNfZG/mvXx8ZCrs+wxgvG1Rm7rM=
-  file: bin/*
+  file:
+    - ./bin/faasd-containerd
+    - ./bin/faasd-armhf
+    - ./bin/faasd-arm64
   on:
-    repo: alexellis/faasd
+    tags: true
+
 env:
 - GO111MODULE=off
