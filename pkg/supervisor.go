@@ -8,7 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"syscall"
+	"sync"
 	"time"
 
 	"github.com/alexellis/faasd/pkg/weave"
@@ -16,6 +16,7 @@ import (
 	"github.com/containerd/containerd/cio"
 	"github.com/containerd/containerd/containers"
 	"github.com/containerd/containerd/errdefs"
+	"golang.org/x/sys/unix"
 
 	"github.com/containerd/containerd/namespaces"
 	"github.com/containerd/containerd/oci"
@@ -60,7 +61,7 @@ func (s *Supervisor) Start(svcs []Service) error {
 	images := map[string]containerd.Image{}
 
 	for _, svc := range svcs {
-		fmt.Printf("Preparing: %s", svc.Name)
+		fmt.Printf("Preparing: %s\n", svc.Name)
 
 		img, err := prepareImage(ctx, s.client, svc.Image)
 		if err != nil {
@@ -96,18 +97,11 @@ func (s *Supervisor) Start(svcs []Service) error {
 
 				if status.Status == containerd.Running {
 					log.Println("need to kill", svc.Name)
-
-					err = t.Kill(ctx, syscall.SIGTERM)
+					err := killTask(ctx, t)
 					if err != nil {
 						return fmt.Errorf("error killing task %s, %s, %s", container.ID(), svc.Name, err)
 					}
-					time.Sleep(5 * time.Second)
 				}
-				_, err = t.Delete(ctx)
-				if err != nil {
-					return fmt.Errorf("error deleting task %s, %s, %s", container.ID(), svc.Name, err)
-				}
-
 			}
 
 			err = container.Delete(ctx, containerd.WithSnapshotCleanup)
@@ -173,6 +167,7 @@ func (s *Supervisor) Start(svcs []Service) error {
 			containerd.WithNewSpec(oci.WithImageConfig(image),
 				oci.WithCapabilities(svc.Caps),
 				oci.WithMounts(mounts),
+				withOCIArgs(svc.Args),
 				hook,
 				oci.WithEnv(svc.Env)),
 		)
@@ -182,7 +177,7 @@ func (s *Supervisor) Start(svcs []Service) error {
 			return containerCreateErr
 		}
 
-		fmt.Println("created", newContainer.ID())
+		log.Printf("Created container %s\n", newContainer.ID())
 
 		task, err := newContainer.NewTask(ctx, cio.NewCreator(cio.WithStdio))
 		if err != nil {
@@ -200,7 +195,7 @@ func (s *Supervisor) Start(svcs []Service) error {
 		writeErr := ioutil.WriteFile("hosts", hosts, 0644)
 
 		if writeErr != nil {
-			fmt.Println("Error writing hosts file")
+			log.Println("Error writing hosts file")
 		}
 		// os.Chown("hosts", 101, 101)
 
@@ -277,9 +272,55 @@ type Service struct {
 	Name   string
 	Mounts []Mount
 	Caps   []string
+	Args   []string
 }
 
 type Mount struct {
 	Src  string
 	Dest string
+}
+
+func withOCIArgs(args []string) oci.SpecOpts {
+	if len(args) > 0 {
+		return oci.WithProcessArgs(args...)
+	}
+
+	return func(_ context.Context, _ oci.Client, _ *containers.Container, s *oci.Spec) error {
+
+		return nil
+	}
+
+}
+
+// From Stellar
+func killTask(ctx context.Context, task containerd.Task) error {
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	var err error
+	go func() {
+		defer wg.Done()
+		if task != nil {
+			wait, err := task.Wait(ctx)
+			if err != nil {
+				err = fmt.Errorf("error waiting on task: %s", err)
+				return
+			}
+			if err := task.Kill(ctx, unix.SIGTERM, containerd.WithKillAll); err != nil {
+				log.Printf("error killing container task: %s", err)
+			}
+			select {
+			case <-wait:
+				task.Delete(ctx)
+				return
+			case <-time.After(5 * time.Second):
+				if err := task.Kill(ctx, unix.SIGKILL, containerd.WithKillAll); err != nil {
+					log.Printf("error force killing container task: %s", err)
+				}
+				return
+			}
+		}
+	}()
+	wg.Wait()
+
+	return err
 }

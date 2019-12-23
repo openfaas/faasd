@@ -20,18 +20,13 @@ func runUp(_ *cobra.Command, _ []string) error {
 
 	wd, _ := os.Getwd()
 	svcs := []pkg.Service{
-		// pkg.Service{
-		// 	Name:  "faas-containerd",
-		// 	Env:   []string{"snapshotter=overlayfs"},
-		// 	Image: "docker.io/alexellis2/faas-containerd:0.3.2",
-		// 	Mounts: []pkg.Mount{
-		// 		pkg.Mount{
-		// 			Src:  "/run/containerd/containerd.sock",
-		// 			Dest: "/run/containerd/containerd.sock",
-		// 		},
-		// 	},
-		// 	Caps: []string{"CAP_SYS_ADMIN", "CAP_NET_RAW"},
-		// },
+		pkg.Service{
+			Name:  "nats",
+			Env:   []string{""},
+			Image: "docker.io/library/nats-streaming:0.11.2",
+			Caps:  []string{},
+			Args:  []string{"/nats-streaming-server", "-m", "8222", "--store=memory", "--cluster_id=faas-cluster"},
+		},
 		pkg.Service{
 			Name:  "prometheus",
 			Env:   []string{},
@@ -53,6 +48,8 @@ func runUp(_ *cobra.Command, _ []string) error {
 				"read_timeout=60s",
 				"write_timeout=60s",
 				"upstream_timeout=65s",
+				"faas_nats_address=nats",
+				"faas_nats_port=8222",
 			},
 			Image:  "docker.io/openfaas/gateway:0.17.4",
 			Mounts: []pkg.Mount{},
