@@ -60,6 +60,29 @@ cd $GOPATH/src/github.com/alexellis/faasd
 go build && sudo ./faasd
 ```
 
+Or get from binaries:
+
+
+### Build and run faas-containerd
+
+```sh
+# For x86_64
+sudo curl -fSLs "https://github.com/alexellis/faasd/releases/download/0.1.3/faasd" \
+    -o "/usr/local/bin/faasd" \
+    && sudo chmod a+x "/usr/local/bin/faasd"
+
+# armhf
+sudo curl -fSLs "https://github.com/alexellis/faasd/releases/download/0.1.3/faasd-armhf" \
+    -o "/usr/local/bin/faasd" \
+    && sudo chmod a+x "/usr/local/bin/faasd"
+
+# arm64
+sudo curl -fSLs "https://github.com/alexellis/faasd/releases/download/0.1.3/faasd-arm64" \
+    -o "/usr/local/bin/faasd" \
+    && sudo chmod a+x "/usr/local/bin/faasd"
+```
+
+
 Look in `hosts` in the current working folder to get the IP for the gateway or Prometheus
 
 ```sh
@@ -83,3 +106,15 @@ echo faas-containerd gateway prometheus |xargs sudo ctr container rm
 
 echo faas-containerd gateway prometheus |xargs sudo ctr snapshot rm
 ```
+
+## Links
+
+https://github.com/renatofq/ctrofb/blob/31968e4b4893f3603e9998f21933c4131523bb5d/cmd/network.go
+
+https://github.com/renatofq/catraia/blob/c4f62c86bddbfadbead38cd2bfe6d920fba26dce/catraia-net/network.go
+
+https://github.com/containernetworking/plugins
+
+https://github.com/containerd/go-cni
+
+
