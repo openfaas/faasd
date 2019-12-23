@@ -12,6 +12,7 @@ deploy:
     - ./bin/faasd
     - ./bin/faasd-armhf
     - ./bin/faasd-arm64
+  skip_cleanup: true
   on:
     tags: true
 
