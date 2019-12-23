@@ -1,5 +1,8 @@
 # faasd - serverless with containerd
 
+[![Build
+Status](https://travis-ci.com/alexellis/faasd.svg?branch=master)](https://travis-ci.com/alexellis/faasd)
+
 faasd is a Golang supervisor that bundles OpenFaaS for use with containerd instead of a container orchestrator like Kubernetes or Docker Swarm.
 
 ## About faasd:
