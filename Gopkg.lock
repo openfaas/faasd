@@ -46,6 +46,14 @@
   version = "0.3.0"
 
 [[projects]]
+  digest = "1:6076d857867a70e87dd1994407deb142f27436f1293b13e75cc053192d14eb0c"
+  name = "github.com/alexellis/k3sup"
+  packages = ["pkg/env"]
+  pruneopts = "UT"
+  revision = "f9a4adddc732742a9ee7962609408fb0999f2d7b"
+  version = "0.7.1"
+
+[[projects]]
   digest = "1:386ca0ac781cc1b630b3ed21725759770174140164b3faf3810e6ed6366a970b"
   name = "github.com/containerd/containerd"
   packages = [
@@ -449,6 +457,7 @@
   analyzer-version = 1
   input-imports = [
     "github.com/alexellis/go-execute/pkg/v1",
+    "github.com/alexellis/k3sup/pkg/env",
     "github.com/containerd/containerd",
     "github.com/containerd/containerd/cio",
     "github.com/containerd/containerd/containers",

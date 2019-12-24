@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/alexellis/faasd/pkg"
+	"github.com/alexellis/k3sup/pkg/env"
 	"github.com/spf13/cobra"
 )
 
@@ -22,7 +23,25 @@ var upCmd = &cobra.Command{
 
 func runUp(_ *cobra.Command, _ []string) error {
 
-	services := makeServiceDefinitions()
+	clientArch, clientOS := env.GetClientArch()
+
+	if clientOS != "Linux" {
+		return fmt.Errorf("You can only use faasd on Linux")
+	}
+	clientSuffix := ""
+	switch clientArch {
+	case "x86_64":
+		clientSuffix = ""
+		break
+	case "armhf":
+	case "arm64":
+		clientSuffix = clientArch
+		break
+	case "aarch64":
+		clientSuffix = "arm64"
+	}
+
+	services := makeServiceDefinitions(clientSuffix)
 
 	start := time.Now()
 	supervisor, err := pkg.NewSupervisor("/run/containerd/containerd.sock")
@@ -69,7 +88,7 @@ func runUp(_ *cobra.Command, _ []string) error {
 	return nil
 }
 
-func makeServiceDefinitions() []pkg.Service {
+func makeServiceDefinitions(archSuffix string) []pkg.Service {
 	wd, _ := os.Getwd()
 
 	return []pkg.Service{
@@ -104,7 +123,7 @@ func makeServiceDefinitions() []pkg.Service {
 				"faas_nats_address=nats",
 				"faas_nats_port=4222",
 			},
-			Image:  "docker.io/openfaas/gateway:0.18.7",
+			Image:  "docker.io/openfaas/gateway:0.18.7" + archSuffix,
 			Mounts: []pkg.Mount{},
 			Caps:   []string{"CAP_NET_RAW"},
 		},
