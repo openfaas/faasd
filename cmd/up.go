@@ -137,7 +137,7 @@ func makeServiceDefinitions(archSuffix string) []pkg.Service {
 				"faas_gateway_address=gateway",
 				"ack_wait=5m5s",
 				"max_inflight=1",
-				"faas_print_body=true",
+				"write_debug=false",
 			},
 			Image:  "docker.io/openfaas/queue-worker:0.9.0",
 			Mounts: []pkg.Mount{},
