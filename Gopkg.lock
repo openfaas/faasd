@@ -440,6 +440,7 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/alexellis/go-execute",
     "github.com/containerd/containerd",
     "github.com/containerd/containerd/cio",
     "github.com/containerd/containerd/containers",
@@ -451,6 +452,7 @@
     "github.com/spf13/cobra",
     "github.com/vishvananda/netlink",
     "github.com/vishvananda/netns",
+    "golang.org/x/sys/unix",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

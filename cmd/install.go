@@ -1,12 +1,11 @@
 package cmd
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"path"
-	"path/filepath"
-	"text/template"
+
+	systemd "github.com/alexellis/faasd/pkg/systemd"
 
 	"github.com/spf13/cobra"
 )
@@ -29,12 +28,37 @@ func runInstall(_ *cobra.Command, _ []string) error {
 		return err
 	}
 
-	err = installUnit("faas-containerd")
+	err = systemd.InstallUnit("faas-containerd")
 	if err != nil {
 		return err
 	}
 
-	err = installUnit("faasd")
+	err = systemd.InstallUnit("faasd")
+	if err != nil {
+		return err
+	}
+
+	err = systemd.DaemonReload()
+	if err != nil {
+		return err
+	}
+
+	err = systemd.Enable("faas-containerd")
+	if err != nil {
+		return err
+	}
+
+	err = systemd.Enable("faasd")
+	if err != nil {
+		return err
+	}
+
+	err = systemd.Start("faas-containerd")
+	if err != nil {
+		return err
+	}
+
+	err = systemd.Start("faasd")
 	if err != nil {
 		return err
 	}
@@ -48,39 +72,4 @@ func binExists(folder, name string) error {
 		return fmt.Errorf("unable to stat %s, install this binary before continuing", findPath)
 	}
 	return nil
-}
-
-func installUnit(name string) error {
-
-	tmpl, err := template.ParseFiles("./hack/" + name + ".service")
-
-	wd, _ := os.Getwd()
-	var tpl bytes.Buffer
-	userData := struct {
-		Cwd string
-	}{
-		Cwd: wd,
-	}
-
-	err = tmpl.Execute(&tpl, userData)
-	if err != nil {
-		return err
-	}
-
-	err = writeUnit(name+".service", tpl.Bytes())
-
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func writeUnit(name string, data []byte) error {
-	f, err := os.Create(filepath.Join("/lib/systemd/system", name))
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	_, err = f.Write(data)
-	return err
 }
