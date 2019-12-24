@@ -1,0 +1,13 @@
+[Unit]
+Description=faasd
+After=faas-containerd.service
+
+[Service]
+MemoryLimit=500M
+ExecStart={{.Cwd}}/faasd up
+Restart=on-failure
+RestartSec=10s
+WorkingDirectory={{.Cwd}}
+
+[Install]
+WantedBy=multi-user.target

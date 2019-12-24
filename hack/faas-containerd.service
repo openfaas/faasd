@@ -1,0 +1,12 @@
+[Unit]
+Description=faasd-containerd
+
+[Service]
+MemoryLimit=500M
+ExecStart="/usr/local/bin/faas-containerd"
+Restart=on-failure
+RestartSec=10s
+WorkingDirectory="/usr/local/bin/"
+
+[Install]
+WantedBy=multi-user.target

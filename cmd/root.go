@@ -22,6 +22,7 @@ const WelcomeMessage = "Welcome to faasd"
 func init() {
 	rootCommand.AddCommand(versionCmd)
 	rootCommand.AddCommand(upCmd)
+	rootCommand.AddCommand(installCmd)
 }
 
 var rootCommand = &cobra.Command{
