@@ -67,17 +67,17 @@ Or get from binaries:
 
 ```sh
 # For x86_64
-sudo curl -fSLs "https://github.com/alexellis/faasd/releases/download/0.2.0/faasd" \
+sudo curl -fSLs "https://github.com/alexellis/faasd/releases/download/0.2.1/faasd" \
     -o "/usr/local/bin/faasd" \
     && sudo chmod a+x "/usr/local/bin/faasd"
 
 # armhf
-sudo curl -fSLs "https://github.com/alexellis/faasd/releases/download/0.2.0/faasd-armhf" \
+sudo curl -fSLs "https://github.com/alexellis/faasd/releases/download/0.2.1/faasd-armhf" \
     -o "/usr/local/bin/faasd" \
     && sudo chmod a+x "/usr/local/bin/faasd"
 
 # arm64
-sudo curl -fSLs "https://github.com/alexellis/faasd/releases/download/0.2.0/faasd-arm64" \
+sudo curl -fSLs "https://github.com/alexellis/faasd/releases/download/0.2.1/faasd-arm64" \
     -o "/usr/local/bin/faasd" \
     && sudo chmod a+x "/usr/local/bin/faasd"
 ```

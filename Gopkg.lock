@@ -38,6 +38,14 @@
   revision = "9e921883ac929bbe515b39793ece99ce3a9d7706"
 
 [[projects]]
+  digest = "1:74860eb071d52337d67e9ffd6893b29affebd026505aa917ec23131576a91a77"
+  name = "github.com/alexellis/go-execute"
+  packages = ["pkg/v1"]
+  pruneopts = "UT"
+  revision = "961405ea754427780f2151adff607fa740d377f7"
+  version = "0.3.0"
+
+[[projects]]
   digest = "1:386ca0ac781cc1b630b3ed21725759770174140164b3faf3810e6ed6366a970b"
   name = "github.com/containerd/containerd"
   packages = [
@@ -440,7 +448,7 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "github.com/alexellis/go-execute",
+    "github.com/alexellis/go-execute/pkg/v1",
     "github.com/containerd/containerd",
     "github.com/containerd/containerd/cio",
     "github.com/containerd/containerd/containers",
