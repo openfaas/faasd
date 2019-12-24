@@ -18,8 +18,37 @@ var upCmd = &cobra.Command{
 
 func runUp(_ *cobra.Command, _ []string) error {
 
+	services := makeServiceDefinitions()
+
+	start := time.Now()
+	supervisor, err := pkg.NewSupervisor("/run/containerd/containerd.sock")
+	if err != nil {
+		return err
+	}
+
+	log.Printf("Supervisor created in: %s\n", time.Since(start).String())
+
+	start = time.Now()
+
+	err = supervisor.Start(services)
+
+	if err != nil {
+		return err
+	}
+
+	defer supervisor.Close()
+
+	log.Printf("Supervisor init done in: %s\n", time.Since(start).String())
+
+	time.Sleep(time.Minute * 120)
+
+	return nil
+}
+
+func makeServiceDefinitions() []pkg.Service {
 	wd, _ := os.Getwd()
-	svcs := []pkg.Service{
+
+	return []pkg.Service{
 		pkg.Service{
 			Name:  "nats",
 			Env:   []string{""},
@@ -71,28 +100,4 @@ func runUp(_ *cobra.Command, _ []string) error {
 			Caps:   []string{"CAP_NET_RAW"},
 		},
 	}
-
-	start := time.Now()
-	supervisor, err := pkg.NewSupervisor("/run/containerd/containerd.sock")
-	if err != nil {
-		return err
-	}
-
-	log.Printf("Supervisor created in: %s\n", time.Since(start).String())
-
-	start = time.Now()
-
-	err = supervisor.Start(svcs)
-
-	if err != nil {
-		return err
-	}
-
-	defer supervisor.Close()
-
-	log.Printf("Supervisor init done in: %s\n", time.Since(start).String())
-
-	time.Sleep(time.Minute * 120)
-
-	return nil
 }
