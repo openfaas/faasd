@@ -1,9 +1,13 @@
 package cmd
 
 import (
+	"fmt"
 	"log"
 	"os"
+	"os/signal"
 	"path"
+	"sync"
+	"syscall"
 	"time"
 
 	"github.com/alexellis/faasd/pkg"
@@ -40,8 +44,28 @@ func runUp(_ *cobra.Command, _ []string) error {
 
 	log.Printf("Supervisor init done in: %s\n", time.Since(start).String())
 
-	time.Sleep(time.Minute * 120)
+	shutdownTimeout := time.Second * 1
 
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		sig := make(chan os.Signal, 1)
+		signal.Notify(sig, syscall.SIGTERM, syscall.SIGINT)
+
+		log.Printf("faasd: waiting for SIGTERM or SIGINT\n")
+		<-sig
+
+		log.Printf("Signal received.. shutting down server in %s\n", shutdownTimeout.String())
+		err := supervisor.Remove(services)
+		if err != nil {
+			fmt.Println(err)
+		}
+		time.AfterFunc(shutdownTimeout, func() {
+			wg.Done()
+		})
+	}()
+
+	wg.Wait()
 	return nil
 }
 

@@ -44,6 +44,18 @@ func (s *Supervisor) Close() {
 	defer s.client.Close()
 }
 
+func (s *Supervisor) Remove(svcs []Service) error {
+	ctx := namespaces.WithNamespace(context.Background(), "default")
+
+	for _, svc := range svcs {
+		err := removeContainer(ctx, s.client, svc.Name)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (s *Supervisor) Start(svcs []Service) error {
 	ctx := namespaces.WithNamespace(context.Background(), "default")
 
@@ -61,7 +73,7 @@ func (s *Supervisor) Start(svcs []Service) error {
 	images := map[string]containerd.Image{}
 
 	for _, svc := range svcs {
-		fmt.Printf("Preparing: %s\n", svc.Name)
+		fmt.Printf("Preparing: %s with image: %s\n", svc.Name, svc.Image)
 
 		img, err := prepareImage(ctx, s.client, svc.Image)
 		if err != nil {
@@ -70,7 +82,6 @@ func (s *Supervisor) Start(svcs []Service) error {
 		images[svc.Name] = img
 		size, _ := img.Size(ctx)
 		fmt.Printf("Prepare done for: %s, %d bytes\n", svc.Image, size)
-
 	}
 
 	for _, svc := range svcs {
@@ -78,37 +89,9 @@ func (s *Supervisor) Start(svcs []Service) error {
 
 		image := images[svc.Name]
 
-		container, containerErr := s.client.LoadContainer(ctx, svc.Name)
-
-		if containerErr == nil {
-			found := true
-			t, err := container.Task(ctx, nil)
-			if err != nil {
-				if errdefs.IsNotFound(err) {
-					found = false
-				} else {
-					return fmt.Errorf("unable to get task %s: ", err)
-				}
-			}
-
-			if found {
-				status, _ := t.Status(ctx)
-				fmt.Println("Status:", status.Status)
-
-				// if status.Status == containerd.Running {
-				log.Println("need to kill", svc.Name)
-				err := killTask(ctx, t)
-				if err != nil {
-					return fmt.Errorf("error killing task %s, %s, %s", container.ID(), svc.Name, err)
-				}
-				// }
-			}
-
-			err = container.Delete(ctx, containerd.WithSnapshotCleanup)
-			if err != nil {
-				return fmt.Errorf("error deleting container %s, %s, %s", container.ID(), svc.Name, err)
-			}
-
+		containerErr := removeContainer(ctx, s.client, svc.Name)
+		if containerErr != nil {
+			return containerErr
 		}
 
 		mounts := []specs.Mount{}
@@ -185,7 +168,7 @@ func (s *Supervisor) Start(svcs []Service) error {
 			return err
 		}
 
-		ip := getIP(container.ID(), task.Pid())
+		ip := getIP(newContainer.ID(), task.Pid())
 
 		hosts, _ := ioutil.ReadFile("hosts")
 
@@ -323,4 +306,38 @@ func killTask(ctx context.Context, task containerd.Task) error {
 	wg.Wait()
 
 	return err
+}
+
+func removeContainer(ctx context.Context, client *containerd.Client, name string) error {
+
+	container, containerErr := client.LoadContainer(ctx, name)
+
+	if containerErr == nil {
+		found := true
+		t, err := container.Task(ctx, nil)
+		if err != nil {
+			if errdefs.IsNotFound(err) {
+				found = false
+			} else {
+				return fmt.Errorf("unable to get task %s: ", err)
+			}
+		}
+
+		if found {
+			status, _ := t.Status(ctx)
+			fmt.Printf("Status of %s is: %s\n", name, status.Status)
+
+			log.Printf("Need to kill %s\n", name)
+			err := killTask(ctx, t)
+			if err != nil {
+				return fmt.Errorf("error killing task %s, %s, %s", container.ID(), name, err)
+			}
+		}
+
+		err = container.Delete(ctx, containerd.WithSnapshotCleanup)
+		if err != nil {
+			return fmt.Errorf("error deleting container %s, %s, %s", container.ID(), name, err)
+		}
+	}
+	return nil
 }
