@@ -34,11 +34,12 @@ func runUp(_ *cobra.Command, _ []string) error {
 		clientSuffix = ""
 		break
 	case "armhf":
-	case "arm64":
-		clientSuffix = clientArch
+	case "armv7l":
+		clientSuffix = "-armhf"
 		break
+	case "arm64":
 	case "aarch64":
-		clientSuffix = "arm64"
+		clientSuffix = "-arm64"
 	}
 
 	services := makeServiceDefinitions(clientSuffix)
