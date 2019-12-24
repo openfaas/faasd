@@ -63,21 +63,21 @@ go build && sudo ./faasd
 Or get from binaries:
 
 
-### Build and run faas-containerd
+### Build and run
 
 ```sh
 # For x86_64
-sudo curl -fSLs "https://github.com/alexellis/faasd/releases/download/0.1.3/faasd" \
+sudo curl -fSLs "https://github.com/alexellis/faasd/releases/download/0.2.0/faasd" \
     -o "/usr/local/bin/faasd" \
     && sudo chmod a+x "/usr/local/bin/faasd"
 
 # armhf
-sudo curl -fSLs "https://github.com/alexellis/faasd/releases/download/0.1.3/faasd-armhf" \
+sudo curl -fSLs "https://github.com/alexellis/faasd/releases/download/0.2.0/faasd-armhf" \
     -o "/usr/local/bin/faasd" \
     && sudo chmod a+x "/usr/local/bin/faasd"
 
 # arm64
-sudo curl -fSLs "https://github.com/alexellis/faasd/releases/download/0.1.3/faasd-arm64" \
+sudo curl -fSLs "https://github.com/alexellis/faasd/releases/download/0.2.0/faasd-arm64" \
     -o "/usr/local/bin/faasd" \
     && sudo chmod a+x "/usr/local/bin/faasd"
 ```
