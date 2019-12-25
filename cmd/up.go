@@ -124,7 +124,7 @@ func makeServiceDefinitions(archSuffix string) []pkg.Service {
 				"faas_nats_address=nats",
 				"faas_nats_port=4222",
 			},
-			Image:  "docker.io/openfaas/gateway:0.18.7" + archSuffix,
+			Image:  "docker.io/openfaas/gateway:0.18.8" + archSuffix,
 			Mounts: []pkg.Mount{},
 			Caps:   []string{"CAP_NET_RAW"},
 		},
