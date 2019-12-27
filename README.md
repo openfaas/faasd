@@ -37,14 +37,22 @@ Other operations are pending development in the provider.
 
 ## Backlog
 
-* Use CNI to create network namespaces and adapters
-* Inject / manage IPs between core components for service to service communication - i.e. so Prometheus can scrape the OpenFaaS gateway
-* Monitor and restart any of the core components, if they crash
-* Configure `basic_auth` to protect the OpenFaaS gateway and faas-containerd HTTP API
-* Self-install / create systemd service on start-up using [go-systemd](https://github.com/coreos/go-systemd)
-* Bundle/package/automate installation of containerd - [see bootstrap from k3s](https://github.com/rancher/k3s)
-* Create [faasd.service](https://github.com/rancher/k3s/blob/master/k3s.service)
+Pending:
 
+* [ ] Configure `basic_auth` to protect the OpenFaaS gateway and faas-containerd HTTP API
+* [ ] Use CNI to create network namespaces and adapters
+* [ ] Monitor and restart any of the core components at runtime if the container stops
+* [ ] Bundle/package/automate installation of containerd - [see bootstrap from k3s](https://github.com/rancher/k3s)
+* [ ] Provide ufw rules / example for blocking access to everything but a reverse proxy to the gateway container
+
+Done:
+
+* [x] Inject / manage IPs between core components for service to service communication - i.e. so Prometheus can scrape the OpenFaaS gateway - done via `/etc/hosts` mount
+* [x] Add queue-worker and NATS
+* [x] Create faasd.service and faas-containerd.service
+* [x] Self-install / create systemd service via `faasd install`
+* [x] Restart containers upon restart of faasd
+* [x] Clear / remove containers and tasks with SIGTERM / SIGINT
 
 ## Hacking (build from source)
 
