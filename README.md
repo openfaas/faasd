@@ -44,44 +44,46 @@ Other operations are pending development in the provider.
 * Create [faasd.service](https://github.com/rancher/k3s/blob/master/k3s.service)
 
 
-## Hacking
+## Hacking (build from source)
 
 First run faas-containerd
 
 ```sh
 cd $GOPATH/src/github.com/alexellis/faas-containerd
-go build && sudo ./faas-containerd
+go build
+
+sudo ./faas-containerd
 ```
 
 Then run faasd, which brings up the gateway and Prometheus as containers
 
 ```sh
 cd $GOPATH/src/github.com/alexellis/faasd
-go build && sudo ./faasd
+go build
+
+sudo ./faasd up
 ```
 
-Or get from binaries:
-
-
-### Build and run
+### Build and run (binaries)
 
 ```sh
 # For x86_64
-sudo curl -fSLs "https://github.com/alexellis/faasd/releases/download/0.2.1/faasd" \
+sudo curl -fSLs "https://github.com/alexellis/faasd/releases/download/0.2.2/faasd" \
     -o "/usr/local/bin/faasd" \
     && sudo chmod a+x "/usr/local/bin/faasd"
 
 # armhf
-sudo curl -fSLs "https://github.com/alexellis/faasd/releases/download/0.2.1/faasd-armhf" \
+sudo curl -fSLs "https://github.com/alexellis/faasd/releases/download/0.2.2/faasd-armhf" \
     -o "/usr/local/bin/faasd" \
     && sudo chmod a+x "/usr/local/bin/faasd"
 
 # arm64
-sudo curl -fSLs "https://github.com/alexellis/faasd/releases/download/0.2.1/faasd-arm64" \
+sudo curl -fSLs "https://github.com/alexellis/faasd/releases/download/0.2.2/faasd-arm64" \
     -o "/usr/local/bin/faasd" \
     && sudo chmod a+x "/usr/local/bin/faasd"
 ```
 
+### At run-time
 
 Look in `hosts` in the current working folder to get the IP for the gateway or Prometheus
 
@@ -91,11 +93,25 @@ Look in `hosts` in the current working folder to get the IP for the gateway or P
 172.19.0.2      prometheus
 
 172.19.0.3      gateway
+172.19.0.4      nats
+172.19.0.5      queue-worker
 ```
 
 Since faas-containerd uses containerd heavily it is not running as a container, but as a stand-alone process. Its port is available via the bridge interface, i.e. netns0.
 
-Now go to the gateway's IP address as shown above on port 8080, i.e. http://172.19.0.3:8080 - you can also use this address to deploy OpenFaaS Functions via the `faas-cli`. 
+* Prometheus will run on the Prometheus IP plus port 8080 i.e. http://172.19.0.2:9090/targets
+
+* faas-containerd runs on 172.19.0.1:8081
+
+* Now go to the gateway's IP address as shown above on port 8080, i.e. http://172.19.0.3:8080 - you can also use this address to deploy OpenFaaS Functions via the `faas-cli`. 
+
+#### Installation with systemd
+
+* `faasd install` - install faasd and containerd with systemd
+* `journalctl -u faasd` - faasd systemd logs
+* `journalctl -u faas-containerd` - faas-containerd systemd logs
+
+### Appendix
 
 Removing containers:
 
