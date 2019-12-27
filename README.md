@@ -62,7 +62,9 @@ First run faas-containerd
 
 ```sh
 cd $GOPATH/src/github.com/alexellis/faas-containerd
-go build
+
+# You'll need to install containerd and its pre-reqs first
+# https://github.com/alexellis/faas-containerd/
 
 sudo ./faas-containerd
 ```
@@ -73,7 +75,11 @@ Then run faasd, which brings up the gateway and Prometheus as containers
 cd $GOPATH/src/github.com/alexellis/faasd
 go build
 
-sudo ./faasd up
+# Install with systemd
+# sudo ./faasd install
+
+# Or run interactively
+# sudo ./faasd up
 ```
 
 ### Build and run (binaries)
