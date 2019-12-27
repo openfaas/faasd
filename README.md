@@ -29,8 +29,10 @@ Other operations are pending development in the provider.
 
 ### Pre-reqs
 
-* Linux - ideally Ubuntu, which is used for testing.
+* Linux - ideally Ubuntu, which is used for testing
 * Installation steps as per [faas-containerd](https://github.com/alexellis/faas-containerd) for building and for development
+    * [netns](https://github.com/genuinetools/netns/releases) binary in `$PATH`
+    * [containerd v1.3.2](https://github.com/containerd/containerd)
 * [faas-cli](https://github.com/openfaas/faas-cli) (optional)
 
 ## Backlog
