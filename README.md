@@ -24,6 +24,7 @@ You can use the standard [faas-cli](https://github.com/openfaas/faas-cli) with f
 * `faas describe` 
 * `faas deploy --update=true --replace=false`
 * `faas invoke`
+* `faas invoke --async`
 
 Other operations are pending development in the provider.
 
@@ -53,6 +54,7 @@ Done:
 * [x] Self-install / create systemd service via `faasd install`
 * [x] Restart containers upon restart of faasd
 * [x] Clear / remove containers and tasks with SIGTERM / SIGINT
+* [x] Determine armhf/arm64 containers to run for gateway
 
 ## Hacking (build from source)
 
