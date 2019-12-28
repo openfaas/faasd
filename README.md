@@ -125,7 +125,7 @@ Since faas-containerd uses containerd heavily it is not running as a container, 
 
 #### Installation with systemd
 
-* `faasd install` - install faasd and containerd with systemd
+* `faasd install` - install faasd and containerd with systemd, run in `$GOPATH/src/github.com/alexellis/faasd`
 * `journalctl -u faasd` - faasd systemd logs
 * `journalctl -u faas-containerd` - faas-containerd systemd logs
 
@@ -134,11 +134,11 @@ Since faas-containerd uses containerd heavily it is not running as a container, 
 Removing containers:
 
 ```sh
-echo faas-containerd gateway prometheus |xargs sudo ctr task rm -f
+echo faas-containerd gateway prometheus | xargs sudo ctr task rm -f
 
-echo faas-containerd gateway prometheus |xargs sudo ctr container rm
+echo faas-containerd gateway prometheus | xargs sudo ctr container rm
 
-echo faas-containerd gateway prometheus |xargs sudo ctr snapshot rm
+echo faas-containerd gateway prometheus | xargs sudo ctr snapshot rm
 ```
 
 ## Links
@@ -150,5 +150,4 @@ https://github.com/renatofq/catraia/blob/c4f62c86bddbfadbead38cd2bfe6d920fba26dc
 https://github.com/containernetworking/plugins
 
 https://github.com/containerd/go-cni
-
 
