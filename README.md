@@ -86,17 +86,17 @@ go build
 
 ```sh
 # For x86_64
-sudo curl -fSLs "https://github.com/alexellis/faasd/releases/download/0.2.4/faasd" \
+sudo curl -fSLs "https://github.com/alexellis/faasd/releases/download/0.2.5/faasd" \
     -o "/usr/local/bin/faasd" \
     && sudo chmod a+x "/usr/local/bin/faasd"
 
 # armhf
-sudo curl -fSLs "https://github.com/alexellis/faasd/releases/download/0.2.4/faasd-armhf" \
+sudo curl -fSLs "https://github.com/alexellis/faasd/releases/download/0.2.5/faasd-armhf" \
     -o "/usr/local/bin/faasd" \
     && sudo chmod a+x "/usr/local/bin/faasd"
 
 # arm64
-sudo curl -fSLs "https://github.com/alexellis/faasd/releases/download/0.2.4/faasd-arm64" \
+sudo curl -fSLs "https://github.com/alexellis/faasd/releases/download/0.2.5/faasd-arm64" \
     -o "/usr/local/bin/faasd" \
     && sudo chmod a+x "/usr/local/bin/faasd"
 ```
