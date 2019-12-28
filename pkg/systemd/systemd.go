@@ -65,8 +65,12 @@ func DaemonReload() error {
 }
 
 func InstallUnit(name string) error {
+	tmplName := "./hack/" + name + ".service"
+	tmpl, err := template.ParseFiles()
 
-	tmpl, err := template.ParseFiles("./hack/" + name + ".service")
+	if err != nil {
+		return fmt.Errorf("error loading template %s, error %s", tmplName, err)
+	}
 
 	wd, _ := os.Getwd()
 	var tpl bytes.Buffer
