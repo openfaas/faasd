@@ -43,6 +43,12 @@ func Remove(ctx context.Context, client *containerd.Client, name string) error {
 		if err != nil {
 			return fmt.Errorf("error deleting container %s, %s, %s", container.ID(), name, err)
 		}
+	} else {
+		service := client.SnapshotService("")
+		key := name + "snapshot"
+		if _, err := client.SnapshotService("").Stat(ctx, key); err == nil {
+			service.Remove(ctx, key)
+		}
 	}
 	return nil
 }
