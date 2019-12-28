@@ -4,7 +4,7 @@ After=faas-containerd.service
 
 [Service]
 MemoryLimit=500M
-ExecStart={{.Cwd}}/faasd up
+ExecStart=/usr/local/bin/faasd up
 Restart=on-failure
 RestartSec=10s
 WorkingDirectory={{.Cwd}}
