@@ -79,3 +79,33 @@ func killTask(ctx context.Context, task containerd.Task) error {
 
 	return err
 }
+
+func PrepareImage(ctx context.Context, client *containerd.Client, imageName, snapshotter string) (containerd.Image, error) {
+
+	var empty containerd.Image
+	image, err := client.GetImage(ctx, imageName)
+	if err != nil {
+		if !errdefs.IsNotFound(err) {
+			return empty, err
+		}
+
+		img, err := client.Pull(ctx, imageName, containerd.WithPullUnpack)
+		if err != nil {
+			return empty, fmt.Errorf("cannot pull: %s", err)
+		}
+		image = img
+	}
+
+	unpacked, err := image.IsUnpacked(ctx, snapshotter)
+	if err != nil {
+		return empty, fmt.Errorf("cannot check if unpacked: %s", err)
+	}
+
+	if !unpacked {
+		if err := image.Unpack(ctx, snapshotter); err != nil {
+			return empty, fmt.Errorf("cannot unpack: %s", err)
+		}
+	}
+
+	return image, nil
+}

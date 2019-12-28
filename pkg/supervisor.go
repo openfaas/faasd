@@ -14,7 +14,6 @@ import (
 	"github.com/containerd/containerd"
 	"github.com/containerd/containerd/cio"
 	"github.com/containerd/containerd/containers"
-	"github.com/containerd/containerd/errdefs"
 
 	"github.com/containerd/containerd/namespaces"
 	"github.com/containerd/containerd/oci"
@@ -73,7 +72,7 @@ func (s *Supervisor) Start(svcs []Service) error {
 	for _, svc := range svcs {
 		fmt.Printf("Preparing: %s with image: %s\n", svc.Name, svc.Image)
 
-		img, err := prepareImage(ctx, s.client, svc.Image)
+		img, err := service.PrepareImage(ctx, s.client, svc.Image, defaultSnapshotter)
 		if err != nil {
 			return err
 		}
@@ -195,37 +194,6 @@ func (s *Supervisor) Start(svcs []Service) error {
 	}
 
 	return nil
-}
-
-func prepareImage(ctx context.Context, client *containerd.Client, imageName string) (containerd.Image, error) {
-	snapshotter := defaultSnapshotter
-
-	var empty containerd.Image
-	image, err := client.GetImage(ctx, imageName)
-	if err != nil {
-		if !errdefs.IsNotFound(err) {
-			return empty, err
-		}
-
-		img, err := client.Pull(ctx, imageName, containerd.WithPullUnpack)
-		if err != nil {
-			return empty, fmt.Errorf("cannot pull: %s", err)
-		}
-		image = img
-	}
-
-	unpacked, err := image.IsUnpacked(ctx, snapshotter)
-	if err != nil {
-		return empty, fmt.Errorf("cannot check if unpacked: %s", err)
-	}
-
-	if !unpacked {
-		if err := image.Unpack(ctx, snapshotter); err != nil {
-			return empty, fmt.Errorf("cannot unpack: %s", err)
-		}
-	}
-
-	return image, nil
 }
 
 func getIP(containerID string, taskPID uint32) string {
