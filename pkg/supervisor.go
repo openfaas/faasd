@@ -186,7 +186,6 @@ func (s *Supervisor) Start(svcs []Service) error {
 		}
 		log.Println("Exited: ", exitStatusC)
 
-		// call start on the task to execute the redis server
 		if err := task.Start(ctx); err != nil {
 			log.Println("Task err: ", err)
 			return err

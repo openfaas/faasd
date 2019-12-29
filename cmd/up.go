@@ -65,6 +65,7 @@ func runUp(_ *cobra.Command, _ []string) error {
 	log.Printf("Supervisor init done in: %s\n", time.Since(start).String())
 
 	shutdownTimeout := time.Second * 1
+	timeout := time.Second * 60
 
 	wg := sync.WaitGroup{}
 	wg.Add(1)
@@ -83,6 +84,12 @@ func runUp(_ *cobra.Command, _ []string) error {
 		time.AfterFunc(shutdownTimeout, func() {
 			wg.Done()
 		})
+	}()
+
+	go func() {
+		wd, _ := os.Getwd()
+		proxy := pkg.NewProxy(path.Join(wd, "hosts"), timeout)
+		proxy.Start()
 	}()
 
 	wg.Wait()
