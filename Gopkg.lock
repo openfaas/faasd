@@ -274,6 +274,14 @@
   version = "v0.8.1"
 
 [[projects]]
+  digest = "1:044c51736e2688a3e4f28f72537f8a7b3f9c188fab4477d5334d92dfe2c07ed5"
+  name = "github.com/sethvargo/go-password"
+  packages = ["password"]
+  pruneopts = "UT"
+  revision = "07c3d521e892540e71469bb0312866130714c038"
+  version = "v0.1.3"
+
+[[projects]]
   digest = "1:fd61cf4ae1953d55df708acb6b91492d538f49c305b364a014049914495db426"
   name = "github.com/sirupsen/logrus"
   packages = ["."]
@@ -466,6 +474,7 @@
     "github.com/containerd/containerd/oci",
     "github.com/morikuni/aec",
     "github.com/opencontainers/runtime-spec/specs-go",
+    "github.com/sethvargo/go-password/password",
     "github.com/spf13/cobra",
     "github.com/vishvananda/netlink",
     "github.com/vishvananda/netns",

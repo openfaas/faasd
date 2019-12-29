@@ -40,7 +40,6 @@ Other operations are pending development in the provider.
 
 Pending:
 
-* [ ] Configure `basic_auth` to protect the OpenFaaS gateway and faas-containerd HTTP API
 * [ ] Use CNI to create network namespaces and adapters
 * [ ] Monitor and restart any of the core components at runtime if the container stops
 * [ ] Bundle/package/automate installation of containerd - [see bootstrap from k3s](https://github.com/rancher/k3s)
@@ -55,6 +54,7 @@ Done:
 * [x] Restart containers upon restart of faasd
 * [x] Clear / remove containers and tasks with SIGTERM / SIGINT
 * [x] Determine armhf/arm64 containers to run for gateway
+* [x] Configure `basic_auth` to protect the OpenFaaS gateway and faas-containerd HTTP API
 
 ## Hacking (build from source)
 
@@ -82,6 +82,8 @@ go build
 # sudo ./faasd up
 ```
 
+You will then need to get the basic-auth password, it is written to `$GOPATH/src/github.com/alexellis/faasd/basic-auth-password` if you followed the above instructions.
+The default Basic Auth username is `admin`, which is written to `$GOPATH/src/github.com/alexellis/faasd/basic-auth-user`, if you wish to use a non-standard user then create this file and add your username (no newlines or other characters) 
 ### Build and run (binaries)
 
 ```sh

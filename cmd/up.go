@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/pkg/errors"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/signal"
@@ -12,6 +14,7 @@ import (
 
 	"github.com/alexellis/faasd/pkg"
 	"github.com/alexellis/k3sup/pkg/env"
+	"github.com/sethvargo/go-password/password"
 	"github.com/spf13/cobra"
 )
 
@@ -40,6 +43,11 @@ func runUp(_ *cobra.Command, _ []string) error {
 	case "arm64":
 	case "aarch64":
 		clientSuffix = "-arm64"
+	}
+
+	authFileErr := errors.Wrap(makeBasicAuthFiles(), "Could not create gateway auth files")
+	if authFileErr != nil {
+		return authFileErr
 	}
 
 	services := makeServiceDefinitions(clientSuffix)
@@ -96,10 +104,70 @@ func runUp(_ *cobra.Command, _ []string) error {
 	return nil
 }
 
+func makeBasicAuthFiles() error {
+	wd, _ := os.Getwd()
+	pwdFile := wd + "/basic-auth-password"
+	authPassword, err := password.Generate(63, 10, 0, false, true)
+
+	if err != nil {
+		return err
+	}
+
+	err = makeFile(pwdFile, authPassword)
+	if err != nil {
+		return err
+	}
+
+	userFile := wd + "/basic-auth-user"
+	err = makeFile(userFile, "admin")
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func makeFile(filePath, fileContents string) error {
+	_, err := os.Stat(filePath)
+	if err == nil {
+		log.Printf("File exists: %q, Using data from this file",filePath)
+		return nil
+	} else if os.IsNotExist(err) {
+		log.Printf("Writing file: %q", filePath)
+		return ioutil.WriteFile(filePath, []byte(fileContents), 0644)
+	} else {
+		return err
+	}
+}
+
 func makeServiceDefinitions(archSuffix string) []pkg.Service {
 	wd, _ := os.Getwd()
 
+	secretMountDir := "/run/secrets/"
+
 	return []pkg.Service{
+		pkg.Service{
+			Name:   "basic-auth-plugin",
+			Image:  "docker.io/openfaas/basic-auth-plugin:0.18.10" + archSuffix,
+			Env: []string{
+				"port=8080",
+				"secret_mount_path=" + secretMountDir,
+				"user_filename=basic-auth-user",
+				"pass_filename=basic-auth-password",
+			},
+			Mounts: []pkg.Mount{
+				pkg.Mount{
+					Src:path.Join(wd, "/basic-auth-password"),
+					Dest:secretMountDir + "basic-auth-password",
+				},
+				pkg.Mount{
+					Src:  path.Join(wd, "/basic-auth-user"),
+					Dest: secretMountDir + "basic-auth-user",
+				},
+			},
+			Caps: []string{"CAP_NET_RAW"},
+			Args:   nil,
+		},
 		pkg.Service{
 			Name:  "nats",
 			Env:   []string{""},
@@ -122,7 +190,7 @@ func makeServiceDefinitions(archSuffix string) []pkg.Service {
 		pkg.Service{
 			Name: "gateway",
 			Env: []string{
-				"basic_auth=false",
+				"basic_auth=true",
 				"functions_provider_url=http://faas-containerd:8081/",
 				"direct_functions=false",
 				"read_timeout=60s",
@@ -130,9 +198,21 @@ func makeServiceDefinitions(archSuffix string) []pkg.Service {
 				"upstream_timeout=65s",
 				"faas_nats_address=nats",
 				"faas_nats_port=4222",
+				"auth_proxy_url=http://basic-auth-plugin:8080/validate",
+				"auth_proxy_pass_body=false",
+				"secret_mount_path=" + secretMountDir,
 			},
 			Image:  "docker.io/openfaas/gateway:0.18.8" + archSuffix,
-			Mounts: []pkg.Mount{},
+			Mounts: []pkg.Mount{
+				pkg.Mount{
+					Src:path.Join(wd, "/basic-auth-password"),
+					Dest:secretMountDir + "basic-auth-password",
+				},
+				pkg.Mount{
+					Src:  path.Join(wd, "/basic-auth-user"),
+					Dest: secretMountDir + "basic-auth-user",
+				},
+			},
 			Caps:   []string{"CAP_NET_RAW"},
 		},
 		pkg.Service{
@@ -145,9 +225,20 @@ func makeServiceDefinitions(archSuffix string) []pkg.Service {
 				"ack_wait=5m5s",
 				"max_inflight=1",
 				"write_debug=false",
+				"basic_auth=true",
+				"secret_mount_path=" + secretMountDir,
 			},
 			Image:  "docker.io/openfaas/queue-worker:0.9.0",
-			Mounts: []pkg.Mount{},
+			Mounts: []pkg.Mount{
+				pkg.Mount{
+					Src:path.Join(wd, "/basic-auth-password"),
+					Dest:secretMountDir + "basic-auth-password",
+				},
+				pkg.Mount{
+					Src:  path.Join(wd, "/basic-auth-user"),
+					Dest: secretMountDir + "basic-auth-user",
+				},
+			},
 			Caps:   []string{"CAP_NET_RAW"},
 		},
 	}
