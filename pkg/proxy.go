@@ -27,6 +27,10 @@ type Proxy struct {
 func (p *Proxy) Start() error {
 	tcp := 8080
 
+	http.DefaultClient.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		return http.ErrUseLastResponse
+	}
+
 	time.Sleep(3 * time.Second)
 	log.Printf("Starting faasd proxy on %d\n", tcp)
 	data := struct{ host string }{
