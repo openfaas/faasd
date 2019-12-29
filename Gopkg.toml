@@ -21,3 +21,7 @@
 [prune]
   go-tests = true
   unused-packages = true
+
+[[constraint]]
+  name = "github.com/sethvargo/go-password"
+  version = "0.1.3"

@@ -2,3 +2,6 @@
 hosts
 /resolv.conf
 .idea/
+
+basic-auth-user
+basic-auth-password
