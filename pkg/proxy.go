@@ -63,7 +63,7 @@ func (p *Proxy) Start() error {
 			}
 
 			upstream := fmt.Sprintf("http://%s:8080%s%s", data.host, r.URL.Path, query)
-			fmt.Printf("Forward to %s %s\n", upstream, data)
+			fmt.Printf("[faasd] proxy: %s\n", upstream)
 
 			if r.Body != nil {
 				defer r.Body.Close()
