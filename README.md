@@ -82,8 +82,6 @@ go build
 # sudo ./faasd up
 ```
 
-You will then need to get the basic-auth password, it is written to `$GOPATH/src/github.com/alexellis/faasd/basic-auth-password` if you followed the above instructions.
-The default Basic Auth username is `admin`, which is written to `$GOPATH/src/github.com/alexellis/faasd/basic-auth-user`, if you wish to use a non-standard user then create this file and add your username (no newlines or other characters) 
 ### Build and run (binaries)
 
 ```sh
@@ -124,6 +122,11 @@ Since faas-containerd uses containerd heavily it is not running as a container, 
 * faas-containerd runs on 172.19.0.1:8081
 
 * Now go to the gateway's IP address as shown above on port 8080, i.e. http://172.19.0.3:8080 - you can also use this address to deploy OpenFaaS Functions via the `faas-cli`. 
+
+* basic-auth
+
+    You will then need to get the basic-auth password, it is written to `$GOPATH/src/github.com/alexellis/faasd/basic-auth-password` if you followed the above instructions.
+The default Basic Auth username is `admin`, which is written to `$GOPATH/src/github.com/alexellis/faasd/basic-auth-user`, if you wish to use a non-standard user then create this file and add your username (no newlines or other characters) 
 
 #### Installation with systemd
 
