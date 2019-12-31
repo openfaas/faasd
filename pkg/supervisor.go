@@ -153,7 +153,7 @@ func (s *Supervisor) Start(svcs []Service) error {
 		)
 
 		if containerCreateErr != nil {
-			log.Println(containerCreateErr)
+			log.Printf("Error creating container %s\n", containerCreateErr)
 			return containerCreateErr
 		}
 
@@ -161,7 +161,7 @@ func (s *Supervisor) Start(svcs []Service) error {
 
 		task, err := newContainer.NewTask(ctx, cio.NewCreator(cio.WithStdio))
 		if err != nil {
-			log.Println(err)
+			log.Printf("Error creating task: %s\n", err)
 			return err
 		}
 
@@ -175,19 +175,21 @@ func (s *Supervisor) Start(svcs []Service) error {
 		writeErr := ioutil.WriteFile("hosts", hosts, 0644)
 
 		if writeErr != nil {
-			log.Println("Error writing hosts file")
+			log.Printf("Error writing file %s %s\n", "hosts", writeErr)
 		}
 		// os.Chown("hosts", 101, 101)
 
-		exitStatusC, err := task.Wait(ctx)
+		_, err = task.Wait(ctx)
 		if err != nil {
-			log.Println(err)
+			log.Printf("Wait err: %s\n", err)
 			return err
 		}
-		log.Println("Exited: ", exitStatusC)
 
-		if err := task.Start(ctx); err != nil {
-			log.Println("Task err: ", err)
+		log.Printf("Task: %s\tContainer: %s\n", task.ID(), newContainer.ID())
+		// log.Println("Exited: ", exitStatusC)
+
+		if err = task.Start(ctx); err != nil {
+			log.Printf("Task err: %s\n", err)
 			return err
 		}
 	}
