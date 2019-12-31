@@ -13,7 +13,16 @@ func init() {
 	rootCommand.AddCommand(installCmd)
 }
 
-func Execute() error {
+var (
+	// GitCommit Git Commit SHA
+	GitCommit string
+	// Version version of the CLI
+	Version string
+)
+
+func Execute(gitCommit, version string) error {
+	GitCommit = gitCommit
+	Version = version
 
 	if err := rootCommand.Execute(); err != nil {
 		return err

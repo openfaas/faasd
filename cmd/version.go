@@ -21,10 +21,26 @@ func parseBaseCommand(_ *cobra.Command, _ []string) {
 		`faasd
 Commit: %s
 Version: %s
-`, pkg.GitCommit, pkg.GetVersion())
+`, GitCommit, GetVersion())
 }
 
 func printLogo() {
 	logoText := aec.WhiteF.Apply(pkg.Logo)
 	fmt.Println(logoText)
 }
+
+// GetVersion get latest version
+func GetVersion() string {
+	if len(Version) == 0 {
+		return "dev"
+	}
+	return Version
+}
+
+// Logo for version and root command
+const Logo = `  __                     _ 
+ / _| __ _  __ _ ___  __| |
+| |_ / _` + "`" + ` |/ _` + "`" + ` / __|/ _` + "`" + ` |
+|  _| (_| | (_| \__ \ (_| |
+|_|  \__,_|\__,_|___/\__,_|
+`
