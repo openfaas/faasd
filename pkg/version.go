@@ -1,13 +1,13 @@
 package pkg
 
 var (
-	//GitCommit Git Commit SHA
+	// GitCommit Git Commit SHA
 	GitCommit string
-	//Version version of the CLI
+	// Version version of the CLI
 	Version string
 )
 
-//GetVersion get latest version
+// GetVersion get latest version
 func GetVersion() string {
 	if len(Version) == 0 {
 		return "dev"
@@ -15,6 +15,7 @@ func GetVersion() string {
 	return Version
 }
 
+// Logo for version and root command
 const Logo = `  __                     _ 
  / _| __ _  __ _ ___  __| |
 | |_ / _` + "`" + ` |/ _` + "`" + ` / __|/ _` + "`" + ` |
