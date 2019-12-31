@@ -6,48 +6,36 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"strings"
 
 	"time"
 )
 
-func NewProxy(hosts string, timeout time.Duration) *Proxy {
+func NewProxy(timeout time.Duration) *Proxy {
 
 	return &Proxy{
-		Hosts:   hosts,
 		Timeout: timeout,
 	}
 }
 
 type Proxy struct {
-	Hosts   string
 	Timeout time.Duration
 }
 
-func (p *Proxy) Start() error {
+func (p *Proxy) Start(gatewayChan chan string) error {
 	tcp := 8080
 
 	http.DefaultClient.CheckRedirect = func(req *http.Request, via []*http.Request) error {
 		return http.ErrUseLastResponse
 	}
 
-	time.Sleep(3 * time.Second)
-	log.Printf("Starting faasd proxy on %d\n", tcp)
 	data := struct{ host string }{
 		host: "",
 	}
 
-	fileData, fileErr := ioutil.ReadFile(p.Hosts)
-	if fileErr != nil {
-		return fileErr
-	}
+	data.host = <-gatewayChan
 
-	lines := strings.Split(string(fileData), "\n")
-	for _, line := range lines {
-		if strings.Index(line, "gateway") > -1 {
-			data.host = line[:strings.Index(line, "\t")]
-		}
-	}
+	log.Printf("Starting faasd proxy on %d\n", tcp)
+
 	fmt.Printf("Gateway: %s\n", data.host)
 
 	s := &http.Server{
@@ -72,6 +60,8 @@ func (p *Proxy) Start() error {
 			wrapper := ioutil.NopCloser(r.Body)
 			upReq, upErr := http.NewRequest(r.Method, upstream, wrapper)
 
+			copyHeaders(upReq.Header, &r.Header)
+
 			if upErr != nil {
 				log.Println(upErr)
 
@@ -88,9 +78,7 @@ func (p *Proxy) Start() error {
 				return
 			}
 
-			for k, v := range upRes.Header {
-				w.Header().Set(k, v[0])
-			}
+			copyHeaders(w.Header(), &upRes.Header)
 
 			w.WriteHeader(upRes.StatusCode)
 			io.Copy(w, upRes.Body)
@@ -99,4 +87,13 @@ func (p *Proxy) Start() error {
 	}
 
 	return s.ListenAndServe()
+}
+
+// copyHeaders clones the header values from the source into the destination.
+func copyHeaders(destination http.Header, source *http.Header) {
+	for k, v := range *source {
+		vClone := make([]string, len(v))
+		copy(vClone, v)
+		destination[k] = vClone
+	}
 }

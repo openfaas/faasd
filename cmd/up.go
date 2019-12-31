@@ -2,15 +2,17 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/pkg/errors"
 	"io/ioutil"
 	"log"
 	"os"
 	"os/signal"
 	"path"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"github.com/alexellis/faasd/pkg"
 	"github.com/alexellis/k3sup/pkg/env"
@@ -94,10 +96,30 @@ func runUp(_ *cobra.Command, _ []string) error {
 		})
 	}()
 
+	gatewayURLChan := make(chan string, 1)
+	proxy := pkg.NewProxy(timeout)
+	go proxy.Start(gatewayURLChan)
+
 	go func() {
 		wd, _ := os.Getwd()
-		proxy := pkg.NewProxy(path.Join(wd, "hosts"), timeout)
-		proxy.Start()
+
+		time.Sleep(3 * time.Second)
+
+		fileData, fileErr := ioutil.ReadFile(path.Join(wd, "hosts"))
+		if fileErr != nil {
+			log.Println(fileErr)
+			return
+		}
+		host := ""
+		lines := strings.Split(string(fileData), "\n")
+		for _, line := range lines {
+			if strings.Index(line, "gateway") > -1 {
+				host = line[:strings.Index(line, "\t")]
+			}
+		}
+		log.Printf("[up] Sending %s to proxy\n", host)
+		gatewayURLChan <- host
+		close(gatewayURLChan)
 	}()
 
 	wg.Wait()
@@ -130,10 +152,10 @@ func makeBasicAuthFiles() error {
 func makeFile(filePath, fileContents string) error {
 	_, err := os.Stat(filePath)
 	if err == nil {
-		log.Printf("File exists: %q, Using data from this file",filePath)
+		log.Printf("File exists: %q\n", filePath)
 		return nil
 	} else if os.IsNotExist(err) {
-		log.Printf("Writing file: %q", filePath)
+		log.Printf("Writing to: %q\n", filePath)
 		return ioutil.WriteFile(filePath, []byte(fileContents), 0644)
 	} else {
 		return err
@@ -143,12 +165,12 @@ func makeFile(filePath, fileContents string) error {
 func makeServiceDefinitions(archSuffix string) []pkg.Service {
 	wd, _ := os.Getwd()
 
-	secretMountDir := "/run/secrets/"
+	secretMountDir := "/run/secrets"
 
 	return []pkg.Service{
 		pkg.Service{
-			Name:   "basic-auth-plugin",
-			Image:  "docker.io/openfaas/basic-auth-plugin:0.18.10" + archSuffix,
+			Name:  "basic-auth-plugin",
+			Image: "docker.io/openfaas/basic-auth-plugin:0.18.10" + archSuffix,
 			Env: []string{
 				"port=8080",
 				"secret_mount_path=" + secretMountDir,
@@ -157,16 +179,16 @@ func makeServiceDefinitions(archSuffix string) []pkg.Service {
 			},
 			Mounts: []pkg.Mount{
 				pkg.Mount{
-					Src:path.Join(wd, "/basic-auth-password"),
-					Dest:secretMountDir + "basic-auth-password",
+					Src:  path.Join(wd, "basic-auth-password"),
+					Dest: path.Join(secretMountDir, "basic-auth-password"),
 				},
 				pkg.Mount{
-					Src:  path.Join(wd, "/basic-auth-user"),
-					Dest: secretMountDir + "basic-auth-user",
+					Src:  path.Join(wd, "basic-auth-user"),
+					Dest: path.Join(secretMountDir, "basic-auth-user"),
 				},
 			},
 			Caps: []string{"CAP_NET_RAW"},
-			Args:   nil,
+			Args: nil,
 		},
 		pkg.Service{
 			Name:  "nats",
@@ -202,18 +224,18 @@ func makeServiceDefinitions(archSuffix string) []pkg.Service {
 				"auth_proxy_pass_body=false",
 				"secret_mount_path=" + secretMountDir,
 			},
-			Image:  "docker.io/openfaas/gateway:0.18.8" + archSuffix,
+			Image: "docker.io/openfaas/gateway:0.18.8" + archSuffix,
 			Mounts: []pkg.Mount{
 				pkg.Mount{
-					Src:path.Join(wd, "/basic-auth-password"),
-					Dest:secretMountDir + "basic-auth-password",
+					Src:  path.Join(wd, "basic-auth-password"),
+					Dest: path.Join(secretMountDir, "basic-auth-password"),
 				},
 				pkg.Mount{
-					Src:  path.Join(wd, "/basic-auth-user"),
-					Dest: secretMountDir + "basic-auth-user",
+					Src:  path.Join(wd, "basic-auth-user"),
+					Dest: path.Join(secretMountDir, "basic-auth-user"),
 				},
 			},
-			Caps:   []string{"CAP_NET_RAW"},
+			Caps: []string{"CAP_NET_RAW"},
 		},
 		pkg.Service{
 			Name: "queue-worker",
@@ -228,18 +250,18 @@ func makeServiceDefinitions(archSuffix string) []pkg.Service {
 				"basic_auth=true",
 				"secret_mount_path=" + secretMountDir,
 			},
-			Image:  "docker.io/openfaas/queue-worker:0.9.0",
+			Image: "docker.io/openfaas/queue-worker:0.9.0",
 			Mounts: []pkg.Mount{
 				pkg.Mount{
-					Src:path.Join(wd, "/basic-auth-password"),
-					Dest:secretMountDir + "basic-auth-password",
+					Src:  path.Join(wd, "basic-auth-password"),
+					Dest: path.Join(secretMountDir, "basic-auth-password"),
 				},
 				pkg.Mount{
-					Src:  path.Join(wd, "/basic-auth-user"),
-					Dest: secretMountDir + "basic-auth-user",
+					Src:  path.Join(wd, "basic-auth-user"),
+					Dest: path.Join(secretMountDir, "basic-auth-user"),
 				},
 			},
-			Caps:   []string{"CAP_NET_RAW"},
+			Caps: []string{"CAP_NET_RAW"},
 		},
 	}
 }
