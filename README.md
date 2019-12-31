@@ -30,7 +30,7 @@ Other operations are pending development in the provider.
 
 ### Pre-reqs
 
-* Linux - ideally Ubuntu, which is used for testing
+* Linux - ideally Ubuntu, which is used for testing. If using Raspbian, a fresh install of `buster` or later.
 * Installation steps as per [faas-containerd](https://github.com/alexellis/faas-containerd) for building and for development
     * [netns](https://github.com/genuinetools/netns/releases) binary in `$PATH`
     * [containerd v1.3.2](https://github.com/containerd/containerd)
