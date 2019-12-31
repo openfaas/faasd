@@ -6,6 +6,7 @@ import (
 	"github.com/alexellis/faasd/cmd"
 )
 
+// These values will be injected into these variables at the build time.
 var (
 	// GitCommit Git Commit SHA
 	GitCommit string
@@ -14,7 +15,7 @@ var (
 )
 
 func main() {
-	if err := cmd.Execute(GitCommit, Version); err != nil {
+	if err := cmd.Execute(Version, GitCommit); err != nil {
 		os.Exit(1)
 	}
 	return

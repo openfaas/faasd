@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"fmt"
+
+	"github.com/morikuni/aec"
 	"github.com/spf13/cobra"
 )
 
@@ -20,9 +23,12 @@ var (
 	Version string
 )
 
-func Execute(gitCommit, version string) error {
-	GitCommit = gitCommit
+// Execute faasd
+func Execute(version, gitCommit string) error {
+
+	// Get Version and GitCommit values from main.go.
 	Version = version
+	GitCommit = gitCommit
 
 	if err := rootCommand.Execute(); err != nil {
 		return err
@@ -47,3 +53,40 @@ func runRootCommand(cmd *cobra.Command, args []string) error {
 
 	return nil
 }
+
+var versionCmd = &cobra.Command{
+	Use:   "version",
+	Short: "Display version information.",
+	Run:   parseBaseCommand,
+}
+
+func parseBaseCommand(_ *cobra.Command, _ []string) {
+	printLogo()
+
+	fmt.Printf(
+		`faasd
+Commit: %s
+Version: %s
+`, GitCommit, GetVersion())
+}
+
+func printLogo() {
+	logoText := aec.WhiteF.Apply(Logo)
+	fmt.Println(logoText)
+}
+
+// GetVersion get latest version
+func GetVersion() string {
+	if len(Version) == 0 {
+		return "dev"
+	}
+	return Version
+}
+
+// Logo for version and root command
+const Logo = `  __                     _ 
+ / _| __ _  __ _ ___  __| |
+| |_ / _` + "`" + ` |/ _` + "`" + ` / __|/ _` + "`" + ` |
+|  _| (_| | (_| \__ \ (_| |
+|_|  \__,_|\__,_|___/\__,_|
+`
