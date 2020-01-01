@@ -30,10 +30,20 @@ Other operations are pending development in the provider.
 
 ### Pre-reqs
 
-* Linux - ideally Ubuntu, which is used for testing
+* Linux
+
+    PC / Cloud - any Linux that containerd works on should be fair game, but faasd is tested with Ubuntu 18.04
+
+    For Raspberry Pi Raspbian Stretch or newer also works fine
+
+    For MacOS users try [multipass.run](https://multipass.run) or [Vagrant](https://www.vagrantup.com/)
+
+    For Windows users, install [Git Bash](https://git-scm.com/downloads) along with multipass or vagrant. You can also use WSL1 or WSL2 which provides a Linux environment.
+
 * Installation steps as per [faas-containerd](https://github.com/alexellis/faas-containerd) for building and for development
     * [netns](https://github.com/genuinetools/netns/releases) binary in `$PATH`
     * [containerd v1.3.2](https://github.com/containerd/containerd)
+
 * [faas-cli](https://github.com/openfaas/faas-cli) (optional)
 
 ## Backlog
@@ -55,6 +65,12 @@ Done:
 * [x] Clear / remove containers and tasks with SIGTERM / SIGINT
 * [x] Determine armhf/arm64 containers to run for gateway
 * [x] Configure `basic_auth` to protect the OpenFaaS gateway and faas-containerd HTTP API
+
+## Tutorial: Get started on armhf / Raspberry Pi
+
+You can run this tutorial on your Raspberry Pi, or adapt the steps for a regular Linux VM/VPS host.
+
+* [faasd - lightweight Serverless for your Raspberry Pi](https://blog.alexellis.io/faasd-for-lightweight-serverless/)
 
 ## Hacking (build from source)
 
