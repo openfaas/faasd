@@ -54,6 +54,7 @@ Pending:
 * [ ] Monitor and restart any of the core components at runtime if the container stops
 * [ ] Bundle/package/automate installation of containerd - [see bootstrap from k3s](https://github.com/rancher/k3s)
 * [ ] Provide ufw rules / example for blocking access to everything but a reverse proxy to the gateway container
+* [ ] Provide [simple Caddyfile example](https://blog.alexellis.io/https-inlets-local-endpoints/) in the README showing how to expose the faasd proxy on port 80/443 with TLS
 
 Done:
 
