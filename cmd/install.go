@@ -6,6 +6,7 @@ import (
 	"path"
 
 	systemd "github.com/alexellis/faasd/pkg/systemd"
+	"github.com/pkg/errors"
 
 	"github.com/spf13/cobra"
 )
@@ -17,6 +18,10 @@ var installCmd = &cobra.Command{
 }
 
 func runInstall(_ *cobra.Command, _ []string) error {
+
+	if basicAuthErr := makeBasicAuthFiles(); basicAuthErr != nil {
+		return errors.Wrap(basicAuthErr, "cannot create basic-auth-* files")
+	}
 
 	err := binExists("/usr/local/bin/", "faas-containerd")
 	if err != nil {

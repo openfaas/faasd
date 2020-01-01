@@ -26,6 +26,8 @@ var upCmd = &cobra.Command{
 	RunE:  runUp,
 }
 
+const secretMountDir = "/run/secrets"
+
 func runUp(_ *cobra.Command, _ []string) error {
 
 	clientArch, clientOS := env.GetClientArch()
@@ -47,9 +49,8 @@ func runUp(_ *cobra.Command, _ []string) error {
 		clientSuffix = "-arm64"
 	}
 
-	authFileErr := errors.Wrap(makeBasicAuthFiles(), "Could not create gateway auth files")
-	if authFileErr != nil {
-		return authFileErr
+	if basicAuthErr := makeBasicAuthFiles(); basicAuthErr != nil {
+		return errors.Wrap(basicAuthErr, "cannot create basic-auth-* files")
 	}
 
 	services := makeServiceDefinitions(clientSuffix)
@@ -164,8 +165,6 @@ func makeFile(filePath, fileContents string) error {
 
 func makeServiceDefinitions(archSuffix string) []pkg.Service {
 	wd, _ := os.Getwd()
-
-	secretMountDir := "/run/secrets"
 
 	return []pkg.Service{
 		pkg.Service{
