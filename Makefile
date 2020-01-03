@@ -42,6 +42,6 @@ test-e2e:
 	uname | /usr/local/bin/faas-cli invoke figlet --async
 	sleep 10
 	/usr/local/bin/faas-cli list -v
-	/usr/local/bin/faas-cli delete figlet
+	/usr/local/bin/faas-cli remove figlet
 	sleep 3
 	/usr/local/bin/faas-cli list
