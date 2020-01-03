@@ -1,9 +1,13 @@
 sudo: required
 language: go
+
 go:
 - '1.12'
+
 script:
 - make dist
+- make prepare-test
+
 deploy:
   provider: releases
   api_key:
