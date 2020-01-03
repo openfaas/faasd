@@ -26,22 +26,23 @@ prepare-test:
 	sudo curl -fSLs "https://github.com/genuinetools/netns/releases/download/v0.5.3/netns-linux-arm" --output "/usr/local/bin/netns" && sudo chmod a+x "/usr/local/bin/netns"
 	sudo /sbin/sysctl -w net.ipv4.conf.all.forwarding=1
 	sudo curl -sSLf "https://github.com/alexellis/faas-containerd/releases/download/$(FAASD_VER)/faas-containerd" --output "/usr/local/bin/faas-containerd" && sudo chmod a+x "/usr/local/bin/faas-containerd" || :
+	cp $(GOPATH)/src/github.com/alexellis/faasd/bin/faasd $(GOPATH)/src/github.com/alexellis/faasd/
 	cd $(GOPATH)/src/github.com/alexellis/faasd/ && sudo ./faasd install
 	sudo systemctl status containerd --no-pager
 	sudo systemctl status faas-containerd --no-pager
 	sudo systemctl status faasd --no-pager
-	curl -SLfs https://cli.openfaas.com | sudo sh
+	curl -sSLf https://cli.openfaas.com | sudo sh
 
 .PHONY: test-e2e
 test-e2e:
-	sudo cat $(GOPATH)/src/github.com/alexellis/faasd/basic-auth-password | faas-cli login --password-stdin
-	faas-cli store deploy figlet
+	sudo cat $(GOPATH)/src/github.com/alexellis/faasd/basic-auth-password | /usr/local/bin/faas-cli login --password-stdin
+	/usr/local/bin/faas-cli store deploy figlet
 	sleep 2
-	faas-cli list -v
-	uname | faas-cli invoke figlet
-	uname | faas-cli invoke figlet --async
+	/usr/local/bin/faas-cli list -v
+	uname | /usr/local/bin/faas-cli invoke figlet
+	uname | /usr/local/bin/faas-cli invoke figlet --async
 	sleep 10
-	faas-cli list -v
-	faas-cli delete figlet
+	/usr/local/bin/faas-cli list -v
+	/usr/local/bin/faas-cli delete figlet
 	sleep 3
-	faas-cli list
+	/usr/local/bin/faas-cli list
