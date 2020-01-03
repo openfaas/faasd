@@ -4,6 +4,11 @@ language: go
 go:
 - '1.12'
 
+addons:
+  apt:
+    packages:
+      - runc
+
 script:
 - make dist
 - make prepare-test
