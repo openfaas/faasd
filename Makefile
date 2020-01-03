@@ -24,7 +24,7 @@ prepare-test:
 	sudo curl -fSLs "https://github.com/genuinetools/netns/releases/download/v0.5.3/netns-linux-arm" --output "/usr/local/bin/netns" && sudo chmod a+x "/usr/local/bin/netns"
 	sudo /sbin/sysctl -w net.ipv4.conf.all.forwarding=1
 	sudo curl -sSLf "https://github.com/alexellis/faas-containerd/releases/download/$(FAASD_VER)/faas-containerd" --output "/usr/local/bin/faas-containerd" && sudo chmod a+x "/usr/local/bin/faas-containerd" || :
-	cd $(HOME)/go/src/github.com/alexellis/faasd/ && sudo ./faasd install
+	cd $(GOPATH)/src/github.com/alexellis/faasd/ && sudo ./faasd install
 	sudo systemctl status containerd --no-pager
 	sudo systemctl status faas-containerd --no-pager
 	sudo systemctl status faasd --no-pager
@@ -32,7 +32,7 @@ prepare-test:
 
 .PHONY: test-e2e
 test-e2e:
-	sudo cat $(HOME)/go/src/github.com/alexellis/faasd/basic-auth-password | faas-cli login --password-stdin
+	sudo cat $(GOPATH)/src/github.com/alexellis/faasd/basic-auth-password | faas-cli login --password-stdin
 	faas-cli store deploy figlet
 	faas-cli list -v
 	uname | faas-cli invoke figlet
