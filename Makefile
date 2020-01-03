@@ -26,10 +26,11 @@ prepare-test:
 	sudo curl -sSLf "https://github.com/alexellis/faas-containerd/releases/download/$(FAASD_VER)/faas-containerd" --output "/usr/local/bin/faas-containerd" && sudo chmod a+x "/usr/local/bin/faas-containerd" || :
 	sudo cp $(GOPATH)/src/github.com/alexellis/faasd/bin/faasd /usr/local/bin/
 	cd $(GOPATH)/src/github.com/alexellis/faasd/ && sudo /usr/local/bin/faasd install
-	sudo systemctl status containerd --no-pager
-	sudo systemctl status faas-containerd --no-pager
-	sudo systemctl status faasd --no-pager
+	sudo systemctl status -l containerd --no-pager
+	sudo systemctl status -l faas-containerd --no-pager
+	sudo systemctl status -l faasd --no-pager
 	curl -sSLf https://cli.openfaas.com | sudo sh
+	sleep 30
 
 .PHONY: test-e2e
 test-e2e:
