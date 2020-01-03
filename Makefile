@@ -28,3 +28,13 @@ prepare-test:
 	sudo systemctl status containerd --no-pager
 	sudo systemctl status faas-containerd --no-pager
 	sudo systemctl status faasd --no-pager
+	curl -SLfs https://cli.openfaas.com | sudo sh
+
+.PHONY: test-e2e
+test-e2e:
+	sudo cat $(HOME)/go/src/github.com/alexellis/faasd/basic-auth-password | faas-cli login --password-stdin
+	faas-cli store deploy figlet
+	faas-cli list -v
+	uname | faas-cli invoke figlet
+	faas-cli delete figlet
+	faas-cli list -v

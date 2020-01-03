@@ -7,6 +7,7 @@ go:
 script:
 - make dist
 - make prepare-test
+- make test-e2e
 
 deploy:
   provider: releases
