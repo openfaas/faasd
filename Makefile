@@ -2,7 +2,7 @@ Version := $(shell git describe --tags --dirty)
 GitCommit := $(shell git rev-parse HEAD)
 LDFLAGS := "-s -w -X main.Version=$(Version) -X main.GitCommit=$(GitCommit)"
 CONTAINERD_VER := 1.3.2
-FAASD_VER := 0.4.0
+FAASC_VER := 0.4.0
 
 .PHONY: all
 all: local
@@ -23,7 +23,7 @@ prepare-test:
 	sudo systemctl daemon-reload && sudo systemctl start containerd
 	sudo curl -fSLs "https://github.com/genuinetools/netns/releases/download/v0.5.3/netns-linux-amd64" --output "/usr/local/bin/netns" && sudo chmod a+x "/usr/local/bin/netns"
 	sudo /sbin/sysctl -w net.ipv4.conf.all.forwarding=1
-	sudo curl -sSLf "https://github.com/alexellis/faas-containerd/releases/download/$(FAASD_VER)/faas-containerd" --output "/usr/local/bin/faas-containerd" && sudo chmod a+x "/usr/local/bin/faas-containerd" || :
+	sudo curl -sSLf "https://github.com/alexellis/faas-containerd/releases/download/$(FAASC_VER)/faas-containerd" --output "/usr/local/bin/faas-containerd" && sudo chmod a+x "/usr/local/bin/faas-containerd" || :
 	sudo cp $(GOPATH)/src/github.com/alexellis/faasd/bin/faasd /usr/local/bin/
 	cd $(GOPATH)/src/github.com/alexellis/faasd/ && sudo /usr/local/bin/faasd install
 	sudo systemctl status -l containerd --no-pager
