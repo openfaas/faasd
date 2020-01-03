@@ -77,6 +77,7 @@ func runUp(_ *cobra.Command, _ []string) error {
 
 	shutdownTimeout := time.Second * 1
 	timeout := time.Second * 60
+	proxyDoneCh := make(chan bool)
 
 	wg := sync.WaitGroup{}
 	wg.Add(1)
@@ -92,14 +93,18 @@ func runUp(_ *cobra.Command, _ []string) error {
 		if err != nil {
 			fmt.Println(err)
 		}
+
+		// Close proxy
+		proxyDoneCh <- true
 		time.AfterFunc(shutdownTimeout, func() {
 			wg.Done()
 		})
 	}()
 
 	gatewayURLChan := make(chan string, 1)
-	proxy := pkg.NewProxy(timeout)
-	go proxy.Start(gatewayURLChan)
+	proxyPort := 8080
+	proxy := pkg.NewProxy(proxyPort, timeout)
+	go proxy.Start(gatewayURLChan, proxyDoneCh)
 
 	go func() {
 		wd, _ := os.Getwd()
@@ -119,7 +124,7 @@ func runUp(_ *cobra.Command, _ []string) error {
 			}
 		}
 		log.Printf("[up] Sending %s to proxy\n", host)
-		gatewayURLChan <- host
+		gatewayURLChan <- host + ":8080"
 		close(gatewayURLChan)
 	}()
 
