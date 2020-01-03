@@ -34,7 +34,12 @@ prepare-test:
 test-e2e:
 	sudo cat $(GOPATH)/src/github.com/alexellis/faasd/basic-auth-password | faas-cli login --password-stdin
 	faas-cli store deploy figlet
+	sleep 2
 	faas-cli list -v
 	uname | faas-cli invoke figlet
-	faas-cli delete figlet
+	uname | faas-cli invoke figlet --async
+	sleep 10
 	faas-cli list -v
+	faas-cli delete figlet
+	sleep 3
+	faas-cli list
