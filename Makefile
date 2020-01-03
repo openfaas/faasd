@@ -30,7 +30,7 @@ prepare-test:
 	sudo systemctl status -l faas-containerd --no-pager
 	sudo systemctl status -l faasd --no-pager
 	curl -sSLf https://cli.openfaas.com | sudo sh
-	sleep 30
+	sleep 120 && sudo systemctl status -l faasd --no-pager
 
 .PHONY: test-e2e
 test-e2e:
