@@ -35,7 +35,7 @@ prepare-test:
 
 .PHONY: test-e2e
 test-e2e:
-	sudo cat $(GOPATH)/src/github.com/alexellis/faasd/basic-auth-password | /usr/local/bin/faas-cli login --password-stdin
+	sudo cat $(GOPATH)/src/github.com/alexellis/faasd/secrets/basic-auth-password | /usr/local/bin/faas-cli login --password-stdin
 	/usr/local/bin/faas-cli store deploy figlet --env write_timeout=1s --env read_timeout=1s
 	sleep 2
 	/usr/local/bin/faas-cli list -v
