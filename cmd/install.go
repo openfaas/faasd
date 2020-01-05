@@ -1,9 +1,8 @@
 package cmd
 
 import (
-	"fmt"
-	"io"
-	"os"
+	"github.com/alexellis/faasd/pkg"
+	"log"
 	"path"
 
 	systemd "github.com/alexellis/faasd/pkg/systemd"
@@ -21,44 +20,60 @@ var installCmd = &cobra.Command{
 const faasdwd = "/run/faasd"
 const faasContainerdwd = "/run/faas-containerd"
 
-func runInstall(_ *cobra.Command, _ []string) error {
+func runInstall(cmd *cobra.Command, _ []string) error {
 
-	if err := ensureWorkingDir(path.Join(faasdwd, "secrets")); err != nil {
+	if err := pkg.EnsureWorkingDir(path.Join(faasdwd, "secrets")); err != nil {
 		return err
 	}
 
-	if err := ensureWorkingDir(faasContainerdwd); err != nil {
+	if err := pkg.EnsureWorkingDir(faasContainerdwd); err != nil {
 		return err
 	}
 
-	if basicAuthErr := makeBasicAuthFiles(path.Join(faasdwd, "secrets")); basicAuthErr != nil {
+	if basicAuthErr := pkg.MakeBasicAuthFiles(path.Join(faasdwd, "secrets")); basicAuthErr != nil {
 		return errors.Wrap(basicAuthErr, "cannot create basic-auth-* files")
 	}
 
-	if err := cp("prometheus.yml", faasdwd); err != nil {
+	if err := pkg.CopyFile("prometheus.yml", faasdwd); err != nil {
 		return err
 	}
 
-	if err := cp("resolv.conf", faasdwd); err != nil {
+	if err := pkg.CopyFile("resolv.conf", faasdwd); err != nil {
 		return err
 	}
 
-	err := binExists("/usr/local/bin/", "faas-containerd")
-	if err != nil {
-		return err
+	// If we are only installing the files into the /run/ directories we skip installing systemd files
+	prepareOnly, _ := cmd.Flags().GetBool("prepare")
+	if !prepareOnly {
+		log.Println("Installing systemd services")
+		if err := checkBinaries(); err != nil {
+			return err
+		}
+
+		if err := installSystemdServices(); err != nil {
+			return err
+		}
+
 	}
 
-	err = binExists("/usr/local/bin/", "faasd")
-	if err != nil {
-		return err
+	return nil
+}
+
+func checkBinaries() error {
+	binaries := []string{"faas-containerd", "faasd", "netns"}
+
+	for _, binary := range binaries {
+		if err := pkg.BinaryExists("/usr/local/bin/", binary); err != nil {
+			return err
+		}
 	}
 
-	err = binExists("/usr/local/bin/", "netns")
-	if err != nil {
-		return err
-	}
+	return nil
+}
 
-	err = systemd.InstallUnit("faas-containerd", map[string]string{
+func installSystemdServices() error {
+
+	err := systemd.InstallUnit("faas-containerd", map[string]string{
 		"Cwd":             faasContainerdwd,
 		"SecretMountPath": path.Join(faasdwd, "secrets")})
 
@@ -95,44 +110,5 @@ func runInstall(_ *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-
 	return nil
-}
-
-func binExists(folder, name string) error {
-	findPath := path.Join(folder, name)
-	if _, err := os.Stat(findPath); err != nil {
-		return fmt.Errorf("unable to stat %s, install this binary before continuing", findPath)
-	}
-	return nil
-}
-
-func ensureWorkingDir(folder string) error {
-	if _, err := os.Stat(folder); err != nil {
-		err = os.MkdirAll(folder, 0600)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func cp(source, destFolder string) error {
-	file, err := os.Open(source)
-	if err != nil {
-		return err
-
-	}
-	defer file.Close()
-
-	out, err := os.Create(path.Join(destFolder, source))
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-
-	_, err = io.Copy(out, file)
-
-	return err
 }

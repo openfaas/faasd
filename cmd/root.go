@@ -7,12 +7,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// WelcomeMessage to introduce ofc-bootstrap
-const WelcomeMessage = "Welcome to faasd"
-
 func init() {
 	rootCommand.AddCommand(versionCmd)
+
+	upCmd.Flags().String("work-dir", "", "--work-dir can be used to tell faasd to use a specific directory, rather than the current directory")
 	rootCommand.AddCommand(upCmd)
+
+	installCmd.Flags().Bool("prepare", false, "prepare for installation only, dont start or enable systemd services")
 	rootCommand.AddCommand(installCmd)
 }
 

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/pkg/errors"
 	"io/ioutil"
 	"log"
 	"os"
@@ -12,11 +13,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/pkg/errors"
-
 	"github.com/alexellis/faasd/pkg"
 	"github.com/alexellis/k3sup/pkg/env"
-	"github.com/sethvargo/go-password/password"
 	"github.com/spf13/cobra"
 )
 
@@ -28,12 +26,18 @@ var upCmd = &cobra.Command{
 
 const secretMountDir = "/run/secrets"
 
-func runUp(_ *cobra.Command, _ []string) error {
+func runUp(cmd *cobra.Command, _ []string) error {
+
+	wd, _ := cmd.Flags().GetString("work-dir")
+
+	if len(wd) == 0 {
+		wd = faasdwd
+	}
 
 	clientArch, clientOS := env.GetClientArch()
 
 	if clientOS != "Linux" {
-		return fmt.Errorf("You can only use faasd on Linux")
+		return fmt.Errorf("you can only use faasd on Linux")
 	}
 	clientSuffix := ""
 	switch clientArch {
@@ -49,11 +53,11 @@ func runUp(_ *cobra.Command, _ []string) error {
 		clientSuffix = "-arm64"
 	}
 
-	if basicAuthErr := makeBasicAuthFiles(path.Join(path.Join(faasdwd, "secrets"))); basicAuthErr != nil {
+	if basicAuthErr := pkg.MakeBasicAuthFiles(path.Join(faasdwd, "secrets")); basicAuthErr != nil {
 		return errors.Wrap(basicAuthErr, "cannot create basic-auth-* files")
 	}
 
-	services := makeServiceDefinitions(clientSuffix)
+	services := makeServiceDefinitions(clientSuffix, wd)
 
 	start := time.Now()
 	supervisor, err := pkg.NewSupervisor("/run/containerd/containerd.sock")
@@ -65,7 +69,7 @@ func runUp(_ *cobra.Command, _ []string) error {
 
 	start = time.Now()
 
-	err = supervisor.Start(services)
+	err = supervisor.Start(services, wd)
 
 	if err != nil {
 		return err
@@ -107,7 +111,6 @@ func runUp(_ *cobra.Command, _ []string) error {
 	go proxy.Start(gatewayURLChan, proxyDoneCh)
 
 	go func() {
-		wd, _ := os.Getwd()
 
 		time.Sleep(3 * time.Second)
 
@@ -132,45 +135,9 @@ func runUp(_ *cobra.Command, _ []string) error {
 	return nil
 }
 
-func makeBasicAuthFiles(wd string) error {
-
-	pwdFile := wd + "/basic-auth-password"
-	authPassword, err := password.Generate(63, 10, 0, false, true)
-
-	if err != nil {
-		return err
-	}
-
-	err = makeFile(pwdFile, authPassword)
-	if err != nil {
-		return err
-	}
-
-	userFile := wd + "/basic-auth-user"
-	err = makeFile(userFile, "admin")
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func makeFile(filePath, fileContents string) error {
-	_, err := os.Stat(filePath)
-	if err == nil {
-		log.Printf("File exists: %q\n", filePath)
-		return nil
-	} else if os.IsNotExist(err) {
-		log.Printf("Writing to: %q\n", filePath)
-		return ioutil.WriteFile(filePath, []byte(fileContents), 0644)
-	} else {
-		return err
-	}
-}
-
-func makeServiceDefinitions(archSuffix string) []pkg.Service {
+func makeServiceDefinitions(archSuffix, workingDir string) []pkg.Service {
+	secretDir := path.Join(workingDir, "secrets")
 	wd, _ := os.Getwd()
-
 	return []pkg.Service{
 		pkg.Service{
 			Name:  "basic-auth-plugin",
@@ -183,11 +150,11 @@ func makeServiceDefinitions(archSuffix string) []pkg.Service {
 			},
 			Mounts: []pkg.Mount{
 				pkg.Mount{
-					Src:  path.Join(path.Join(wd, "secrets"), "basic-auth-password"),
+					Src:  path.Join(secretDir, "basic-auth-password"),
 					Dest: path.Join(secretMountDir, "basic-auth-password"),
 				},
 				pkg.Mount{
-					Src:  path.Join(path.Join(wd, "secrets"), "basic-auth-user"),
+					Src:  path.Join(secretDir, "basic-auth-user"),
 					Dest: path.Join(secretMountDir, "basic-auth-user"),
 				},
 			},
@@ -231,11 +198,11 @@ func makeServiceDefinitions(archSuffix string) []pkg.Service {
 			Image: "docker.io/openfaas/gateway:0.18.8" + archSuffix,
 			Mounts: []pkg.Mount{
 				pkg.Mount{
-					Src:  path.Join(path.Join(wd, "secrets"), "basic-auth-password"),
+					Src:  path.Join(secretDir, "basic-auth-password"),
 					Dest: path.Join(secretMountDir, "basic-auth-password"),
 				},
 				pkg.Mount{
-					Src:  path.Join(path.Join(wd, "secrets"), "basic-auth-user"),
+					Src:  path.Join(secretDir, "basic-auth-user"),
 					Dest: path.Join(secretMountDir, "basic-auth-user"),
 				},
 			},
@@ -257,11 +224,11 @@ func makeServiceDefinitions(archSuffix string) []pkg.Service {
 			Image: "docker.io/openfaas/queue-worker:0.9.0",
 			Mounts: []pkg.Mount{
 				pkg.Mount{
-					Src:  path.Join(path.Join(wd, "secrets"), "basic-auth-password"),
+					Src:  path.Join(secretDir, "basic-auth-password"),
 					Dest: path.Join(secretMountDir, "basic-auth-password"),
 				},
 				pkg.Mount{
-					Src:  path.Join(path.Join(wd, "secrets"), "basic-auth-user"),
+					Src:  path.Join(secretDir, "basic-auth-user"),
 					Dest: path.Join(secretMountDir, "basic-auth-user"),
 				},
 			},

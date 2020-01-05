@@ -53,12 +53,11 @@ func (s *Supervisor) Remove(svcs []Service) error {
 	return nil
 }
 
-func (s *Supervisor) Start(svcs []Service) error {
+func (s *Supervisor) Start(svcs []Service, workingDir string) error {
 	ctx := namespaces.WithNamespace(context.Background(), "default")
 
-	wd, _ := os.Getwd()
-
-	writeHostsErr := ioutil.WriteFile(path.Join(wd, "hosts"),
+	println("\n\n\n" + workingDir + "\n\n\n")
+	writeHostsErr := ioutil.WriteFile(path.Join(workingDir, "hosts"),
 		[]byte(`127.0.0.1	localhost
 172.19.0.1	faas-containerd`), 0644)
 
@@ -107,14 +106,14 @@ func (s *Supervisor) Start(svcs []Service) error {
 		mounts = append(mounts, specs.Mount{
 			Destination: "/etc/resolv.conf",
 			Type:        "bind",
-			Source:      path.Join(wd, "resolv.conf"),
+			Source:      path.Join(workingDir, "resolv.conf"),
 			Options:     []string{"rbind", "ro"},
 		})
 
 		mounts = append(mounts, specs.Mount{
 			Destination: "/etc/hosts",
 			Type:        "bind",
-			Source:      path.Join(wd, "hosts"),
+			Source:      path.Join(workingDir, "hosts"),
 			Options:     []string{"rbind", "ro"},
 		})
 
@@ -167,12 +166,12 @@ func (s *Supervisor) Start(svcs []Service) error {
 
 		ip := getIP(newContainer.ID(), task.Pid())
 
-		hosts, _ := ioutil.ReadFile("hosts")
+		hosts, _ := ioutil.ReadFile(path.Join(workingDir, "hosts"))
 
 		hosts = []byte(string(hosts) + fmt.Sprintf(`
 %s	%s
 `, ip, svc.Name))
-		writeErr := ioutil.WriteFile("hosts", hosts, 0644)
+		writeErr := ioutil.WriteFile(path.Join(workingDir, "hosts"), hosts, 0644)
 
 		if writeErr != nil {
 			log.Printf("Error writing file %s %s\n", "hosts", writeErr)

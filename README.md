@@ -152,16 +152,45 @@ The default Basic Auth username is `admin`, which is written to `/run/faasd/secr
 * `journalctl -u faasd` - faasd systemd logs
 * `journalctl -u faas-containerd` - faas-containerd systemd logs
 
+#### Changing your basic-auth username and password
+
+By default `faasd install` creates the basic auth files in the /run/faasd/secrets directory. If you wish to change these 
+secrets simply edit (or create) these files and re-load the systemd services
+
+To regenerate a random password you only need to remove the `basic-auth-password` file. To set your own password just 
+create this file with your password in it without extra whitespace or newlines.
+
+For a non-default username (default is `admin`) edit/create the basic-auth-user file with your username.
+
+
+```
+sudo systemctl stop faas-containerd && sudo systemctl start faas-containerd
+sudo systemctl stop faasd && sudo systemctl start faasd
+```
+
+#### Developing faasd
+
+It may be easier to run faasd using the `faasd up` command when developing. This allows you to build and run faasd 
+without installing using `faasd install` command to start systemd services.
+
+There are 2 flags that may be useful in this case, 
+
+* `faasd install --prepare` will create the /run/faasd directory, basic auth files and copy in some config 
+without installing and starting the systemd services
+
+* `faasd up --work-dir /run/faasd/` will allow you to run faasd from anywhere, like on your go path, so you can build and
+run your new faasd binaries and point them at the correct "working directory"
+
 ### Appendix
 
 Removing containers:
 
 ```sh
-echo faas-containerd gateway prometheus | xargs sudo ctr task rm -f
+echo faas-containerd gateway prometheus nats queue-worker | xargs sudo ctr task rm -f
 
-echo faas-containerd gateway prometheus | xargs sudo ctr container rm
+echo faas-containerd gateway prometheus nats queue-worker | xargs sudo ctr container rm
 
-echo faas-containerd gateway prometheus | xargs sudo ctr snapshot rm
+echo faas-containerd gateway prometheus nats queue-worker | xargs sudo ctr snapshot rm
 ```
 
 ## Links
