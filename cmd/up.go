@@ -49,7 +49,7 @@ func runUp(_ *cobra.Command, _ []string) error {
 		clientSuffix = "-arm64"
 	}
 
-	if basicAuthErr := makeBasicAuthFiles(); basicAuthErr != nil {
+	if basicAuthErr := makeBasicAuthFiles(path.Join(path.Join(faasdwd, "secrets"))); basicAuthErr != nil {
 		return errors.Wrap(basicAuthErr, "cannot create basic-auth-* files")
 	}
 
@@ -132,8 +132,8 @@ func runUp(_ *cobra.Command, _ []string) error {
 	return nil
 }
 
-func makeBasicAuthFiles() error {
-	wd, _ := os.Getwd()
+func makeBasicAuthFiles(wd string) error {
+
 	pwdFile := wd + "/basic-auth-password"
 	authPassword, err := password.Generate(63, 10, 0, false, true)
 
@@ -183,11 +183,11 @@ func makeServiceDefinitions(archSuffix string) []pkg.Service {
 			},
 			Mounts: []pkg.Mount{
 				pkg.Mount{
-					Src:  path.Join(wd, "basic-auth-password"),
+					Src:  path.Join(path.Join(wd, "secrets"), "basic-auth-password"),
 					Dest: path.Join(secretMountDir, "basic-auth-password"),
 				},
 				pkg.Mount{
-					Src:  path.Join(wd, "basic-auth-user"),
+					Src:  path.Join(path.Join(wd, "secrets"), "basic-auth-user"),
 					Dest: path.Join(secretMountDir, "basic-auth-user"),
 				},
 			},
@@ -231,11 +231,11 @@ func makeServiceDefinitions(archSuffix string) []pkg.Service {
 			Image: "docker.io/openfaas/gateway:0.18.8" + archSuffix,
 			Mounts: []pkg.Mount{
 				pkg.Mount{
-					Src:  path.Join(wd, "basic-auth-password"),
+					Src:  path.Join(path.Join(wd, "secrets"), "basic-auth-password"),
 					Dest: path.Join(secretMountDir, "basic-auth-password"),
 				},
 				pkg.Mount{
-					Src:  path.Join(wd, "basic-auth-user"),
+					Src:  path.Join(path.Join(wd, "secrets"), "basic-auth-user"),
 					Dest: path.Join(secretMountDir, "basic-auth-user"),
 				},
 			},
@@ -257,11 +257,11 @@ func makeServiceDefinitions(archSuffix string) []pkg.Service {
 			Image: "docker.io/openfaas/queue-worker:0.9.0",
 			Mounts: []pkg.Mount{
 				pkg.Mount{
-					Src:  path.Join(wd, "basic-auth-password"),
+					Src:  path.Join(path.Join(wd, "secrets"), "basic-auth-password"),
 					Dest: path.Join(secretMountDir, "basic-auth-password"),
 				},
 				pkg.Mount{
-					Src:  path.Join(wd, "basic-auth-user"),
+					Src:  path.Join(path.Join(wd, "secrets"), "basic-auth-user"),
 					Dest: path.Join(secretMountDir, "basic-auth-user"),
 				},
 			},

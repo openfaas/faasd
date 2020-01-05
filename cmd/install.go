@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path"
 
@@ -17,14 +18,28 @@ var installCmd = &cobra.Command{
 	RunE:  runInstall,
 }
 
+const faasdwd = "/run/faasd"
+const faasContainerdwd = "/run/faas-containerd"
+
 func runInstall(_ *cobra.Command, _ []string) error {
 
-	if basicAuthErr := makeBasicAuthFiles(); basicAuthErr != nil {
+	if err := ensureWorkingDir(path.Join(faasdwd, "secrets")); err != nil {
+		return err
+	}
+
+	if err := ensureWorkingDir(faasContainerdwd); err != nil {
+		return err
+	}
+
+	if basicAuthErr := makeBasicAuthFiles(path.Join(faasdwd, "secrets")); basicAuthErr != nil {
 		return errors.Wrap(basicAuthErr, "cannot create basic-auth-* files")
 	}
 
-	wd := "/run/faasd"
-	if err := ensureWorkingDir(wd); err != nil {
+	if err := cp("prometheus.yml", faasdwd); err != nil {
+		return err
+	}
+
+	if err := cp("resolv.conf", faasdwd); err != nil {
 		return err
 	}
 
@@ -43,12 +58,15 @@ func runInstall(_ *cobra.Command, _ []string) error {
 		return err
 	}
 
-	err = systemd.InstallUnit("faas-containerd", wd)
+	err = systemd.InstallUnit("faas-containerd", map[string]string{
+		"Cwd":             faasContainerdwd,
+		"SecretMountPath": path.Join(faasdwd, "secrets")})
+
 	if err != nil {
 		return err
 	}
 
-	err = systemd.InstallUnit("faasd", wd)
+	err = systemd.InstallUnit("faasd", map[string]string{"Cwd": faasdwd})
 	if err != nil {
 		return err
 	}
@@ -91,11 +109,30 @@ func binExists(folder, name string) error {
 
 func ensureWorkingDir(folder string) error {
 	if _, err := os.Stat(folder); err != nil {
-		err = os.MkdirAll("/run/faasd", 0600)
+		err = os.MkdirAll(folder, 0600)
 		if err != nil {
 			return err
 		}
 	}
 
 	return nil
+}
+
+func cp(source, destFolder string) error {
+	file, err := os.Open(source)
+	if err != nil {
+		return err
+
+	}
+	defer file.Close()
+
+	out, err := os.Create(path.Join(destFolder, source))
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, file)
+
+	return err
 }
