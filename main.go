@@ -15,8 +15,10 @@ var (
 )
 
 func main() {
+
 	if err := cmd.Execute(Version, GitCommit); err != nil {
 		os.Exit(1)
 	}
+
 	return
 }

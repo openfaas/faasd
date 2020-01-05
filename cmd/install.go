@@ -12,16 +12,25 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var installCmd = &cobra.Command{
-	Use:   "install",
-	Short: "Install faasd",
-	RunE:  runInstall,
+func makeInstallCmd() *cobra.Command {
+	var cmd = &cobra.Command{
+		Use:   "install",
+		Short: "Install faasd",
+		RunE:  runInstall,
+	}
+	cmd.Flags().Bool("prepare", false, "Only prepare secrets and working directories")
+	return cmd
 }
 
 const faasdwd = "/run/faasd"
 const faasContainerdwd = "/run/faas-containerd"
 
-func runInstall(_ *cobra.Command, _ []string) error {
+func runInstall(command *cobra.Command, _ []string) error {
+
+	prepareOnly, prepErr := command.Flags().GetBool("prepare")
+	if prepErr != nil {
+		return prepErr
+	}
 
 	if err := ensureWorkingDir(path.Join(faasdwd, "secrets")); err != nil {
 		return err
@@ -43,52 +52,54 @@ func runInstall(_ *cobra.Command, _ []string) error {
 		return err
 	}
 
-	err := binExists("/usr/local/bin/", "faas-containerd")
-	if err != nil {
-		return err
-	}
+	if !prepareOnly {
+		err := binExists("/usr/local/bin/", "faas-containerd")
+		if err != nil {
+			return err
+		}
 
-	err = binExists("/usr/local/bin/", "faasd")
-	if err != nil {
-		return err
-	}
+		err = binExists("/usr/local/bin/", "faasd")
+		if err != nil {
+			return err
+		}
 
-	err = systemd.InstallUnit("faas-containerd", map[string]string{
-		"Cwd":             faasContainerdwd,
-		"SecretMountPath": path.Join(faasdwd, "secrets")})
+		err = systemd.InstallUnit("faas-containerd", map[string]string{
+			"Cwd":             faasContainerdwd,
+			"SecretMountPath": path.Join(faasdwd, "secrets")})
 
-	if err != nil {
-		return err
-	}
+		if err != nil {
+			return err
+		}
 
-	err = systemd.InstallUnit("faasd", map[string]string{"Cwd": faasdwd})
-	if err != nil {
-		return err
-	}
+		err = systemd.InstallUnit("faasd", map[string]string{"Cwd": faasdwd})
+		if err != nil {
+			return err
+		}
 
-	err = systemd.DaemonReload()
-	if err != nil {
-		return err
-	}
+		err = systemd.DaemonReload()
+		if err != nil {
+			return err
+		}
 
-	err = systemd.Enable("faas-containerd")
-	if err != nil {
-		return err
-	}
+		err = systemd.Enable("faas-containerd")
+		if err != nil {
+			return err
+		}
 
-	err = systemd.Enable("faasd")
-	if err != nil {
-		return err
-	}
+		err = systemd.Enable("faasd")
+		if err != nil {
+			return err
+		}
 
-	err = systemd.Start("faas-containerd")
-	if err != nil {
-		return err
-	}
+		err = systemd.Start("faas-containerd")
+		if err != nil {
+			return err
+		}
 
-	err = systemd.Start("faasd")
-	if err != nil {
-		return err
+		err = systemd.Start("faasd")
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

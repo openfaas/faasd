@@ -13,7 +13,7 @@ const WelcomeMessage = "Welcome to faasd"
 func init() {
 	rootCommand.AddCommand(versionCmd)
 	rootCommand.AddCommand(upCmd)
-	rootCommand.AddCommand(installCmd)
+	rootCommand.AddCommand(makeInstallCmd())
 }
 
 var (

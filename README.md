@@ -74,7 +74,27 @@ You can run this tutorial on your Raspberry Pi, or adapt the steps for a regular
 
 * [faasd - lightweight Serverless for your Raspberry Pi](https://blog.alexellis.io/faasd-for-lightweight-serverless/)
 
-## Hacking (build from source)
+
+### Either download binaries
+
+```sh
+# For x86_64
+sudo curl -fSLs "https://github.com/alexellis/faasd/releases/download/0.4.4/faasd" \
+    -o "/usr/local/bin/faasd" \
+    && sudo chmod a+x "/usr/local/bin/faasd"
+
+# armhf
+sudo curl -fSLs "https://github.com/alexellis/faasd/releases/download/0.4.4/faasd-armhf" \
+    -o "/usr/local/bin/faasd" \
+    && sudo chmod a+x "/usr/local/bin/faasd"
+
+# arm64
+sudo curl -fSLs "https://github.com/alexellis/faasd/releases/download/0.4.4/faasd-arm64" \
+    -o "/usr/local/bin/faasd" \
+    && sudo chmod a+x "/usr/local/bin/faasd"
+```
+
+## Or for hacking, you can build from source
 
 Install the CNI plugins:
 
@@ -111,29 +131,17 @@ cd $GOPATH/src/github.com/alexellis/faasd
 go build
 
 # Install with systemd
-# sudo ./faasd install
-
-# Or run interactively
-# sudo ./faasd up
+sudo ./faasd install
 ```
 
-### Build and run (binaries)
+Now you can access faasd on `localhost:8080`.
+
+For development do not run `faasd up` manually unless you are working in development.
 
 ```sh
-# For x86_64
-sudo curl -fSLs "https://github.com/alexellis/faasd/releases/download/0.4.4/faasd" \
-    -o "/usr/local/bin/faasd" \
-    && sudo chmod a+x "/usr/local/bin/faasd"
-
-# armhf
-sudo curl -fSLs "https://github.com/alexellis/faasd/releases/download/0.4.4/faasd-armhf" \
-    -o "/usr/local/bin/faasd" \
-    && sudo chmod a+x "/usr/local/bin/faasd"
-
-# arm64
-sudo curl -fSLs "https://github.com/alexellis/faasd/releases/download/0.4.4/faasd-arm64" \
-    -o "/usr/local/bin/faasd" \
-    && sudo chmod a+x "/usr/local/bin/faasd"
+sudo ./faasd install --prepare  # Only creates secrets, skipping systemd configuration
+sudo cp -r /run/faasd/secrets . # Copy in generated secrets
+sudo ./faasd up
 ```
 
 ### At run-time
@@ -163,6 +171,7 @@ Since faas-containerd uses containerd heavily it is not running as a container, 
 * basic-auth
 
     You will then need to get the basic-auth password, it is written to `/run/faasd/secrets/basic-auth-password` if you followed the above instructions.
+
 The default Basic Auth username is `admin`, which is written to `/run/faasd/secrets/basic-auth-user`, if you wish to use a non-standard user then create this file and add your username (no newlines or other characters) 
 
 #### Installation with systemd
