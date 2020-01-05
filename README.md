@@ -66,6 +66,7 @@ Done:
 * [x] Clear / remove containers and tasks with SIGTERM / SIGINT
 * [x] Determine armhf/arm64 containers to run for gateway
 * [x] Configure `basic_auth` to protect the OpenFaaS gateway and faas-containerd HTTP API
+* [x] Setup custom working directory for faasd `/run/faasd/`
 
 ## Tutorial: Get started on armhf / Raspberry Pi
 
@@ -120,7 +121,7 @@ sudo curl -fSLs "https://github.com/alexellis/faasd/releases/download/0.4.2/faas
 
 ### At run-time
 
-Look in `hosts` in the current working folder to get the IP for the gateway or Prometheus
+Look in `hosts` in the current working folder or in `/run/faasd/` to get the IP for the gateway or Prometheus
 
 ```sh
 127.0.0.1       localhost
@@ -142,12 +143,12 @@ Since faas-containerd uses containerd heavily it is not running as a container, 
 
 * basic-auth
 
-    You will then need to get the basic-auth password, it is written to `$GOPATH/src/github.com/alexellis/faasd/basic-auth-password` if you followed the above instructions.
-The default Basic Auth username is `admin`, which is written to `$GOPATH/src/github.com/alexellis/faasd/basic-auth-user`, if you wish to use a non-standard user then create this file and add your username (no newlines or other characters) 
+    You will then need to get the basic-auth password, it is written to `/run/faasd/secrets/basic-auth-password` if you followed the above instructions.
+The default Basic Auth username is `admin`, which is written to `/run/faasd/secrets/basic-auth-user`, if you wish to use a non-standard user then create this file and add your username (no newlines or other characters) 
 
 #### Installation with systemd
 
-* `faasd install` - install faasd and containerd with systemd, run in `$GOPATH/src/github.com/alexellis/faasd`
+* `faasd install` - install faasd and containerd with systemd, this must be run from `$GOPATH/src/github.com/alexellis/faasd`
 * `journalctl -u faasd` - faasd systemd logs
 * `journalctl -u faas-containerd` - faas-containerd systemd logs
 
