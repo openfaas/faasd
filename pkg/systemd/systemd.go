@@ -64,10 +64,9 @@ func DaemonReload() error {
 	return nil
 }
 
-func InstallUnit(name, folder string) error {
-	if len(folder) == 0 {
-		wd, _ := os.Getwd()
-		folder = wd
+func InstallUnit(name string, tokens map[string]string) error {
+	if len(tokens["Cwd"]) == 0 {
+		return fmt.Errorf("key Cwd expected in tokens parameter")
 	}
 
 	tmplName := "./hack/" + name + ".service"
@@ -78,13 +77,8 @@ func InstallUnit(name, folder string) error {
 	}
 
 	var tpl bytes.Buffer
-	userData := struct {
-		Cwd string
-	}{
-		Cwd: folder,
-	}
 
-	err = tmpl.Execute(&tpl, userData)
+	err = tmpl.Execute(&tpl, tokens)
 	if err != nil {
 		return err
 	}
