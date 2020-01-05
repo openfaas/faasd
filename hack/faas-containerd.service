@@ -3,7 +3,7 @@ Description=faasd-containerd
 
 [Service]
 MemoryLimit=500M
-Environment="basic_auth=true"
+# Environment="basic_auth=true" # Not tested properly in PR #13, causes runtime error
 ExecStart=/usr/local/bin/faas-containerd
 Restart=on-failure
 RestartSec=10s
