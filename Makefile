@@ -27,6 +27,7 @@ prepare-test:
 	sudo cp $(GOPATH)/src/github.com/alexellis/faasd/bin/faasd /usr/local/bin/
 	cd $(GOPATH)/src/github.com/alexellis/faasd/ && sudo /usr/local/bin/faasd install
 	sudo systemctl status -l containerd --no-pager
+	sudo journalctl -u faas-containerd --no-pager
 	sudo systemctl status -l faas-containerd --no-pager
 	sudo systemctl status -l faasd --no-pager
 	curl -sSLf https://cli.openfaas.com | sudo sh
