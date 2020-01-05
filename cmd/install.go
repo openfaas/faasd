@@ -23,6 +23,11 @@ func runInstall(_ *cobra.Command, _ []string) error {
 		return errors.Wrap(basicAuthErr, "cannot create basic-auth-* files")
 	}
 
+	wd := "/run/faasd"
+	if err := ensureWorkingDir(wd); err != nil {
+		return err
+	}
+
 	err := binExists("/usr/local/bin/", "faas-containerd")
 	if err != nil {
 		return err
@@ -38,12 +43,12 @@ func runInstall(_ *cobra.Command, _ []string) error {
 		return err
 	}
 
-	err = systemd.InstallUnit("faas-containerd")
+	err = systemd.InstallUnit("faas-containerd", wd)
 	if err != nil {
 		return err
 	}
 
-	err = systemd.InstallUnit("faasd")
+	err = systemd.InstallUnit("faasd", wd)
 	if err != nil {
 		return err
 	}
@@ -81,5 +86,16 @@ func binExists(folder, name string) error {
 	if _, err := os.Stat(findPath); err != nil {
 		return fmt.Errorf("unable to stat %s, install this binary before continuing", findPath)
 	}
+	return nil
+}
+
+func ensureWorkingDir(folder string) error {
+	if _, err := os.Stat(folder); err != nil {
+		err = os.MkdirAll("/run/faasd", 0600)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }

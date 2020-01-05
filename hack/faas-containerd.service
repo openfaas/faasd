@@ -7,7 +7,7 @@ MemoryLimit=500M
 ExecStart=/usr/local/bin/faas-containerd
 Restart=on-failure
 RestartSec=10s
-WorkingDirectory=/usr/local/bin/
+WorkingDirectory={{.Cwd}}
 
 [Install]
 WantedBy=multi-user.target
