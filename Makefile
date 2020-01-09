@@ -3,6 +3,8 @@ GitCommit := $(shell git rev-parse HEAD)
 LDFLAGS := "-s -w -X main.Version=$(Version) -X main.GitCommit=$(GitCommit)"
 CONTAINERD_VER := 1.3.2
 FAASC_VER := 0.4.0
+CNI_VERSION := v0.8.4
+ARCH := amd64
 
 .PHONY: all
 all: local
@@ -23,6 +25,8 @@ prepare-test:
 	sudo systemctl daemon-reload && sudo systemctl start containerd
 	sudo curl -fSLs "https://github.com/genuinetools/netns/releases/download/v0.5.3/netns-linux-amd64" --output "/usr/local/bin/netns" && sudo chmod a+x "/usr/local/bin/netns"
 	sudo /sbin/sysctl -w net.ipv4.conf.all.forwarding=1
+	sudo mkdir -p /opt/cni/bin
+	curl -sSL https://github.com/containernetworking/plugins/releases/download/$(CNI_VERSION)/cni-plugins-linux-$(ARCH)-$(CNI_VERSION).tgz | sudo tar -xz -C /opt/cni/bin
 	sudo curl -sSLf "https://github.com/alexellis/faas-containerd/releases/download/$(FAASC_VER)/faas-containerd" --output "/usr/local/bin/faas-containerd" && sudo chmod a+x "/usr/local/bin/faas-containerd" || :
 	sudo cp $(GOPATH)/src/github.com/alexellis/faasd/bin/faasd /usr/local/bin/
 	cd $(GOPATH)/src/github.com/alexellis/faasd/ && sudo /usr/local/bin/faasd install
