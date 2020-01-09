@@ -5,15 +5,19 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net"
 	"os"
-	"os/exec"
 	"path"
+	"path/filepath"
 
 	"github.com/alexellis/faasd/pkg/service"
 	"github.com/alexellis/faasd/pkg/weave"
 	"github.com/containerd/containerd"
 	"github.com/containerd/containerd/cio"
 	"github.com/containerd/containerd/containers"
+	gocni "github.com/containerd/go-cni"
+	"github.com/google/uuid"
+	"github.com/pkg/errors"
 
 	"github.com/containerd/containerd/namespaces"
 	"github.com/containerd/containerd/oci"
@@ -21,6 +25,25 @@ import (
 )
 
 const defaultSnapshotter = "overlayfs"
+
+const (
+	// TODO: CNIBinDir and CNIConfDir should maybe be globally configurable?
+	// CNIBinDir describes the directory where the CNI binaries are stored
+	CNIBinDir = "/opt/cni/bin"
+	// CNIConfDir describes the directory where the CNI plugin's configuration is stored
+	CNIConfDir = "/etc/cni/net.d"
+	// netNSPathFmt gives the path to the a process network namespace, given the pid
+	NetNSPathFmt = "/proc/%d/ns/net"
+	// defaultCNIConfFilename is the vanity filename of default CNI configuration file
+	DefaultCNIConfFilename = "10-openfaas.conflist"
+	// defaultNetworkName names the "docker-bridge"-like CNI plugin-chain installed when no other CNI configuration is present.
+	// This value appears in iptables comments created by CNI.
+	DefaultNetworkName = "openfaas-cni-bridge"
+	// defaultBridgeName is the default bridge device name used in the defaultCNIConf
+	DefaultBridgeName = "openfaas0"
+	// defaultSubnet is the default subnet used in the defaultCNIConf -- this value is set to not collide with common container networking subnets:
+	DefaultSubnet = "10.62.0.0/16"
+)
 
 type Supervisor struct {
 	client *containerd.Client
@@ -58,9 +81,16 @@ func (s *Supervisor) Start(svcs []Service) error {
 
 	wd, _ := os.Getwd()
 
+	ip, _, _ := net.ParseCIDR(DefaultSubnet)
+	ip = ip.To4()
+	ip[3] = 1
+	ip.String()
+	hosts := fmt.Sprintf(`
+127.0.0.1	localhost
+%s	faas-containerd`, ip)
+
 	writeHostsErr := ioutil.WriteFile(path.Join(wd, "hosts"),
-		[]byte(`127.0.0.1	localhost
-172.19.0.1	faas-containerd`), 0644)
+		[]byte(hosts), 0644)
 
 	if writeHostsErr != nil {
 		return fmt.Errorf("cannot write hosts file: %s", writeHostsErr)
@@ -118,27 +148,6 @@ func (s *Supervisor) Start(svcs []Service) error {
 			Options:     []string{"rbind", "ro"},
 		})
 
-		hook := func(_ context.Context, _ oci.Client, _ *containers.Container, s *specs.Spec) error {
-			if s.Hooks == nil {
-				s.Hooks = &specs.Hooks{}
-			}
-			netnsPath, err := exec.LookPath("netns")
-			if err != nil {
-				return err
-			}
-
-			s.Hooks.Prestart = []specs.Hook{
-				{
-					Path: netnsPath,
-					Args: []string{
-						"netns",
-					},
-					Env: os.Environ(),
-				},
-			}
-			return nil
-		}
-
 		newContainer, containerCreateErr := s.client.NewContainer(
 			ctx,
 			svc.Name,
@@ -148,7 +157,6 @@ func (s *Supervisor) Start(svcs []Service) error {
 				oci.WithCapabilities(svc.Caps),
 				oci.WithMounts(mounts),
 				withOCIArgs(svc.Args),
-				hook,
 				oci.WithEnv(svc.Env)),
 		)
 
@@ -165,7 +173,33 @@ func (s *Supervisor) Start(svcs []Service) error {
 			return err
 		}
 
+		id := uuid.New().String()
+		netns := fmt.Sprintf(NetNSPathFmt, task.Pid())
+
+		cni, err := gocni.New(gocni.WithPluginConfDir(CNIConfDir),
+			gocni.WithPluginDir([]string{CNIBinDir}))
+
+		if err != nil {
+			return errors.Wrapf(err, "error creating CNI instance")
+		}
+
+		// Load the cni configuration
+		if err := cni.Load(gocni.WithLoNetwork, gocni.WithConfListFile(filepath.Join(CNIConfDir, DefaultCNIConfFilename))); err != nil {
+			return errors.Wrapf(err, "failed to load cni configuration: %v", err)
+		}
+
+		labels := map[string]string{}
+
+		_, err = cni.Setup(ctx, id, netns, gocni.WithLabels(labels))
+		if err != nil {
+			return errors.Wrapf(err, "failed to setup network for namespace %q: %v", id, err)
+		}
+
+		// Get the IP of the default interface.
+		// defaultInterface := gocni.DefaultPrefix + "0"
+		// ip := &result.Interfaces[defaultInterface].IPConfigs[0].IP
 		ip := getIP(newContainer.ID(), task.Pid())
+		log.Printf("%s has IP: %s\n", newContainer.ID(), ip)
 
 		hosts, _ := ioutil.ReadFile("hosts")
 
@@ -200,7 +234,7 @@ func (s *Supervisor) Start(svcs []Service) error {
 func getIP(containerID string, taskPID uint32) string {
 	// https://github.com/weaveworks/weave/blob/master/net/netdev.go
 
-	peerIDs, err := weave.ConnectedToBridgeVethPeerIds("netns0")
+	peerIDs, err := weave.ConnectedToBridgeVethPeerIds(DefaultBridgeName)
 	if err != nil {
 		log.Fatal(err)
 	}

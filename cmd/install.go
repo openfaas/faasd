@@ -53,11 +53,6 @@ func runInstall(_ *cobra.Command, _ []string) error {
 		return err
 	}
 
-	err = binExists("/usr/local/bin/", "netns")
-	if err != nil {
-		return err
-	}
-
 	err = systemd.InstallUnit("faas-containerd", map[string]string{
 		"Cwd":             faasContainerdwd,
 		"SecretMountPath": path.Join(faasdwd, "secrets")})

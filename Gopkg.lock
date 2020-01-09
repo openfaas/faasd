@@ -131,6 +131,14 @@
   revision = "bda0ff6ed73c67bfb5e62bc9c697f146b7fd7f13"
 
 [[projects]]
+  branch = "master"
+  digest = "1:2301a9a859e3b0946e2ddd6961ba6faf6857e6e68bc9293db758dbe3b17cc35e"
+  name = "github.com/containerd/go-cni"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "c154a49e2c754b83ebfb12ebf1362213b94d23e6"
+
+[[projects]]
   digest = "1:6d66a41dbbc6819902f1589d0550bc01c18032c0a598a7cd656731e6df73861b"
   name = "github.com/containerd/ttrpc"
   packages = ["."]
@@ -143,6 +151,21 @@
   packages = ["."]
   pruneopts = "UT"
   revision = "a93fcdb778cd272c6e9b3028b2f42d813e785d40"
+
+[[projects]]
+  digest = "1:1a07bbfee1d0534e8dda4773948e6dcd3a061ea7ab047ce04619476946226483"
+  name = "github.com/containernetworking/cni"
+  packages = [
+    "libcni",
+    "pkg/invoke",
+    "pkg/types",
+    "pkg/types/020",
+    "pkg/types/current",
+    "pkg/version",
+  ]
+  pruneopts = "UT"
+  revision = "4cfb7b568922a3c79a23e438dc52fe537fc9687e"
+  version = "v0.7.1"
 
 [[projects]]
   digest = "1:e495f9f1fb2bae55daeb76e099292054fe1f734947274b3cfc403ccda595d55a"
@@ -203,6 +226,14 @@
   pruneopts = "UT"
   revision = "6c65a5562fc06764971b7c5d05c76c75e84bdbf7"
   version = "v1.3.2"
+
+[[projects]]
+  digest = "1:582b704bebaa06b48c29b0cec224a6058a09c86883aaddabde889cd1a5f73e1b"
+  name = "github.com/google/uuid"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "0cd6bf5da1e1c83f8b45653022c74f71af0538a4"
+  version = "v1.1.1"
 
 [[projects]]
   digest = "1:870d441fe217b8e689d7949fef6e43efbc787e50f200cb1e70dbca9204a1d6be"
@@ -472,8 +503,11 @@
     "github.com/containerd/containerd/errdefs",
     "github.com/containerd/containerd/namespaces",
     "github.com/containerd/containerd/oci",
+    "github.com/containerd/go-cni",
+    "github.com/google/uuid",
     "github.com/morikuni/aec",
     "github.com/opencontainers/runtime-spec/specs-go",
+    "github.com/pkg/errors",
     "github.com/sethvargo/go-password/password",
     "github.com/spf13/cobra",
     "github.com/vishvananda/netlink",
