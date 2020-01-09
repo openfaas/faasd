@@ -154,17 +154,7 @@ The default Basic Auth username is `admin`, which is written to `/run/faasd/secr
 
 ### Appendix
 
-Removing containers:
-
-```sh
-echo faas-containerd gateway prometheus | xargs sudo ctr task rm -f
-
-echo faas-containerd gateway prometheus | xargs sudo ctr container rm
-
-echo faas-containerd gateway prometheus | xargs sudo ctr snapshot rm
-```
-
-## Links
+#### Links
 
 https://github.com/renatofq/ctrofb/blob/31968e4b4893f3603e9998f21933c4131523bb5d/cmd/network.go
 
