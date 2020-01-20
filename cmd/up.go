@@ -258,6 +258,7 @@ func makeServiceDefinitions(archSuffix string) []pkg.Service {
 				"auth_proxy_url=http://basic-auth-plugin:8080/validate",
 				"auth_proxy_pass_body=false",
 				"secret_mount_path=" + secretMountDir,
+				"scale_from_zero=true",
 			},
 			Image: "docker.io/openfaas/gateway:0.18.8" + archSuffix,
 			Mounts: []pkg.Mount{
