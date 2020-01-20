@@ -5,10 +5,11 @@ Description=faasd-containerd
 MemoryLimit=500M
 Environment="secret_mount_path={{.SecretMountPath}}"
 Environment="basic_auth=true"
-ExecStart=/usr/local/bin/faas-containerd
+ExecStart=/usr/local/bin/faasd start-provider
 Restart=on-failure
 RestartSec=10s
 WorkingDirectory={{.Cwd}}
+RuntimeDirectory=faasd
 
 [Install]
 WantedBy=multi-user.target

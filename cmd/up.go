@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -26,32 +25,6 @@ var upCmd = &cobra.Command{
 	Short: "Start faasd",
 	RunE:  runUp,
 }
-
-// defaultCNIConf is a CNI configuration that enables network access to containers (docker-bridge style)
-var defaultCNIConf = fmt.Sprintf(`
-{
-    "cniVersion": "0.4.0",
-    "name": "%s",
-    "plugins": [
-      {
-        "type": "bridge",
-        "bridge": "%s",
-        "isGateway": true,
-        "ipMasq": true,
-        "ipam": {
-            "type": "host-local",
-            "subnet": "%s",
-            "routes": [
-                { "dst": "0.0.0.0/0" }
-            ]
-        }
-      },
-      {
-        "type": "firewall"
-      }
-    ]
-}
-`, pkg.DefaultNetworkName, pkg.DefaultBridgeName, pkg.DefaultSubnet)
 
 const secretMountDir = "/run/secrets"
 
@@ -78,10 +51,6 @@ func runUp(_ *cobra.Command, _ []string) error {
 
 	if basicAuthErr := makeBasicAuthFiles(path.Join(path.Join(faasdwd, "secrets"))); basicAuthErr != nil {
 		return errors.Wrap(basicAuthErr, "cannot create basic-auth-* files")
-	}
-
-	if makeNetworkErr := makeNetworkConfig(); makeNetworkErr != nil {
-		return errors.Wrap(makeNetworkErr, "error creating network config")
 	}
 
 	services := makeServiceDefinitions(clientSuffix)
@@ -300,57 +269,4 @@ func makeServiceDefinitions(archSuffix string) []pkg.Service {
 			Caps: []string{"CAP_NET_RAW"},
 		},
 	}
-}
-
-func makeNetworkConfig() error {
-	netConfig := path.Join(pkg.CNIConfDir, pkg.DefaultCNIConfFilename)
-	log.Printf("Writing network config...\n")
-
-	if !dirExists(pkg.CNIConfDir) {
-		if err := os.MkdirAll(pkg.CNIConfDir, 0755); err != nil {
-			return fmt.Errorf("cannot create directory: %s", pkg.CNIConfDir)
-		}
-	}
-
-	if err := ioutil.WriteFile(netConfig, []byte(defaultCNIConf), 644); err != nil {
-		return fmt.Errorf("cannot write network config: %s", pkg.DefaultCNIConfFilename)
-
-	}
-	return nil
-}
-
-func dirEmpty(dirname string) (b bool) {
-	if !dirExists(dirname) {
-		return
-	}
-
-	f, err := os.Open(dirname)
-	if err != nil {
-		return
-	}
-	defer func() { _ = f.Close() }()
-
-	// If the first file is EOF, the directory is empty
-	if _, err = f.Readdir(1); err == io.EOF {
-		b = true
-	}
-	return
-}
-
-func dirExists(dirname string) bool {
-	exists, info := pathExists(dirname)
-	if !exists {
-		return false
-	}
-
-	return info.IsDir()
-}
-
-func pathExists(path string) (bool, os.FileInfo) {
-	info, err := os.Stat(path)
-	if os.IsNotExist(err) {
-		return false, nil
-	}
-
-	return true, info
 }

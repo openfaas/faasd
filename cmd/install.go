@@ -43,12 +43,7 @@ func runInstall(_ *cobra.Command, _ []string) error {
 		return err
 	}
 
-	err := binExists("/usr/local/bin/", "faas-containerd")
-	if err != nil {
-		return err
-	}
-
-	err = binExists("/usr/local/bin/", "faasd")
+	err := binExists("/usr/local/bin/", "faasd")
 	if err != nil {
 		return err
 	}

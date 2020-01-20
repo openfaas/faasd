@@ -8,6 +8,7 @@ ExecStart=/usr/local/bin/faasd up
 Restart=on-failure
 RestartSec=10s
 WorkingDirectory={{.Cwd}}
+RuntimeDirectory=faasd
 
 [Install]
 WantedBy=multi-user.target
