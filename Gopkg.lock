@@ -236,6 +236,14 @@
   version = "v1.1.1"
 
 [[projects]]
+  digest = "1:cbec35fe4d5a4fba369a656a8cd65e244ea2c743007d8f6c1ccb132acf9d1296"
+  name = "github.com/gorilla/mux"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "00bdffe0f3c77e27d2cf6f5c70232a2d3e4d9c15"
+  version = "v1.7.3"
+
+[[projects]]
   digest = "1:870d441fe217b8e689d7949fef6e43efbc787e50f200cb1e70dbca9204a1d6be"
   name = "github.com/inconshreveable/mousetrap"
   packages = ["."]
@@ -295,6 +303,28 @@
   packages = ["specs-go"]
   pruneopts = "UT"
   revision = "29686dbc5559d93fb1ef402eeda3e35c38d75af4"
+
+[[projects]]
+  digest = "1:cdf3df431e70077f94e14a99305808e3d13e96262b4686154970f448f7248842"
+  name = "github.com/openfaas/faas"
+  packages = ["gateway/requests"]
+  pruneopts = "UT"
+  revision = "80b6976c106370a7081b2f8e9099a6ea9638e1f3"
+  version = "0.18.10"
+
+[[projects]]
+  digest = "1:6f21508bd38feec0d440ca862f5adcb4c955713f3eb4e075b9af731e6ef258ba"
+  name = "github.com/openfaas/faas-provider"
+  packages = [
+    ".",
+    "auth",
+    "httputil",
+    "proxy",
+    "types",
+  ]
+  pruneopts = "UT"
+  revision = "8f7c35975e1b2bf8286c2f90ee51633eec427491"
+  version = "0.14.0"
 
 [[projects]]
   digest = "1:cf31692c14422fa27c83a05292eb5cbe0fb2775972e8f1f8446a71549bd8980b"
@@ -505,8 +535,13 @@
     "github.com/containerd/containerd/oci",
     "github.com/containerd/go-cni",
     "github.com/google/uuid",
+    "github.com/gorilla/mux",
     "github.com/morikuni/aec",
     "github.com/opencontainers/runtime-spec/specs-go",
+    "github.com/openfaas/faas-provider",
+    "github.com/openfaas/faas-provider/proxy",
+    "github.com/openfaas/faas-provider/types",
+    "github.com/openfaas/faas/gateway/requests",
     "github.com/pkg/errors",
     "github.com/sethvargo/go-password/password",
     "github.com/spf13/cobra",
