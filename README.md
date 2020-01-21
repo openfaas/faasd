@@ -75,7 +75,7 @@ Done:
 * [x] Clear / remove containers and tasks with SIGTERM / SIGINT
 * [x] Determine armhf/arm64 containers to run for gateway
 * [x] Configure `basic_auth` to protect the OpenFaaS gateway and faasd-provider HTTP API
-* [x] Setup custom working directory for faasd `/run/faasd/`
+* [x] Setup custom working directory for faasd `/var/lib/faasd/`
 * [x] Use CNI to create network namespaces and adapters
 
 ## Tutorial: Get started on armhf / Raspberry Pi
@@ -134,7 +134,7 @@ sudo curl -fSLs "https://github.com/alexellis/faasd/releases/download/0.4.4/faas
 
 ### At run-time
 
-Look in `hosts` in the current working folder or in `/run/faasd/` to get the IP for the gateway or Prometheus
+Look in `hosts` in the current working folder or in `/var/lib/faasd/` to get the IP for the gateway or Prometheus
 
 ```sh
 127.0.0.1      localhost
@@ -158,8 +158,8 @@ Since faasd-provider uses containerd heavily it is not running as a container, b
 
 * basic-auth
 
-    You will then need to get the basic-auth password, it is written to `/run/faasd/secrets/basic-auth-password` if you followed the above instructions.
-The default Basic Auth username is `admin`, which is written to `/run/faasd/secrets/basic-auth-user`, if you wish to use a non-standard user then create this file and add your username (no newlines or other characters) 
+    You will then need to get the basic-auth password, it is written to `/var/lib/faasd/secrets/basic-auth-password` if you followed the above instructions.
+The default Basic Auth username is `admin`, which is written to `/var/lib/faasd/secrets/basic-auth-user`, if you wish to use a non-standard user then create this file and add your username (no newlines or other characters) 
 
 #### Installation with systemd
 

@@ -53,7 +53,7 @@ var defaultCNIConf = fmt.Sprintf(`
 }
 `, pkg.DefaultNetworkName, pkg.DefaultBridgeName, pkg.DefaultSubnet)
 
-const secretMountDir = "/run/secrets"
+const containerSecretMountDir = "/run/secrets"
 
 func runUp(_ *cobra.Command, _ []string) error {
 
@@ -208,18 +208,18 @@ func makeServiceDefinitions(archSuffix string) []pkg.Service {
 			Image: "docker.io/openfaas/basic-auth-plugin:0.18.10" + archSuffix,
 			Env: []string{
 				"port=8080",
-				"secret_mount_path=" + secretMountDir,
+				"secret_mount_path=" + containerSecretMountDir,
 				"user_filename=basic-auth-user",
 				"pass_filename=basic-auth-password",
 			},
 			Mounts: []pkg.Mount{
 				pkg.Mount{
 					Src:  path.Join(path.Join(wd, "secrets"), "basic-auth-password"),
-					Dest: path.Join(secretMountDir, "basic-auth-password"),
+					Dest: path.Join(containerSecretMountDir, "basic-auth-password"),
 				},
 				pkg.Mount{
 					Src:  path.Join(path.Join(wd, "secrets"), "basic-auth-user"),
-					Dest: path.Join(secretMountDir, "basic-auth-user"),
+					Dest: path.Join(containerSecretMountDir, "basic-auth-user"),
 				},
 			},
 			Caps: []string{"CAP_NET_RAW"},
@@ -257,18 +257,18 @@ func makeServiceDefinitions(archSuffix string) []pkg.Service {
 				"faas_nats_port=4222",
 				"auth_proxy_url=http://basic-auth-plugin:8080/validate",
 				"auth_proxy_pass_body=false",
-				"secret_mount_path=" + secretMountDir,
+				"secret_mount_path=" + containerSecretMountDir,
 				"scale_from_zero=true",
 			},
 			Image: "docker.io/openfaas/gateway:0.18.8" + archSuffix,
 			Mounts: []pkg.Mount{
 				pkg.Mount{
 					Src:  path.Join(path.Join(wd, "secrets"), "basic-auth-password"),
-					Dest: path.Join(secretMountDir, "basic-auth-password"),
+					Dest: path.Join(containerSecretMountDir, "basic-auth-password"),
 				},
 				pkg.Mount{
 					Src:  path.Join(path.Join(wd, "secrets"), "basic-auth-user"),
-					Dest: path.Join(secretMountDir, "basic-auth-user"),
+					Dest: path.Join(containerSecretMountDir, "basic-auth-user"),
 				},
 			},
 			Caps: []string{"CAP_NET_RAW"},
@@ -284,17 +284,17 @@ func makeServiceDefinitions(archSuffix string) []pkg.Service {
 				"max_inflight=1",
 				"write_debug=false",
 				"basic_auth=true",
-				"secret_mount_path=" + secretMountDir,
+				"secret_mount_path=" + containerSecretMountDir,
 			},
 			Image: "docker.io/openfaas/queue-worker:0.9.0",
 			Mounts: []pkg.Mount{
 				pkg.Mount{
 					Src:  path.Join(path.Join(wd, "secrets"), "basic-auth-password"),
-					Dest: path.Join(secretMountDir, "basic-auth-password"),
+					Dest: path.Join(containerSecretMountDir, "basic-auth-password"),
 				},
 				pkg.Mount{
 					Src:  path.Join(path.Join(wd, "secrets"), "basic-auth-user"),
-					Dest: path.Join(secretMountDir, "basic-auth-user"),
+					Dest: path.Join(containerSecretMountDir, "basic-auth-user"),
 				},
 			},
 			Caps: []string{"CAP_NET_RAW"},

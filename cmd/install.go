@@ -18,8 +18,8 @@ var installCmd = &cobra.Command{
 	RunE:  runInstall,
 }
 
-const faasdwd = "/run/faasd"
-const faasdProviderWd = "/run/faasd-provider"
+const faasdwd = "/var/lib/faasd"
+const faasdProviderWd = "/var/lib/faasd-provider"
 
 func runInstall(_ *cobra.Command, _ []string) error {
 
@@ -87,7 +87,7 @@ func runInstall(_ *cobra.Command, _ []string) error {
 	}
 
 	fmt.Println(`Login with:
-  sudo cat /run/faasd/secrets/basic-auth-password | faas-cli login -s`)
+  sudo cat /var/lib/faasd/secrets/basic-auth-password | faas-cli login -s`)
 
 	return nil
 }
