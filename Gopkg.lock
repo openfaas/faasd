@@ -228,14 +228,6 @@
   version = "v1.3.2"
 
 [[projects]]
-  digest = "1:582b704bebaa06b48c29b0cec224a6058a09c86883aaddabde889cd1a5f73e1b"
-  name = "github.com/google/uuid"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "0cd6bf5da1e1c83f8b45653022c74f71af0538a4"
-  version = "v1.1.1"
-
-[[projects]]
   digest = "1:cbec35fe4d5a4fba369a656a8cd65e244ea2c743007d8f6c1ccb132acf9d1296"
   name = "github.com/gorilla/mux"
   packages = ["."]
@@ -375,15 +367,15 @@
   revision = "d98352740cb2c55f81556b63d4a1ec64c5a319c2"
 
 [[projects]]
-  digest = "1:2d9d06cb9d46dacfdbb45f8575b39fc0126d083841a29d4fbf8d97708f43107e"
+  digest = "1:1314b5ef1c0b25257ea02e454291bf042478a48407cfe3ffea7e20323bbf5fdf"
   name = "github.com/vishvananda/netlink"
   packages = [
     ".",
     "nl",
   ]
   pruneopts = "UT"
-  revision = "a2ad57a690f3caf3015351d2d6e1c0b95c349752"
-  version = "v1.0.0"
+  revision = "f049be6f391489d3f374498fe0c8df8449258372"
+  version = "v1.1.0"
 
 [[projects]]
   branch = "master"
@@ -534,7 +526,6 @@
     "github.com/containerd/containerd/namespaces",
     "github.com/containerd/containerd/oci",
     "github.com/containerd/go-cni",
-    "github.com/google/uuid",
     "github.com/gorilla/mux",
     "github.com/morikuni/aec",
     "github.com/opencontainers/runtime-spec/specs-go",

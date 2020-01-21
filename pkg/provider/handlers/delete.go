@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 
+	cninetwork "github.com/alexellis/faasd/pkg/cninetwork"
 	"github.com/alexellis/faasd/pkg/service"
 	"github.com/containerd/containerd"
 	"github.com/containerd/containerd/namespaces"
@@ -52,7 +53,7 @@ func MakeDeleteHandler(client *containerd.Client, cni gocni.CNI) func(w http.Res
 
 		// TODO: this needs to still happen if the task is paused
 		if function.replicas != 0 {
-			err = DeleteCNINetwork(ctx, cni, client, name)
+			err = cninetwork.DeleteCNINetwork(ctx, cni, client, name)
 			if err != nil {
 				log.Printf("[Delete] error removing CNI network for %s, %s\n", name, err)
 			}
