@@ -1,4 +1,4 @@
-package handlers
+package cninetwork
 
 import (
 	"context"
@@ -23,7 +23,8 @@ const (
 	CNIConfDir = "/etc/cni/net.d"
 	// NetNSPathFmt gives the path to the a process network namespace, given the pid
 	NetNSPathFmt = "/proc/%d/ns/net"
-
+	// CNIResultsDir is the directory CNI stores allocated IP for containers
+	CNIResultsDir = "/var/lib/cni/results"
 	// defaultCNIConfFilename is the vanity filename of default CNI configuration file
 	defaultCNIConfFilename = "10-openfaas.conflist"
 	// defaultNetworkName names the "docker-bridge"-like CNI plugin-chain installed when no other CNI configuration is present.
@@ -94,8 +95,8 @@ func InitNetwork() (gocni.CNI, error) {
 
 // CreateCNINetwork creates a CNI network interface and attaches it to the context
 func CreateCNINetwork(ctx context.Context, cni gocni.CNI, task containerd.Task, labels map[string]string) (*gocni.CNIResult, error) {
-	id := NetID(task)
-	netns := NetNamespace(task)
+	id := netID(task)
+	netns := netNamespace(task)
 	result, err := cni.Setup(ctx, id, netns, gocni.WithLabels(labels))
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to setup network for task %q: %v", id, err)
@@ -116,8 +117,8 @@ func DeleteCNINetwork(ctx context.Context, cni gocni.CNI, client *containerd.Cli
 
 		log.Printf("[Delete] removing CNI network for: %s\n", task.ID())
 
-		id := NetID(task)
-		netns := NetNamespace(task)
+		id := netID(task)
+		netns := netNamespace(task)
 
 		if err := cni.Remove(ctx, id, netns); err != nil {
 			return errors.Wrapf(err, "Failed to remove network for task: %q, %v", id, err)
@@ -135,7 +136,7 @@ func GetIPAddress(result *gocni.CNIResult, task containerd.Task) (net.IP, error)
 	// Get the IP of the created interface
 	var ip net.IP
 	for ifName, config := range result.Interfaces {
-		if config.Sandbox == NetNamespace(task) {
+		if config.Sandbox == netNamespace(task) {
 			for _, ipConfig := range config.IPConfigs {
 				if ifName != "lo" && ipConfig.IP.To4() != nil {
 					ip = ipConfig.IP
@@ -169,13 +170,24 @@ func GetIPfromPID(pid int) (*net.IP, error) {
 	return nil, fmt.Errorf("no IP found for function")
 }
 
-// NetID generates the network IF based on task name and task PID
-func NetID(task containerd.Task) string {
+// CNIGateway returns the gateway for default subnet
+func CNIGateway() (string, error) {
+	ip, _, err := net.ParseCIDR(defaultSubnet)
+	if err != nil {
+		return "", fmt.Errorf("error formatting gateway for network %s", defaultSubnet)
+	}
+	ip = ip.To4()
+	ip[3] = 1
+	return ip.String(), nil
+}
+
+// netID generates the network IF based on task name and task PID
+func netID(task containerd.Task) string {
 	return fmt.Sprintf("%s-%d", task.ID(), task.Pid())
 }
 
-// NetNamespace generates the namespace path based on task PID.
-func NetNamespace(task containerd.Task) string {
+// netNamespace generates the namespace path based on task PID.
+func netNamespace(task containerd.Task) string {
 	return fmt.Sprintf(NetNSPathFmt, task.Pid())
 }
 

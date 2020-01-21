@@ -11,6 +11,7 @@ import (
 	"path"
 	"strings"
 
+	cninetwork "github.com/alexellis/faasd/pkg/cninetwork"
 	"github.com/alexellis/faasd/pkg/service"
 	"github.com/containerd/containerd"
 	"github.com/containerd/containerd/cio"
@@ -101,7 +102,7 @@ func deploy(ctx context.Context, req types.FunctionDeployment, client *container
 		name,
 		containerd.WithImage(image),
 		containerd.WithSnapshotter(snapshotter),
-		containerd.WithNewSnapshot(req.Service+"-snapshot", image),
+		containerd.WithNewSnapshot(name+"-snapshot", image),
 		containerd.WithNewSpec(oci.WithImageConfig(image),
 			oci.WithCapabilities([]string{"CAP_NET_RAW"}),
 			oci.WithMounts(mounts),
@@ -127,13 +128,13 @@ func createTask(ctx context.Context, client *containerd.Client, container contai
 	log.Printf("Container ID: %s\tTask ID %s:\tTask PID: %d\t\n", name, task.ID(), task.Pid())
 
 	labels := map[string]string{}
-	network, err := CreateCNINetwork(ctx, cni, task, labels)
+	network, err := cninetwork.CreateCNINetwork(ctx, cni, task, labels)
 
 	if err != nil {
 		return err
 	}
 
-	ip, err := GetIPAddress(network, task)
+	ip, err := cninetwork.GetIPAddress(network, task)
 	if err != nil {
 		return err
 	}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/alexellis/faasd/pkg/cninetwork"
 	"github.com/containerd/containerd"
 	"github.com/containerd/containerd/namespaces"
 )
@@ -62,11 +63,10 @@ func GetFunction(client *containerd.Client, name string) (Function, error) {
 				f.pid = task.Pid()
 
 				// Get container IP address
-				ip, getIPErr := GetIPfromPID(int(task.Pid()))
-				if getIPErr != nil {
-					return Function{}, getIPErr
+				ip, err := cninetwork.GetIPfromPID(int(task.Pid()))
+				if err != nil {
+					return Function{}, err
 				}
-
 				f.IP = ip.String()
 			}
 		} else {

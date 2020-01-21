@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/alexellis/faasd/pkg/cninetwork"
 	"github.com/alexellis/faasd/pkg/service"
 	"github.com/containerd/containerd"
 	"github.com/containerd/containerd/namespaces"
@@ -54,7 +55,7 @@ func MakeUpdateHandler(client *containerd.Client, cni gocni.CNI, secretMountPath
 
 		ctx := namespaces.WithNamespace(context.Background(), FunctionNamespace)
 		if function.replicas != 0 {
-			err = DeleteCNINetwork(ctx, cni, client, name)
+			err = cninetwork.DeleteCNINetwork(ctx, cni, client, name)
 			if err != nil {
 				log.Printf("[Update] error removing CNI network for %s, %s\n", name, err)
 			}

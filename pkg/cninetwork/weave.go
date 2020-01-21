@@ -1,7 +1,7 @@
 // Copyright Weaveworks
 // github.com/weaveworks/weave/net
 
-package handlers
+package cninetwork
 
 import (
 	"fmt"

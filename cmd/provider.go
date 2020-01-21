@@ -9,6 +9,7 @@ import (
 	"os"
 	"path"
 
+	"github.com/alexellis/faasd/pkg/cninetwork"
 	"github.com/alexellis/faasd/pkg/provider/config"
 	"github.com/alexellis/faasd/pkg/provider/handlers"
 	"github.com/containerd/containerd"
@@ -52,7 +53,7 @@ func runProvider(_ *cobra.Command, _ []string) error {
 		return fmt.Errorf("cannot write resolv.conf file: %s", writeResolvErr)
 	}
 
-	cni, err := handlers.InitNetwork()
+	cni, err := cninetwork.InitNetwork()
 	if err != nil {
 		return err
 	}
