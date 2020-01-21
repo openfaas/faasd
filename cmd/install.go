@@ -19,7 +19,7 @@ var installCmd = &cobra.Command{
 }
 
 const faasdwd = "/run/faasd"
-const faasContainerdwd = "/run/faas-containerd"
+const faasdProviderWd = "/run/faasd-provider"
 
 func runInstall(_ *cobra.Command, _ []string) error {
 
@@ -27,7 +27,7 @@ func runInstall(_ *cobra.Command, _ []string) error {
 		return err
 	}
 
-	if err := ensureWorkingDir(faasContainerdwd); err != nil {
+	if err := ensureWorkingDir(faasdProviderWd); err != nil {
 		return err
 	}
 
@@ -43,18 +43,13 @@ func runInstall(_ *cobra.Command, _ []string) error {
 		return err
 	}
 
-	err := binExists("/usr/local/bin/", "faas-containerd")
+	err := binExists("/usr/local/bin/", "faasd")
 	if err != nil {
 		return err
 	}
 
-	err = binExists("/usr/local/bin/", "faasd")
-	if err != nil {
-		return err
-	}
-
-	err = systemd.InstallUnit("faas-containerd", map[string]string{
-		"Cwd":             faasContainerdwd,
+	err = systemd.InstallUnit("faasd-provider", map[string]string{
+		"Cwd":             faasdProviderWd,
 		"SecretMountPath": path.Join(faasdwd, "secrets")})
 
 	if err != nil {
@@ -71,7 +66,7 @@ func runInstall(_ *cobra.Command, _ []string) error {
 		return err
 	}
 
-	err = systemd.Enable("faas-containerd")
+	err = systemd.Enable("faasd-provider")
 	if err != nil {
 		return err
 	}
@@ -81,7 +76,7 @@ func runInstall(_ *cobra.Command, _ []string) error {
 		return err
 	}
 
-	err = systemd.Start("faas-containerd")
+	err = systemd.Start("faasd-provider")
 	if err != nil {
 		return err
 	}
@@ -90,6 +85,9 @@ func runInstall(_ *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
+
+	fmt.Println(`Login with:
+  sudo cat /run/faasd/secrets/basic-auth-password | faas-cli login -s`)
 
 	return nil
 }

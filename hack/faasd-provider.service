@@ -1,5 +1,5 @@
 [Unit]
-Description=faasd-containerd
+Description=faasd-provider
 
 [Service]
 MemoryLimit=500M

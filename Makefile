@@ -2,7 +2,6 @@ Version := $(shell git describe --tags --dirty)
 GitCommit := $(shell git rev-parse HEAD)
 LDFLAGS := "-s -w -X main.Version=$(Version) -X main.GitCommit=$(GitCommit)"
 CONTAINERD_VER := 1.3.2
-FAASC_VER := 0.4.0
 CNI_VERSION := v0.8.4
 ARCH := amd64
 
@@ -27,12 +26,11 @@ prepare-test:
 	sudo /sbin/sysctl -w net.ipv4.conf.all.forwarding=1
 	sudo mkdir -p /opt/cni/bin
 	curl -sSL https://github.com/containernetworking/plugins/releases/download/$(CNI_VERSION)/cni-plugins-linux-$(ARCH)-$(CNI_VERSION).tgz | sudo tar -xz -C /opt/cni/bin
-	sudo curl -sSLf "https://github.com/alexellis/faas-containerd/releases/download/$(FAASC_VER)/faas-containerd" --output "/usr/local/bin/faas-containerd" && sudo chmod a+x "/usr/local/bin/faas-containerd" || :
 	sudo cp $(GOPATH)/src/github.com/alexellis/faasd/bin/faasd /usr/local/bin/
 	cd $(GOPATH)/src/github.com/alexellis/faasd/ && sudo /usr/local/bin/faasd install
 	sudo systemctl status -l containerd --no-pager
-	sudo journalctl -u faas-containerd --no-pager
-	sudo systemctl status -l faas-containerd --no-pager
+	sudo journalctl -u faasd-provider --no-pager
+	sudo systemctl status -l faasd-provider --no-pager
 	sudo systemctl status -l faasd --no-pager
 	curl -sSLf https://cli.openfaas.com | sudo sh
 	sleep 120 && sudo journalctl -u faasd --no-pager
