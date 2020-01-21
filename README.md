@@ -78,10 +78,6 @@ You can run this tutorial on your Raspberry Pi, or adapt the steps for a regular
 
 Install the CNI plugins:
 
-```sh
-export CNI_VERSION=v0.8.4
-```
-
 * For PC run `export ARCH=amd64`
 * For RPi/armhf run `export ARCH=arm`
 * For arm64 run `export ARCH=arm64`
@@ -89,8 +85,9 @@ export CNI_VERSION=v0.8.4
 Then run:
 
 ```sh
-mkdir -p /opt/cni/bin
-curl -sSL https://github.com/containernetworking/plugins/releases/download/${CNI_VERSION}/cni-plugins-linux-${ARCH}-${CNI_VERSION}.tgz | tar -xz -C /opt/cni/bin
+export CNI_VERSION=v0.8.4
+sudo mkdir -p /opt/cni/bin
+curl -sSL https://github.com/containernetworking/plugins/releases/download/${CNI_VERSION}/cni-plugins-linux-${ARCH}-${CNI_VERSION}.tgz | sudo tar -xz -C /opt/cni/bin
 ```
 
 First run faas-containerd
