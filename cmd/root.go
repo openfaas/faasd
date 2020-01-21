@@ -14,6 +14,7 @@ func init() {
 	rootCommand.AddCommand(versionCmd)
 	rootCommand.AddCommand(upCmd)
 	rootCommand.AddCommand(installCmd)
+	rootCommand.AddCommand(providerCmd)
 }
 
 var (
