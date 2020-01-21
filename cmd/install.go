@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 
+	"github.com/alexellis/faasd/pkg"
 	systemd "github.com/alexellis/faasd/pkg/systemd"
 	"github.com/pkg/errors"
 
@@ -18,8 +19,8 @@ var installCmd = &cobra.Command{
 	RunE:  runInstall,
 }
 
-const faasdwd = "/run/faasd"
-const faasContainerdwd = "/run/faas-containerd"
+const faasdwd = "/var/lib/faasd"
+const faasContainerdwd = "/var/lib/faas-containerd"
 
 func runInstall(_ *cobra.Command, _ []string) error {
 
@@ -109,7 +110,7 @@ func ensureWorkingDir(folder string) error {
 }
 
 func cp(source, destFolder string) error {
-	file, err := os.Open(source)
+	file, err := pkg.Assets.Open(source)
 	if err != nil {
 		return err
 

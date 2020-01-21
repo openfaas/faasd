@@ -335,6 +335,22 @@
   version = "v0.1.3"
 
 [[projects]]
+  branch = "master"
+  digest = "1:68cecd4c1137f77dfa2db1f13a0ceef2b5606d6b69d66fa69f7df1b2f2fe9afc"
+  name = "github.com/shurcooL/httpfs"
+  packages = ["vfsutil"]
+  pruneopts = "UT"
+  revision = "8d4bc4ba774931155e6cd5ef6098cb038dd45135"
+
+[[projects]]
+  branch = "master"
+  digest = "1:98450c86949b8cdc4637b80c1c686ca955e503d3fbae9296d1f49c532895d281"
+  name = "github.com/shurcooL/vfsgen"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "6a9ea43bcacdf716a5c1b38efff722c07adf0069"
+
+[[projects]]
   digest = "1:fd61cf4ae1953d55df708acb6b91492d538f49c305b364a014049914495db426"
   name = "github.com/sirupsen/logrus"
   packages = ["."]
@@ -535,6 +551,7 @@
     "github.com/openfaas/faas/gateway/requests",
     "github.com/pkg/errors",
     "github.com/sethvargo/go-password/password",
+    "github.com/shurcooL/vfsgen",
     "github.com/spf13/cobra",
     "github.com/vishvananda/netlink",
     "github.com/vishvananda/netns",

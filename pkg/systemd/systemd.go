@@ -3,10 +3,12 @@ package systemd
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"text/template"
 
+	"github.com/alexellis/faasd/pkg"
 	execute "github.com/alexellis/go-execute/pkg/v1"
 )
 
@@ -68,12 +70,22 @@ func InstallUnit(name string, tokens map[string]string) error {
 	if len(tokens["Cwd"]) == 0 {
 		return fmt.Errorf("key Cwd expected in tokens parameter")
 	}
+	tmplName := "./" + name + ".service"
+	file, err := pkg.Assets.Open(tmplName)
+	if err != nil {
+		return fmt.Errorf("error opening template %s, error %s", tmplName, err)
+	}
 
-	tmplName := "./hack/" + name + ".service"
-	tmpl, err := template.ParseFiles(tmplName)
+	b, err := ioutil.ReadAll(file)
+	if err != nil {
+		return fmt.Errorf("error reading template %s, error %s", tmplName, err)
+	}
+
+	tmpl := template.New(name)
+	tmpl, err = tmpl.Parse(string(b))
 
 	if err != nil {
-		return fmt.Errorf("error loading template %s, error %s", tmplName, err)
+		return fmt.Errorf("error generating template %s, error %s", tmplName, err)
 	}
 
 	var tpl bytes.Buffer

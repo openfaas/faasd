@@ -9,11 +9,14 @@ ARCH := amd64
 .PHONY: all
 all: local
 
-local:
+generate:
+	go generate
+
+local: generate
 	CGO_ENABLED=0 GOOS=linux go build -o bin/faasd
 
 .PHONY: dist
-dist:
+dist: generate
 	CGO_ENABLED=0 GOOS=linux go build -ldflags $(LDFLAGS) -a -installsuffix cgo -o bin/faasd
 	CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7 go build -ldflags $(LDFLAGS) -a -installsuffix cgo -o bin/faasd-armhf
 	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags $(LDFLAGS) -a -installsuffix cgo -o bin/faasd-arm64
