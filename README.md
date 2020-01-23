@@ -166,7 +166,7 @@ You may find alternatives for CentOS and other distributions.
 ### Install Go 1.13 (x86_64)
 
 ```sh
-https://dl.google.com/go/go1.13.6.linux-amd64.tar.gz > go.tgz
+curl -sSLf https://dl.google.com/go/go1.13.6.linux-amd64.tar.gz > go.tgz
 sudo rm -rf /usr/local/go/
 sudo mkdir -p /usr/local/go/
 sudo tar -xvf go.tgz -C /usr/local/go/ --strip-components=1
