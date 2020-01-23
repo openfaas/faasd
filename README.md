@@ -52,7 +52,7 @@ Other operations are pending development in the provider such as:
 
     For Windows users, install [Git Bash](https://git-scm.com/downloads) along with multipass or vagrant. You can also use WSL1 or WSL2 which provides a Linux environment.
 
-    You will also need [containerd v1.3.2](https://github.com/containerd/containerd) and the [CNI plugins v0.8.4](https://github.com/containernetworking/plugins)
+    You will also need [containerd v1.3.2](https://github.com/containerd/containerd) and the [CNI plugins v0.8.5](https://github.com/containernetworking/plugins)
 
     [faas-cli](https://github.com/openfaas/faas-cli) is optional, but recommended.
 
@@ -95,7 +95,7 @@ Install the CNI plugins:
 Then run:
 
 ```sh
-export CNI_VERSION=v0.8.4
+export CNI_VERSION=v0.8.5
 sudo mkdir -p /opt/cni/bin
 curl -sSL https://github.com/containernetworking/plugins/releases/download/${CNI_VERSION}/cni-plugins-linux-${ARCH}-${CNI_VERSION}.tgz | sudo tar -xz -C /opt/cni/bin
 ```
