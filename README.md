@@ -84,9 +84,114 @@ You can run this tutorial on your Raspberry Pi, or adapt the steps for a regular
 
 * [faasd - lightweight Serverless for your Raspberry Pi](https://blog.alexellis.io/faasd-for-lightweight-serverless/)
 
+## Get containerd
+
+You have three options - binaries for PC, binaries for armhf, or build from source.
+
+* Install containerd `x86_64` only
+
+```sh
+export VER=1.3.2
+curl -sLSf https://github.com/containerd/containerd/releases/download/v$VER/containerd-$VER.linux-amd64.tar.gz > /tmp/containerd.tar.gz \
+  && sudo tar -xvf /tmp/containerd.tar.gz -C /usr/local/bin/ --strip-components=1
+
+containerd -version
+```
+
+* Or get my containerd binaries for armhf
+
+Building containerd on armhf is extremely slow.
+
+```sh
+curl -sSL https://github.com/alexellis/containerd-armhf/releases/download/v1.3.2/containerd.tgz | sudo tar -xvz --strip-components=2 -C /usr/local/bin/
+```
+
+* Or clone / build / install [containerd](https://github.com/containerd/containerd) from source:
+
+```sh
+export GOPATH=$HOME/go/
+mkdir -p $GOPATH/src/github.com/containerd
+cd $GOPATH/src/github.com/containerd
+git clone https://github.com/containerd/containerd
+cd containerd
+git fetch origin --tags
+git checkout v1.3.2
+
+make
+sudo make install
+
+containerd --version
+```
+
+Kill any old containerd version:
+
+```sh
+# Kill any old version
+sudo killall containerd
+sudo systemctl disable containerd
+```
+
+Start containerd in a new terminal:
+
+```sh
+sudo containerd &
+```
+### Enable forwarding
+
+> This is required to allow containers in containerd to access the Internet via your computer's primary network interface.
+
+```sh
+sudo /sbin/sysctl -w net.ipv4.conf.all.forwarding=1
+```
+
+Make the setting permanent:
+
+```sh
+echo "net.ipv4.conf.all.forwarding=1" | sudo tee -a /etc/sysctl.conf
+```
+
 ## Hacking (build from source)
 
-Install the CNI plugins:
+### Get build packages
+
+```sh
+sudo apt update \
+  && sudo apt install -qy \
+    runc \
+    bridge-utils
+```
+
+You may find alternatives for CentOS and other distributions.
+
+### Install Go 1.13 (x86_64)
+
+```sh
+https://dl.google.com/go/go1.13.6.linux-amd64.tar.gz > go.tgz
+sudo rm -rf /usr/local/go/
+sudo mkdir -p /usr/local/go/
+sudo tar -xvf go.tgz -C /usr/local/go/ --strip-components=1
+
+export GOPATH=$HOME/go/
+export PATH=$PATH:/usr/local/go/bin/
+
+go version
+```
+
+### Or on Raspberry Pi (armhf)
+
+```sh
+curl -SLsf https://dl.google.com/go/go1.13.6.linux-armv6l.tar.gz > go.tgz
+sudo rm -rf /usr/local/go/
+sudo mkdir -p /usr/local/go/
+sudo tar -xvf go.tgz -C /usr/local/go/ --strip-components=1
+
+export GOPATH=$HOME/go/
+export PATH=$PATH:/usr/local/go/bin/
+
+go version
+```
+
+### Install the CNI plugins:
 
 * For PC run `export ARCH=amd64`
 * For RPi/armhf run `export ARCH=arm`
@@ -95,7 +200,9 @@ Install the CNI plugins:
 Then run:
 
 ```sh
+export ARCH=amd64
 export CNI_VERSION=v0.8.5
+
 sudo mkdir -p /opt/cni/bin
 curl -sSL https://github.com/containernetworking/plugins/releases/download/${CNI_VERSION}/cni-plugins-linux-${ARCH}-${CNI_VERSION}.tgz | sudo tar -xz -C /opt/cni/bin
 ```
@@ -113,7 +220,7 @@ go build
 # sudo ./faasd up
 ```
 
-### Build and run (binaries)
+### Build and run `faasd` (binaries)
 
 ```sh
 # For x86_64
@@ -148,7 +255,7 @@ Look in `hosts` in the current working folder or in `/var/lib/faasd/` to get the
 
 The IP addresses are dynamic and may change on every launch.
 
-Since faasd-provider uses containerd heavily it is not running as a container, but as a stand-alone process. Its port is available via the bridge interface, i.e. openfaas0.
+Since faasd-provider uses containerd heavily it is not running as a container, but as a stand-alone process. Its port is available via the bridge interface, i.e. `openfaas0`
 
 * Prometheus will run on the Prometheus IP plus port 8080 i.e. http://[prometheus_ip]:9090/targets
 
