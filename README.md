@@ -3,8 +3,6 @@
 [![Build Status](https://travis-ci.com/alexellis/faasd.svg?branch=master)](https://travis-ci.com/alexellis/faasd)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![OpenFaaS](https://img.shields.io/badge/openfaas-serverless-blue.svg)](https://www.openfaas.com)
-[![Derek App](https://alexellis.o6s.io/badge?owner=openfaas&repo=faas)](https://github.com/alexellis/derek/)
-
 
 faasd is a Golang supervisor that bundles OpenFaaS for use with containerd instead of a container orchestrator like Kubernetes or Docker Swarm.
 
@@ -13,6 +11,10 @@ faasd is a Golang supervisor that bundles OpenFaaS for use with containerd inste
 * faasd is a single Golang binary
 * faasd is multi-arch, so works on `x86_64`, armhf and arm64
 * faasd downloads, starts and supervises the core components to run OpenFaaS
+
+![demo](https://pbs.twimg.com/media/EPNQz00W4AEwDxM?format=jpg&name=small)
+
+> Demo of faasd running in KVM
 
 ## What does faasd deploy?
 
@@ -88,7 +90,13 @@ You can run this tutorial on your Raspberry Pi, or adapt the steps for a regular
 
 * [faasd - lightweight Serverless for your Raspberry Pi](https://blog.alexellis.io/faasd-for-lightweight-serverless/)
 
-## Get containerd
+## Tutorial: Multipass & KVM for MacOS/Linux, or Windows (with cloud-config)
+
+* [Get up and running with your own faasd installation on your Mac/Ubuntu or Windows with cloud-config](https://gist.github.com/alexellis/6d297e678c9243d326c151028a3ad7b9)
+
+## Tutorial: Manual installation
+
+### Get containerd
 
 You have three options - binaries for PC, binaries for armhf, or build from source.
 
@@ -140,7 +148,7 @@ Start containerd in a new terminal:
 ```sh
 sudo containerd &
 ```
-### Enable forwarding
+#### Enable forwarding
 
 > This is required to allow containers in containerd to access the Internet via your computer's primary network interface.
 
@@ -154,9 +162,9 @@ Make the setting permanent:
 echo "net.ipv4.conf.all.forwarding=1" | sudo tee -a /etc/sysctl.conf
 ```
 
-## Hacking (build from source)
+### Hacking (build from source)
 
-### Get build packages
+#### Get build packages
 
 ```sh
 sudo apt update \
@@ -167,7 +175,7 @@ sudo apt update \
 
 You may find alternatives for CentOS and other distributions.
 
-### Install Go 1.13 (x86_64)
+#### Install Go 1.13 (x86_64)
 
 ```sh
 curl -sSLf https://dl.google.com/go/go1.13.6.linux-amd64.tar.gz > go.tgz
@@ -181,7 +189,7 @@ export PATH=$PATH:/usr/local/go/bin/
 go version
 ```
 
-### Or on Raspberry Pi (armhf)
+#### Or on Raspberry Pi (armhf)
 
 ```sh
 curl -SLsf https://dl.google.com/go/go1.13.6.linux-armv6l.tar.gz > go.tgz
@@ -195,7 +203,7 @@ export PATH=$PATH:/usr/local/go/bin/
 go version
 ```
 
-### Install the CNI plugins:
+#### Install the CNI plugins:
 
 * For PC run `export ARCH=amd64`
 * For RPi/armhf run `export ARCH=arm`
@@ -224,7 +232,7 @@ go build
 # sudo ./faasd up
 ```
 
-### Build and run `faasd` (binaries)
+#### Build and run `faasd` (binaries)
 
 ```sh
 # For x86_64
@@ -243,7 +251,7 @@ sudo curl -fSLs "https://github.com/alexellis/faasd/releases/download/0.6.2/faas
     && sudo chmod a+x "/usr/local/bin/faasd"
 ```
 
-### At run-time
+#### At run-time
 
 Look in `hosts` in the current working folder or in `/var/lib/faasd/` to get the IP for the gateway or Prometheus
 
