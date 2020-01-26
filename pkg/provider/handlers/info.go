@@ -8,10 +8,11 @@ import (
 )
 
 const (
-	//OrchestrationIdentifier identifier string for provider orchestration
+	// OrchestrationIdentifier identifier string for provider orchestration
 	OrchestrationIdentifier = "containerd"
-	//ProviderName name of the provider
-	ProviderName = "faas-containerd"
+
+	// ProviderName name of the provider
+	ProviderName = "faasd"
 )
 
 //MakeInfoHandler creates handler for /system/info endpoint

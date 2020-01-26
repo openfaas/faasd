@@ -60,8 +60,13 @@ func GetFunction(client *containerd.Client, name string) (Function, error) {
 			if svc.Status == "running" {
 				replicas = 1
 				f.pid = task.Pid()
+
 				// Get container IP address
-				ip, _ := GetIPfromPID(int(task.Pid()))
+				ip, getIPErr := GetIPfromPID(int(task.Pid()))
+				if getIPErr != nil {
+					return Function{}, getIPErr
+				}
+
 				f.IP = ip.String()
 			}
 		} else {

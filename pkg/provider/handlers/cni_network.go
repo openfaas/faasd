@@ -161,8 +161,12 @@ func GetIPfromPID(pid int) (*net.IP, error) {
 	if addrsErr != nil {
 		return nil, fmt.Errorf("unable to find address for veth pair using: %v %s", peerIDs, addrsErr)
 	}
-	return &addrs[0].CIDRs[0].IP, nil
 
+	if len(addrs) > 0 && len(addrs[0].CIDRs) > 0 {
+		return &addrs[0].CIDRs[0].IP, nil
+	}
+
+	return nil, fmt.Errorf("no IP found for function")
 }
 
 // NetID generates the network IF based on task name and task PID
