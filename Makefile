@@ -2,7 +2,7 @@ Version := $(shell git describe --tags --dirty)
 GitCommit := $(shell git rev-parse HEAD)
 LDFLAGS := "-s -w -X main.Version=$(Version) -X main.GitCommit=$(GitCommit)"
 CONTAINERD_VER := 1.3.2
-CNI_VERSION := v0.8.4
+CNI_VERSION := v0.8.5
 ARCH := amd64
 
 .PHONY: all
@@ -22,7 +22,6 @@ prepare-test:
 	curl -sLSf https://github.com/containerd/containerd/releases/download/v$(CONTAINERD_VER)/containerd-$(CONTAINERD_VER).linux-amd64.tar.gz > /tmp/containerd.tar.gz && sudo tar -xvf /tmp/containerd.tar.gz -C /usr/local/bin/ --strip-components=1
 	curl -SLfs https://raw.githubusercontent.com/containerd/containerd/v1.3.2/containerd.service | sudo tee /etc/systemd/system/containerd.service
 	sudo systemctl daemon-reload && sudo systemctl start containerd
-	sudo curl -fSLs "https://github.com/genuinetools/netns/releases/download/v0.5.3/netns-linux-amd64" --output "/usr/local/bin/netns" && sudo chmod a+x "/usr/local/bin/netns"
 	sudo /sbin/sysctl -w net.ipv4.conf.all.forwarding=1
 	sudo mkdir -p /opt/cni/bin
 	curl -sSL https://github.com/containernetworking/plugins/releases/download/$(CNI_VERSION)/cni-plugins-linux-$(ARCH)-$(CNI_VERSION).tgz | sudo tar -xz -C /opt/cni/bin
