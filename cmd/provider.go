@@ -66,17 +66,20 @@ func runProvider(_ *cobra.Command, _ []string) error {
 
 	invokeResolver := handlers.NewInvokeResolver(client)
 
+	userSecretPath := path.Join(wd, "secrets")
+
 	bootstrapHandlers := types.FaaSHandlers{
 		FunctionProxy:        proxy.NewHandlerFunc(*config, invokeResolver),
 		DeleteHandler:        handlers.MakeDeleteHandler(client, cni),
-		DeployHandler:        handlers.MakeDeployHandler(client, cni),
+		DeployHandler:        handlers.MakeDeployHandler(client, cni, userSecretPath),
 		FunctionReader:       handlers.MakeReadHandler(client),
 		ReplicaReader:        handlers.MakeReplicaReaderHandler(client),
 		ReplicaUpdater:       handlers.MakeReplicaUpdateHandler(client, cni),
-		UpdateHandler:        handlers.MakeUpdateHandler(client, cni),
+		UpdateHandler:        handlers.MakeUpdateHandler(client, cni, userSecretPath),
 		HealthHandler:        func(w http.ResponseWriter, r *http.Request) {},
 		InfoHandler:          handlers.MakeInfoHandler(Version, GitCommit),
 		ListNamespaceHandler: listNamespaces(),
+		SecretHandler:        handlers.MakeSecretHandler(client, userSecretPath),
 	}
 
 	log.Printf("Listening on TCP port: %d\n", *config.TCPPort)

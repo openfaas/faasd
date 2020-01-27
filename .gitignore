@@ -6,3 +6,4 @@ hosts
 basic-auth-user
 basic-auth-password
 /bin
+/secrets
