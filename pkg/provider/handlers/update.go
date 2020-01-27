@@ -15,7 +15,7 @@ import (
 	"github.com/openfaas/faas-provider/types"
 )
 
-func MakeUpdateHandler(client *containerd.Client, cni gocni.CNI) func(w http.ResponseWriter, r *http.Request) {
+func MakeUpdateHandler(client *containerd.Client, cni gocni.CNI, secretMountPath string) func(w http.ResponseWriter, r *http.Request) {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -47,6 +47,11 @@ func MakeUpdateHandler(client *containerd.Client, cni gocni.CNI) func(w http.Res
 			return
 		}
 
+		err = validateSecrets(secretMountPath, req.Secrets)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+		}
+
 		ctx := namespaces.WithNamespace(context.Background(), FunctionNamespace)
 		if function.replicas != 0 {
 			err = DeleteCNINetwork(ctx, cni, client, name)
@@ -62,7 +67,7 @@ func MakeUpdateHandler(client *containerd.Client, cni gocni.CNI) func(w http.Res
 			return
 		}
 
-		deployErr := deploy(ctx, req, client, cni)
+		deployErr := deploy(ctx, req, client, cni, secretMountPath)
 		if deployErr != nil {
 			log.Printf("[Update] error deploying %s, error: %s\n", name, deployErr)
 			http.Error(w, deployErr.Error(), http.StatusBadRequest)
