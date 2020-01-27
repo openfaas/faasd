@@ -9,9 +9,9 @@ ARCH := amd64
 ##@ MAIN
 ##########################################################
 .PHONY: all dist
-all: local												## Build all
+all: local	## Build all
 
-local:													## Build local binary
+local:	## Build local binary
 	CGO_ENABLED=0 GOOS=linux go build -o bin/faasd
 
 dist:													## Package for distribution
@@ -24,7 +24,7 @@ dist:													## Package for distribution
 ##########################################################
 .PHONY: prepare-test test-e2e
 
-prepare-test:											## Set up tests
+prepare-test:	## Set up tests
 	curl -sLSf https://github.com/containerd/containerd/releases/download/v$(CONTAINERD_VER)/containerd-$(CONTAINERD_VER).linux-amd64.tar.gz > /tmp/containerd.tar.gz && sudo tar -xvf /tmp/containerd.tar.gz -C /usr/local/bin/ --strip-components=1
 	curl -SLfs https://raw.githubusercontent.com/containerd/containerd/v1.3.2/containerd.service | sudo tee /etc/systemd/system/containerd.service
 	sudo systemctl daemon-reload && sudo systemctl start containerd
@@ -40,7 +40,7 @@ prepare-test:											## Set up tests
 	curl -sSLf https://cli.openfaas.com | sudo sh
 	sleep 120 && sudo journalctl -u faasd --no-pager
 
-test-e2e:												## Run E2E tests
+test-e2e:	## Run E2E tests
 	sudo cat /var/lib/faasd/secrets/basic-auth-password | /usr/local/bin/faas-cli login --password-stdin
 	/usr/local/bin/faas-cli store deploy figlet --env write_timeout=1s --env read_timeout=1s
 	sleep 2
@@ -58,14 +58,14 @@ test-e2e:												## Run E2E tests
 ##########################################################
 .PHONY: help multipass-run mulitpass clean
 
-multipass-run: 			       							## Run FaaSd in multipass VM
+multipass-run:	## Run FaaSd in multipass VM
 	sh hack/multipass.sh
 
-multipass-clean:		       							## Clean Multipass VM
+multipass-clean:	## Clean Multipass VM
 	ssh-keygen -f "/home/gabeduke/.ssh/known_hosts" -R "faasd.local"
 	multipass stop faasd
 	multipass delete faasd
 	multipass purge
 
-help:													## show help
+help:	## show help
 		@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-15s\033[0m 	%s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
