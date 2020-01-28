@@ -66,6 +66,8 @@ Other operations are pending development in the provider such as:
 
 Pending:
 
+* [ ] Add support for using container images in third-party public registries
+* [ ] Add support for using container images in private third-party registries
 * [ ] Monitor and restart any of the core components at runtime if the container stops
 * [ ] Bundle/package/automate installation of containerd - [see bootstrap from k3s](https://github.com/rancher/k3s)
 * [ ] Provide ufw rules / example for blocking access to everything but a reverse proxy to the gateway container

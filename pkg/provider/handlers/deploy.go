@@ -22,7 +22,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func MakeDeployHandler(client *containerd.Client, cni gocni.CNI) func(w http.ResponseWriter, r *http.Request) {
+func MakeDeployHandler(client *containerd.Client, cni gocni.CNI, secretMountPath string) func(w http.ResponseWriter, r *http.Request) {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -45,11 +45,15 @@ func MakeDeployHandler(client *containerd.Client, cni gocni.CNI) func(w http.Res
 			return
 		}
 
-		name := req.Service
+		err = validateSecrets(secretMountPath, req.Secrets)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+		}
 
+		name := req.Service
 		ctx := namespaces.WithNamespace(context.Background(), FunctionNamespace)
 
-		deployErr := deploy(ctx, req, client, cni)
+		deployErr := deploy(ctx, req, client, cni, secretMountPath)
 		if deployErr != nil {
 			log.Printf("[Deploy] error deploying %s, error: %s\n", name, deployErr)
 			http.Error(w, deployErr.Error(), http.StatusBadRequest)
@@ -58,7 +62,7 @@ func MakeDeployHandler(client *containerd.Client, cni gocni.CNI) func(w http.Res
 	}
 }
 
-func deploy(ctx context.Context, req types.FunctionDeployment, client *containerd.Client, cni gocni.CNI) error {
+func deploy(ctx context.Context, req types.FunctionDeployment, client *containerd.Client, cni gocni.CNI, secretMountPath string) error {
 
 	imgRef := "docker.io/" + req.Image
 	if strings.Index(req.Image, ":") == -1 {
@@ -80,6 +84,15 @@ func deploy(ctx context.Context, req types.FunctionDeployment, client *container
 
 	envs := prepareEnv(req.EnvProcess, req.EnvVars)
 	mounts := getMounts()
+
+	for _, secret := range req.Secrets {
+		mounts = append(mounts, specs.Mount{
+			Destination: path.Join("/var/openfaas/secrets", secret),
+			Type:        "bind",
+			Source:      path.Join(secretMountPath, secret),
+			Options:     []string{"rbind", "ro"},
+		})
+	}
 
 	name := req.Service
 
@@ -176,4 +189,13 @@ func getMounts() []specs.Mount {
 		Options:     []string{"rbind", "ro"},
 	})
 	return mounts
+}
+
+func validateSecrets(secretMountPath string, secrets []string) error {
+	for _, secret := range secrets {
+		if _, err := os.Stat(path.Join(secretMountPath, secret)); err != nil {
+			return fmt.Errorf("unable to find secret: %s", secret)
+		}
+	}
+	return nil
 }
