@@ -28,12 +28,13 @@ all: ## build all
 all: local
 
 local: ## build local binary
-	CGO_ENABLED=0 GOOS=linux $(GO) build -o bin/faasd
+local: export $$PATH=$$PATH:$(GO)
+	CGO_ENABLED=0 GOOS=linux go build -o bin/faasd
 
 dist: ## Package for distribution
-	CGO_ENABLED=0 GOOS=linux $(GO) build -ldflags $(LDFLAGS) -a -installsuffix cgo -o bin/faasd
-	CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7 $(GO) build -ldflags $(LDFLAGS) -a -installsuffix cgo -o bin/faasd-armhf
-	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 $(GO) build -ldflags $(LDFLAGS) -a -installsuffix cgo -o bin/faasd-arm64
+	CGO_ENABLED=0 GOOS=linux go build -ldflags $(LDFLAGS) -a -installsuffix cgo -o bin/faasd
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7 go build -ldflags $(LDFLAGS) -a -installsuffix cgo -o bin/faasd-armhf
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags $(LDFLAGS) -a -installsuffix cgo -o bin/faasd-arm64
 
 install: $(GO) $(GCC) local
 	sudo mv bin/faasd /usr/local/bin/faasd
