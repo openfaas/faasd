@@ -23,12 +23,14 @@ $(GCC):
 ##@ MAIN
 ##########################################################
 .PHONY: all dist prepare-test test-e2e
-all: local	## build all
 
-local:	## build local binary
+all: ## build all
+all: local
+
+local: ## build local binary
 	CGO_ENABLED=0 GOOS=linux $(GO) build -o bin/faasd
 
-dist:													## Package for distribution
+dist: ## Package for distribution
 	CGO_ENABLED=0 GOOS=linux $(GO) build -ldflags $(LDFLAGS) -a -installsuffix cgo -o bin/faasd
 	CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7 $(GO) build -ldflags $(LDFLAGS) -a -installsuffix cgo -o bin/faasd-armhf
 	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 $(GO) build -ldflags $(LDFLAGS) -a -installsuffix cgo -o bin/faasd-arm64
@@ -53,7 +55,7 @@ prepare-test:
 	curl -sSLf https://cli.openfaas.com | sudo sh
 	sleep 120 && sudo journalctl -u faasd --no-pager
 
-test-e2e:	## run e2e tests
+test-e2e: ## run e2e tests
 	sudo cat /var/lib/faasd/secrets/basic-auth-password | /usr/local/bin/faas-cli login --password-stdin
 	/usr/local/bin/faas-cli store deploy figlet --env write_timeout=1s --env read_timeout=1s
 	sleep 2
@@ -71,5 +73,5 @@ test-e2e:	## run e2e tests
 ##########################################################
 .PHONY: help
 
-help:	## show help
-		@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-15s\033[0m 	%s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
+help: ## show help
+	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-15s\033[0m 	%s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
