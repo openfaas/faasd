@@ -18,7 +18,10 @@ var installCmd = &cobra.Command{
 	RunE:  runInstall,
 }
 
+const workingDirectoryPermission = 0644
+
 const faasdwd = "/var/lib/faasd"
+
 const faasdProviderWd = "/var/lib/faasd-provider"
 
 func runInstall(_ *cobra.Command, _ []string) error {
@@ -102,7 +105,7 @@ func binExists(folder, name string) error {
 
 func ensureWorkingDir(folder string) error {
 	if _, err := os.Stat(folder); err != nil {
-		err = os.MkdirAll(folder, 0600)
+		err = os.MkdirAll(folder, workingDirectoryPermission)
 		if err != nil {
 			return err
 		}

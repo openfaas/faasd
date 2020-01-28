@@ -39,14 +39,14 @@ func runProvider(_ *cobra.Command, _ []string) error {
 	}
 
 	writeHostsErr := ioutil.WriteFile(path.Join(wd, "hosts"),
-		[]byte(`127.0.0.1	localhost`), 0644)
+		[]byte(`127.0.0.1	localhost`), workingDirectoryPermission)
 
 	if writeHostsErr != nil {
 		return fmt.Errorf("cannot write hosts file: %s", writeHostsErr)
 	}
 
 	writeResolvErr := ioutil.WriteFile(path.Join(wd, "resolv.conf"),
-		[]byte(`nameserver 8.8.8.8`), 0644)
+		[]byte(`nameserver 8.8.8.8`), workingDirectoryPermission)
 
 	if writeResolvErr != nil {
 		return fmt.Errorf("cannot write resolv.conf file: %s", writeResolvErr)

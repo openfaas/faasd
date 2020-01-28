@@ -24,10 +24,11 @@ import (
 	"github.com/opencontainers/runtime-spec/specs-go"
 )
 
+const workingDirectoryPermission = 0644
+
 const defaultSnapshotter = "overlayfs"
 
 const (
-	// TODO: CNIBinDir and CNIConfDir should maybe be globally configurable?
 	// CNIBinDir describes the directory where the CNI binaries are stored
 	CNIBinDir = "/opt/cni/bin"
 	// CNIConfDir describes the directory where the CNI plugin's configuration is stored
@@ -90,7 +91,7 @@ func (s *Supervisor) Start(svcs []Service) error {
 %s	faas-containerd`, ip)
 
 	writeHostsErr := ioutil.WriteFile(path.Join(wd, "hosts"),
-		[]byte(hosts), 0644)
+		[]byte(hosts), workingDirectoryPermission)
 
 	if writeHostsErr != nil {
 		return fmt.Errorf("cannot write hosts file: %s", writeHostsErr)
@@ -206,7 +207,7 @@ func (s *Supervisor) Start(svcs []Service) error {
 		hosts = []byte(string(hosts) + fmt.Sprintf(`
 %s	%s
 `, ip, svc.Name))
-		writeErr := ioutil.WriteFile("hosts", hosts, 0644)
+		writeErr := ioutil.WriteFile("hosts", hosts, workingDirectoryPermission)
 
 		if writeErr != nil {
 			log.Printf("Error writing file %s %s\n", "hosts", writeErr)

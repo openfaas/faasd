@@ -193,7 +193,7 @@ func makeFile(filePath, fileContents string) error {
 		return nil
 	} else if os.IsNotExist(err) {
 		log.Printf("Writing to: %q\n", filePath)
-		return ioutil.WriteFile(filePath, []byte(fileContents), 0644)
+		return ioutil.WriteFile(filePath, []byte(fileContents), workingDirectoryPermission)
 	} else {
 		return err
 	}
