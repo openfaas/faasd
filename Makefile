@@ -28,8 +28,7 @@ all: ## build all
 all: local
 
 local: ## build local binary
-local: export $$PATH=$$PATH:$(GO)
-	CGO_ENABLED=0 GOOS=linux go build -o bin/faasd
+	CGO_ENABLED=0 GOOS=linux $(GO) build -o bin/faasd
 
 dist: ## Package for distribution
 	CGO_ENABLED=0 GOOS=linux go build -ldflags $(LDFLAGS) -a -installsuffix cgo -o bin/faasd
