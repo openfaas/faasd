@@ -1,5 +1,0 @@
-#!/bin/bash
-
-function fetch-multipass-ip() {
-    multipass list | grep ^$1 | awk '{print $3}'
-}

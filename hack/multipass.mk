@@ -1,21 +1,25 @@
 SHELL := /bin/bash
-MULTIPASS_IP := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))/.multipass-ip
+MULTIPASS := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))/.multipass
 
 NAME := faasd
-DOMAIN := $(shell . $(MULTIPASS_IP) ; fetch-multipass-ip $(NAME))
+FAASD_IP = $(shell . $(MULTIPASS) ; fetch-multipass-ip $(NAME))
 
 ##########################################################
 ##@ Run
 ##########################################################
 .PHONY: multipass-run mulitpass-clean
 
-multipass-run:	## run latest FaaSd in multipass VM
-	sh hack/multipass.sh
+multipass-build: PUB=$(shell . $(MULTIPASS) ; inject-pub-key )
+multipass-build:
+	multipass launch --cloud-init cloud-config.txt --name $(NAME)
+
+multipass-run: multipass-build	login ## run latest FaaSd in multipass VM
 
 multipass-clean:	## clean Multipass VM
-	ssh-keygen -f "/home/gabeduke/.ssh/known_hosts" -R "$(DOMAIN)"
-	multipass stop faasd
-	multipass delete faasd
+	ssh-keygen -f "$$HOME/.ssh/known_hosts" -R "$(FAASD_IP)"
+	multipass stop $(NAME)
+	multipass delete $(NAME)
+	multipass purge
 
 ##########################################################
 ##@ DEV
@@ -23,16 +27,17 @@ multipass-clean:	## clean Multipass VM
 .PHONY: dev-sync
 
 dev-sync:	## sync repository to multipass VM
-	ssh ubuntu@$(DOMAIN) mkdir -p /home/ubuntu/go/src/github.com/alexellis/faasd
-	rsync -avz . ubuntu@$(DOMAIN):/home/ubuntu/go/src/github.com/alexellis/faasd
+	ssh ubuntu@$(FAASD_IP) mkdir -p /home/ubuntu/go/src/github.com/alexellis/faasd
+	rsync -avz . ubuntu@$(FAASD_IP):/home/ubuntu/go/src/github.com/alexellis/faasd
 
 dev: dev-sync	## sync and install repository to multipass VM
-	ssh ubuntu@$(DOMAIN) 'cd /home/ubuntu/go/src/github.com/alexellis/faasd ; make install'
+	ssh ubuntu@$(FAASD_IP) 'cd /home/ubuntu/go/src/github.com/alexellis/faasd ; make install'
 
 ssh: dev-sync ## ssh to multipass VM
-	ssh -t ubuntu@$(DOMAIN) 'cd /home/ubuntu/go/src/github.com/alexellis/faasd ; /bin/bash'
+	ssh -t ubuntu@$(FAASD_IP) 'cd /home/ubuntu/go/src/github.com/alexellis/faasd ; /bin/bash'
 
-login: export OPENFAAS_URL = $(DOMAIN):8080
+login: READY=$(shell . $(MULTIPASS) ; wait-for-faasd $(FAASD_IP) )
+login: export OPENFAAS_URL = $(FAASD_IP):8080
 login: ## faas authenticate to multipass VM
-	ssh "ubuntu@$(DOMAIN)" "sudo cat /var/lib/faasd/secrets/basic-auth-password" > basic-auth-password
+	ssh "ubuntu@$(FAASD_IP)" "sudo cat /var/lib/faasd/secrets/basic-auth-password" > basic-auth-password
 	cat ./basic-auth-password | /usr/local/bin/faas-cli login --password-stdin

@@ -1,0 +1,17 @@
+#!/bin/bash
+
+function fetch-multipass-ip() {
+    multipass list | grep ^$1 | awk '{print $3}'
+}
+
+function inject-pub-key() {
+    sed -i "/ssh-rsa/c\  - $(cat ~/.ssh/id_rsa.pub)" cloud-config.txt
+}
+
+function wait-for-faasd() {
+    until curl -s "${1}:8080/ui/" > /dev/null
+    do
+        echo "Waiting for faasd.."
+        sleep 1
+    done
+}
