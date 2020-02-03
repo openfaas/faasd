@@ -1,6 +1,7 @@
 package cninetwork
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"io"
@@ -10,6 +11,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/containerd/containerd"
 	gocni "github.com/containerd/go-cni"
@@ -24,7 +26,7 @@ const (
 	// NetNSPathFmt gives the path to the a process network namespace, given the pid
 	NetNSPathFmt = "/proc/%d/ns/net"
 	// CNIResultsDir is the directory CNI stores allocated IP for containers
-	CNIResultsDir = "/var/lib/cni/results"
+	CNIDataDir = "/var/run/cni"
 	// defaultCNIConfFilename is the vanity filename of default CNI configuration file
 	defaultCNIConfFilename = "10-openfaas.conflist"
 	// defaultNetworkName names the "docker-bridge"-like CNI plugin-chain installed when no other CNI configuration is present.
@@ -32,6 +34,8 @@ const (
 	defaultNetworkName = "openfaas-cni-bridge"
 	// defaultBridgeName is the default bridge device name used in the defaultCNIConf
 	defaultBridgeName = "openfaas0"
+	// defaultIfPrefix is the interface name to be created in the container
+	defaultIfPrefix = "eth"
 	// defaultSubnet is the default subnet used in the defaultCNIConf -- this value is set to not collide with common container networking subnets:
 	defaultSubnet = "10.62.0.0/16"
 )
@@ -50,6 +54,7 @@ var defaultCNIConf = fmt.Sprintf(`
         "ipam": {
             "type": "host-local",
             "subnet": "%s",
+            "dataDir": "%s",
             "routes": [
                 { "dst": "0.0.0.0/0" }
             ]
@@ -60,7 +65,7 @@ var defaultCNIConf = fmt.Sprintf(`
       }
     ]
 }
-`, defaultNetworkName, defaultBridgeName, defaultSubnet)
+`, defaultNetworkName, defaultBridgeName, defaultSubnet, CNIDataDir)
 
 // InitNetwork writes configlist file and initializes CNI network
 func InitNetwork() (gocni.CNI, error) {
@@ -78,8 +83,11 @@ func InitNetwork() (gocni.CNI, error) {
 
 	}
 	// Initialize CNI library
-	cni, err := gocni.New(gocni.WithPluginConfDir(CNIConfDir),
-		gocni.WithPluginDir([]string{CNIBinDir}))
+	cni, err := gocni.New(
+		gocni.WithPluginConfDir(CNIConfDir),
+		gocni.WithPluginDir([]string{CNIBinDir}),
+		gocni.WithInterfacePrefix(defaultIfPrefix),
+	)
 
 	if err != nil {
 		return nil, fmt.Errorf("error initializing cni: %s", err)
@@ -131,43 +139,33 @@ func DeleteCNINetwork(ctx context.Context, cni gocni.CNI, client *containerd.Cli
 	return errors.Wrapf(containerErr, "Unable to find container: %s, error: %s", name, containerErr)
 }
 
-// GetIPAddress returns the IP address of the created container
-func GetIPAddress(result *gocni.CNIResult, task containerd.Task) (net.IP, error) {
-	// Get the IP of the created interface
-	var ip net.IP
-	for ifName, config := range result.Interfaces {
-		if config.Sandbox == netNamespace(task) {
-			for _, ipConfig := range config.IPConfigs {
-				if ifName != "lo" && ipConfig.IP.To4() != nil {
-					ip = ipConfig.IP
-				}
+// GetIPAddress returns the IP address from container based on name and PID
+func GetIPAddress(name string, PID uint32) (string, error) {
+	processName := fmt.Sprintf("%s-%d", name, PID)
+	CNIDir := path.Join(CNIDataDir, defaultNetworkName)
+
+	files, err := ioutil.ReadDir(CNIDir)
+	if err != nil {
+		return "", fmt.Errorf("failed to read CNI dir for container %s: %v", name, err)
+	}
+
+	for _, file := range files {
+		f, err := os.Open(filepath.Join(CNIDir, file.Name()))
+		if err != nil {
+			return "", fmt.Errorf("failed to open CNI IP file for %s/%s: %v", CNIDir, file.Name(), err)
+		}
+		reader := bufio.NewReader(f)
+		text, _ := reader.ReadString('\n')
+		if strings.Contains(text, processName) {
+			i, _ := reader.ReadString('\n')
+			if strings.Contains(i, defaultIfPrefix) {
+				f.Close()
+				return file.Name(), nil
 			}
 		}
+		f.Close()
 	}
-	if ip == nil {
-		return nil, fmt.Errorf("unable to get IP address for: %s", task.ID())
-	}
-	return ip, nil
-}
-
-func GetIPfromPID(pid int) (*net.IP, error) {
-	// https://github.com/weaveworks/weave/blob/master/net/netdev.go
-
-	peerIDs, err := ConnectedToBridgeVethPeerIds(defaultBridgeName)
-	if err != nil {
-		return nil, fmt.Errorf("unable to find peers on: %s %s", defaultBridgeName, err)
-	}
-
-	addrs, addrsErr := GetNetDevsByVethPeerIds(pid, peerIDs)
-	if addrsErr != nil {
-		return nil, fmt.Errorf("unable to find address for veth pair using: %v %s", peerIDs, addrsErr)
-	}
-
-	if len(addrs) > 0 && len(addrs[0].CIDRs) > 0 {
-		return &addrs[0].CIDRs[0].IP, nil
-	}
-
-	return nil, fmt.Errorf("no IP found for function")
+	return "", fmt.Errorf("unable to get IP address for container %s", name)
 }
 
 // CNIGateway returns the gateway for default subnet

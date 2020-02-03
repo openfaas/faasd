@@ -424,25 +424,6 @@
   revision = "d98352740cb2c55f81556b63d4a1ec64c5a319c2"
 
 [[projects]]
-  digest = "1:1314b5ef1c0b25257ea02e454291bf042478a48407cfe3ffea7e20323bbf5fdf"
-  name = "github.com/vishvananda/netlink"
-  packages = [
-    ".",
-    "nl",
-  ]
-  pruneopts = "UT"
-  revision = "f049be6f391489d3f374498fe0c8df8449258372"
-  version = "v1.1.0"
-
-[[projects]]
-  branch = "master"
-  digest = "1:975cb0c04431bf92e60b636a15897c4a3faba9f7dc04da505646630ac91d29d3"
-  name = "github.com/vishvananda/netns"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "0a2b9b5464df8343199164a0321edf3313202f7e"
-
-[[projects]]
   digest = "1:aed53a5fa03c1270457e331cf8b7e210e3088a2278fec552c5c5d29c1664e161"
   name = "go.opencensus.io"
   packages = [
@@ -586,6 +567,7 @@
     "github.com/containerd/containerd/remotes/docker",
     "github.com/containerd/containerd/runtime/v2/logging",
     "github.com/containerd/go-cni",
+    "github.com/containernetworking/cni/pkg/types/current",
     "github.com/coreos/go-systemd/journal",
     "github.com/docker/cli/cli/config",
     "github.com/docker/cli/cli/config/configfile",
@@ -601,8 +583,6 @@
     "github.com/pkg/errors",
     "github.com/sethvargo/go-password/password",
     "github.com/spf13/cobra",
-    "github.com/vishvananda/netlink",
-    "github.com/vishvananda/netns",
     "golang.org/x/sys/unix",
   ]
   solver-name = "gps-cdcl"

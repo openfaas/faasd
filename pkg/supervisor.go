@@ -161,17 +161,17 @@ func (s *Supervisor) Start(svcs []Service) error {
 		}
 
 		labels := map[string]string{}
-		network, err := cninetwork.CreateCNINetwork(ctx, s.cni, task, labels)
+		_, err = cninetwork.CreateCNINetwork(ctx, s.cni, task, labels)
 
 		if err != nil {
 			return err
 		}
 
-		ip, err := cninetwork.GetIPAddress(network, task)
+		ip, err := cninetwork.GetIPAddress(newContainer.ID(), task.Pid())
 		if err != nil {
 			return err
 		}
-		log.Printf("%s has IP: %s\n", newContainer.ID(), ip.String())
+		log.Printf("%s has IP: %s\n", newContainer.ID(), ip)
 
 		hosts, _ := ioutil.ReadFile("hosts")
 

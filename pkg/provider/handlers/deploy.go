@@ -133,17 +133,17 @@ func createTask(ctx context.Context, client *containerd.Client, container contai
 	log.Printf("Container ID: %s\tTask ID %s:\tTask PID: %d\t\n", name, task.ID(), task.Pid())
 
 	labels := map[string]string{}
-	network, err := cninetwork.CreateCNINetwork(ctx, cni, task, labels)
+	_, err := cninetwork.CreateCNINetwork(ctx, cni, task, labels)
 
 	if err != nil {
 		return err
 	}
 
-	ip, err := cninetwork.GetIPAddress(network, task)
+	ip, err := cninetwork.GetIPAddress(name, task.Pid())
 	if err != nil {
 		return err
 	}
-	log.Printf("%s has IP: %s.\n", name, ip.String())
+	log.Printf("%s has IP: %s.\n", name, ip)
 
 	_, waitErr := task.Wait(ctx)
 	if waitErr != nil {

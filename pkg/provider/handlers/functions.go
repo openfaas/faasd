@@ -73,11 +73,11 @@ func GetFunction(client *containerd.Client, name string) (Function, error) {
 				f.pid = task.Pid()
 
 				// Get container IP address
-				ip, err := cninetwork.GetIPfromPID(int(task.Pid()))
+				ip, err := cninetwork.GetIPAddress(name, task.Pid())
 				if err != nil {
 					return Function{}, err
 				}
-				f.IP = ip.String()
+				f.IP = ip
 			}
 		} else {
 			replicas = 0
