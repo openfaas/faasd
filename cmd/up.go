@@ -217,7 +217,7 @@ func makeServiceDefinitions(archSuffix string) []pkg.Service {
 			Name: "gateway",
 			Env: []string{
 				"basic_auth=true",
-				"functions_provider_url=http://faas-containerd:8081/",
+				"functions_provider_url=http://faasd-provider:8081/",
 				"direct_functions=false",
 				"read_timeout=60s",
 				"write_timeout=60s",
