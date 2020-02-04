@@ -27,6 +27,20 @@ const (
 	faasdNamespace = "default"
 )
 
+type Service struct {
+	Image  string
+	Env    []string
+	Name   string
+	Mounts []Mount
+	Caps   []string
+	Args   []string
+}
+
+type Mount struct {
+	Src  string
+	Dest string
+}
+
 type Supervisor struct {
 	client *containerd.Client
 	cni    gocni.CNI
@@ -49,28 +63,6 @@ func NewSupervisor(sock string) (*Supervisor, error) {
 	}, nil
 }
 
-func (s *Supervisor) Close() {
-	defer s.client.Close()
-}
-
-func (s *Supervisor) Remove(svcs []Service) error {
-	ctx := namespaces.WithNamespace(context.Background(), faasdNamespace)
-
-	for _, svc := range svcs {
-		err := cninetwork.DeleteCNINetwork(ctx, s.cni, s.client, svc.Name)
-		if err != nil {
-			log.Printf("[Delete] error removing CNI network for %s, %s\n", svc.Name, err)
-			return err
-		}
-
-		err = service.Remove(ctx, s.client, svc.Name)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func (s *Supervisor) Start(svcs []Service) error {
 	ctx := namespaces.WithNamespace(context.Background(), faasdNamespace)
 
@@ -90,7 +82,6 @@ func (s *Supervisor) Start(svcs []Service) error {
 	if writeHostsErr != nil {
 		return fmt.Errorf("cannot write hosts file: %s", writeHostsErr)
 	}
-	// os.Chown("hosts", 101, 101)
 
 	images := map[string]containerd.Image{}
 
@@ -211,6 +202,28 @@ func (s *Supervisor) Start(svcs []Service) error {
 	return nil
 }
 
+func (s *Supervisor) Close() {
+	defer s.client.Close()
+}
+
+func (s *Supervisor) Remove(svcs []Service) error {
+	ctx := namespaces.WithNamespace(context.Background(), faasdNamespace)
+
+	for _, svc := range svcs {
+		err := cninetwork.DeleteCNINetwork(ctx, s.cni, s.client, svc.Name)
+		if err != nil {
+			log.Printf("[Delete] error removing CNI network for %s, %s\n", svc.Name, err)
+			return err
+		}
+
+		err = service.Remove(ctx, s.client, svc.Name)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func withOCIArgs(args []string) oci.SpecOpts {
 	if len(args) > 0 {
 		return oci.WithProcessArgs(args...)
@@ -219,18 +232,4 @@ func withOCIArgs(args []string) oci.SpecOpts {
 	return func(_ context.Context, _ oci.Client, _ *containers.Container, s *oci.Spec) error {
 		return nil
 	}
-}
-
-type Service struct {
-	Image  string
-	Env    []string
-	Name   string
-	Mounts []Mount
-	Caps   []string
-	Args   []string
-}
-
-type Mount struct {
-	Src  string
-	Dest string
 }
