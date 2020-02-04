@@ -49,12 +49,12 @@ type Supervisor struct {
 func NewSupervisor(sock string) (*Supervisor, error) {
 	client, err := containerd.New(sock)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	cni, err := cninetwork.InitNetwork()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	return &Supervisor{
