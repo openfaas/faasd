@@ -32,7 +32,7 @@ func runProvider(_ *cobra.Command, _ []string) error {
 		return err
 	}
 
-	log.Printf("faas-containerd starting..\tService Timeout: %s\n", config.WriteTimeout.String())
+	log.Printf("faasd-provider starting..\tService Timeout: %s\n", config.WriteTimeout.String())
 
 	wd, err := os.Getwd()
 	if err != nil {
