@@ -82,7 +82,7 @@ func (s *Supervisor) Start(svcs []Service) error {
 	}
 	hosts := fmt.Sprintf(`
 127.0.0.1	localhost
-%s	faas-containerd`, gw)
+%s	faasd-provider`, gw)
 
 	writeHostsErr := ioutil.WriteFile(path.Join(wd, "hosts"),
 		[]byte(hosts), workingDirectoryPermission)

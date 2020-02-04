@@ -1,6 +1,6 @@
 [Unit]
 Description=faasd
-After=faas-containerd.service
+After=faasd-provider.service
 
 [Service]
 MemoryLimit=500M
