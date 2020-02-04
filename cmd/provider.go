@@ -21,7 +21,7 @@ import (
 
 var providerCmd = &cobra.Command{
 	Use:   "provider",
-	Short: "Run the faasd faas-provider",
+	Short: "Run the faasd-provider",
 	RunE:  runProvider,
 }
 
