@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/alexellis/faasd/pkg/cninetwork"
+	"github.com/openfaas/faasd/pkg/cninetwork"
 	"github.com/containerd/containerd"
 	"github.com/containerd/containerd/namespaces"
 )

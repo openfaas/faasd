@@ -1,6 +1,6 @@
 # faasd - serverless with containerd
 
-[![Build Status](https://travis-ci.com/alexellis/faasd.svg?branch=master)](https://travis-ci.com/alexellis/faasd)
+[![Build Status](https://travis-ci.com/openfaas/faasd.svg?branch=master)](https://travis-ci.com/openfaas/faasd)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![OpenFaaS](https://img.shields.io/badge/openfaas-serverless-blue.svg)](https://www.openfaas.com)
 
@@ -224,7 +224,7 @@ curl -sSL https://github.com/containernetworking/plugins/releases/download/${CNI
 Run or install faasd, which brings up the gateway and Prometheus as containers
 
 ```sh
-cd $GOPATH/src/github.com/alexellis/faasd
+cd $GOPATH/src/github.com/openfaas/faasd
 go build
 
 # Install with systemd
@@ -238,17 +238,17 @@ go build
 
 ```sh
 # For x86_64
-sudo curl -fSLs "https://github.com/alexellis/faasd/releases/download/0.6.2/faasd" \
+sudo curl -fSLs "https://github.com/openfaas/faasd/releases/download/0.6.2/faasd" \
     -o "/usr/local/bin/faasd" \
     && sudo chmod a+x "/usr/local/bin/faasd"
 
 # armhf
-sudo curl -fSLs "https://github.com/alexellis/faasd/releases/download/0.6.2/faasd-armhf" \
+sudo curl -fSLs "https://github.com/openfaas/faasd/releases/download/0.6.2/faasd-armhf" \
     -o "/usr/local/bin/faasd" \
     && sudo chmod a+x "/usr/local/bin/faasd"
 
 # arm64
-sudo curl -fSLs "https://github.com/alexellis/faasd/releases/download/0.6.2/faasd-arm64" \
+sudo curl -fSLs "https://github.com/openfaas/faasd/releases/download/0.6.2/faasd-arm64" \
     -o "/usr/local/bin/faasd" \
     && sudo chmod a+x "/usr/local/bin/faasd"
 ```
@@ -284,7 +284,7 @@ The default Basic Auth username is `admin`, which is written to `/var/lib/faasd/
 
 #### Installation with systemd
 
-* `faasd install` - install faasd and containerd with systemd, this must be run from `$GOPATH/src/github.com/alexellis/faasd`
+* `faasd install` - install faasd and containerd with systemd, this must be run from `$GOPATH/src/github.com/openfaas/faasd`
 * `journalctl -u faasd -f` - faasd service logs
 * `journalctl -u faasd-provider -f` - faasd-provider service logs
 

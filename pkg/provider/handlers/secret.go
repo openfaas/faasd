@@ -95,12 +95,6 @@ func deleteSecret(c *containerd.Client, w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	if err != nil {
-		log.Printf("[secret] error %s", err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
 	err = os.Remove(path.Join(mountPath, secret.Name))
 
 	if err != nil {

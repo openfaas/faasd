@@ -8,8 +8,8 @@ import (
 	"os"
 	"path"
 
-	"github.com/alexellis/faasd/pkg/cninetwork"
-	"github.com/alexellis/faasd/pkg/service"
+	"github.com/openfaas/faasd/pkg/cninetwork"
+	"github.com/openfaas/faasd/pkg/service"
 	"github.com/containerd/containerd"
 	"github.com/containerd/containerd/cio"
 	"github.com/containerd/containerd/containers"

@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/alexellis/faasd/cmd"
+	"github.com/openfaas/faasd/cmd"
 )
 
 // These values will be injected into these variables at the build time.

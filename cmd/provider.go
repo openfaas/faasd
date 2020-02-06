@@ -9,9 +9,9 @@ import (
 	"os"
 	"path"
 
-	"github.com/alexellis/faasd/pkg/cninetwork"
-	"github.com/alexellis/faasd/pkg/provider/config"
-	"github.com/alexellis/faasd/pkg/provider/handlers"
+	"github.com/openfaas/faasd/pkg/cninetwork"
+	"github.com/openfaas/faasd/pkg/provider/config"
+	"github.com/openfaas/faasd/pkg/provider/handlers"
 	"github.com/containerd/containerd"
 	bootstrap "github.com/openfaas/faas-provider"
 	"github.com/openfaas/faas-provider/proxy"

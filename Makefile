@@ -25,8 +25,8 @@ prepare-test:
 	sudo /sbin/sysctl -w net.ipv4.conf.all.forwarding=1
 	sudo mkdir -p /opt/cni/bin
 	curl -sSL https://github.com/containernetworking/plugins/releases/download/$(CNI_VERSION)/cni-plugins-linux-$(ARCH)-$(CNI_VERSION).tgz | sudo tar -xz -C /opt/cni/bin
-	sudo cp $(GOPATH)/src/github.com/alexellis/faasd/bin/faasd /usr/local/bin/
-	cd $(GOPATH)/src/github.com/alexellis/faasd/ && sudo /usr/local/bin/faasd install
+	sudo cp $(GOPATH)/src/github.com/openfaas/faasd/bin/faasd /usr/local/bin/
+	cd $(GOPATH)/src/github.com/openfaas/faasd/ && sudo /usr/local/bin/faasd install
 	sudo systemctl status -l containerd --no-pager
 	sudo journalctl -u faasd-provider --no-pager
 	sudo systemctl status -l faasd-provider --no-pager

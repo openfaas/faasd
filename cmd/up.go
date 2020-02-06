@@ -14,7 +14,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/alexellis/faasd/pkg"
+	"github.com/openfaas/faasd/pkg"
 	"github.com/alexellis/k3sup/pkg/env"
 	"github.com/sethvargo/go-password/password"
 	"github.com/spf13/cobra"

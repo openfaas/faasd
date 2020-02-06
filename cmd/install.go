@@ -6,7 +6,7 @@ import (
 	"os"
 	"path"
 
-	systemd "github.com/alexellis/faasd/pkg/systemd"
+	systemd "github.com/openfaas/faasd/pkg/systemd"
 	"github.com/pkg/errors"
 
 	"github.com/spf13/cobra"
