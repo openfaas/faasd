@@ -38,7 +38,7 @@ prepare-test:
 test-e2e:
 	sudo cat /var/lib/faasd/secrets/basic-auth-password | /usr/local/bin/faas-cli login --password-stdin
 	/usr/local/bin/faas-cli store deploy figlet --env write_timeout=1s --env read_timeout=1s
-	sleep 2
+	sleep 5
 	/usr/local/bin/faas-cli list -v
 	uname | /usr/local/bin/faas-cli invoke figlet
 	uname | /usr/local/bin/faas-cli invoke figlet --async
