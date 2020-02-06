@@ -24,6 +24,22 @@ faasd is a Golang supervisor that bundles OpenFaaS for use with containerd inste
 
 You can use the standard [faas-cli](https://github.com/openfaas/faas-cli) with faasd along with pre-packaged functions in the Function Store, or build your own with the template store.
 
+## Tutorials
+
+### Get started on DigitalOcean or with cloud-init
+
+* [Build a Serverless appliance with cloud-init and faasd](https://blog.alexellis.io/deploy-serverless-faasd-with-cloud-init/)
+
+### Run locally on MacOS, Linux, or Windows with Multipass.run
+
+* [Get up and running with your own faasd installation on your Mac/Ubuntu or Windows with cloud-config](https://gist.github.com/alexellis/6d297e678c9243d326c151028a3ad7b9)
+
+### Get started on armhf / Raspberry Pi
+
+You can run this tutorial on your Raspberry Pi, or adapt the steps for a regular Linux VM/VPS host.
+
+* [faasd - lightweight Serverless for your Raspberry Pi](https://blog.alexellis.io/faasd-for-lightweight-serverless/)
+
 ### faasd supports:
 
 * `faas list`
@@ -45,22 +61,6 @@ Other operations are pending development in the provider such as:
 * `faas logs`
 * `faas secret`
 * `faas auth`
-
-### Pre-reqs
-
-* Linux
-
-    PC / Cloud - any Linux that containerd works on should be fair game, but faasd is tested with Ubuntu 18.04
-
-    For Raspberry Pi Raspbian Stretch or newer also works fine
-
-    For MacOS users try [multipass.run](https://multipass.run) or [Vagrant](https://www.vagrantup.com/)
-
-    For Windows users, install [Git Bash](https://git-scm.com/downloads) along with multipass or vagrant. You can also use WSL1 or WSL2 which provides a Linux environment.
-
-    You will also need [containerd v1.3.2](https://github.com/containerd/containerd) and the [CNI plugins v0.8.5](https://github.com/containernetworking/plugins)
-
-    [faas-cli](https://github.com/openfaas/faas-cli) is optional, but recommended.
 
 ## Backlog
 
@@ -86,17 +86,23 @@ Done:
 * [x] Setup custom working directory for faasd `/var/lib/faasd/`
 * [x] Use CNI to create network namespaces and adapters
 
-## Tutorial: Get started on armhf / Raspberry Pi
+## Manual installation
 
-You can run this tutorial on your Raspberry Pi, or adapt the steps for a regular Linux VM/VPS host.
+### Pre-reqs
 
-* [faasd - lightweight Serverless for your Raspberry Pi](https://blog.alexellis.io/faasd-for-lightweight-serverless/)
+* Linux
 
-## Tutorial: Multipass & KVM for MacOS/Linux, or Windows (with cloud-config)
+    PC / Cloud - any Linux that containerd works on should be fair game, but faasd is tested with Ubuntu 18.04
 
-* [Get up and running with your own faasd installation on your Mac/Ubuntu or Windows with cloud-config](https://gist.github.com/alexellis/6d297e678c9243d326c151028a3ad7b9)
+    For Raspberry Pi Raspbian Stretch or newer also works fine
 
-## Tutorial: Manual installation
+    For MacOS users try [multipass.run](https://multipass.run) or [Vagrant](https://www.vagrantup.com/)
+
+    For Windows users, install [Git Bash](https://git-scm.com/downloads) along with multipass or vagrant. You can also use WSL1 or WSL2 which provides a Linux environment.
+
+    You will also need [containerd v1.3.2](https://github.com/containerd/containerd) and the [CNI plugins v0.8.5](https://github.com/containernetworking/plugins)
+
+    [faas-cli](https://github.com/openfaas/faas-cli) is optional, but recommended.
 
 ### Get containerd
 
