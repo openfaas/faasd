@@ -41,3 +41,7 @@
 [[constraint]]
   name = "github.com/openfaas/faas-provider"
   version = "0.14.0"
+
+[[constraint]]
+  name = "github.com/docker/cli"
+  version = "19.3.5"

@@ -13,7 +13,7 @@
   version = "v0.4.14"
 
 [[projects]]
-  digest = "1:b28f788c0be42a6d26f07b282c5ff5f814ab7ad5833810ef0bc5f56fb9bedf11"
+  digest = "1:f06a14a8b60a7a9cdbf14ed52272faf4ff5de4ed7c784ff55b64995be98ac59f"
   name = "github.com/Microsoft/hcsshim"
   packages = [
     ".",
@@ -33,6 +33,7 @@
     "internal/timeout",
     "internal/vmcompute",
     "internal/wclayer",
+    "osversion",
   ]
   pruneopts = "UT"
   revision = "9e921883ac929bbe515b39793ece99ce3a9d7706"
@@ -113,10 +114,11 @@
   version = "v1.3.2"
 
 [[projects]]
-  digest = "1:7e9da25c7a952c63e31ed367a88eede43224b0663b58eb452870787d8ddb6c70"
+  digest = "1:e4414857969cfbe45c7dab0a012aad4855bf7167c25d672a182cb18676424a0c"
   name = "github.com/containerd/continuity"
   packages = [
     "fs",
+    "pathdriver",
     "syscallx",
     "sysx",
   ]
@@ -168,6 +170,19 @@
   version = "v0.7.1"
 
 [[projects]]
+  digest = "1:92ebc9c068ab8e3fff03a58694ee33830964f6febd0130069aadce328802de14"
+  name = "github.com/docker/cli"
+  packages = [
+    "cli/config",
+    "cli/config/configfile",
+    "cli/config/credentials",
+    "cli/config/types",
+  ]
+  pruneopts = "UT"
+  revision = "99c5edceb48d64c1aa5d09b8c9c499d431d98bb9"
+  version = "v19.03.5"
+
+[[projects]]
   digest = "1:e495f9f1fb2bae55daeb76e099292054fe1f734947274b3cfc403ccda595d55a"
   name = "github.com/docker/distribution"
   packages = [
@@ -179,11 +194,43 @@
   revision = "0d3efadf0154c2b8a4e7b6621fff9809655cc580"
 
 [[projects]]
+  digest = "1:10f9c98f627e9697ec23b7973a683324f1d901dd9bace4a71405c0b2ec554303"
+  name = "github.com/docker/docker"
+  packages = [
+    "pkg/homedir",
+    "pkg/idtools",
+    "pkg/mount",
+    "pkg/system",
+  ]
+  pruneopts = "UT"
+  revision = "ea84732a77251e0d7af278e2b7df1d6a59fca46b"
+  version = "v19.03.5"
+
+[[projects]]
+  digest = "1:9f3f49b4e32d3da2dd6ed07cc568627b53cc80205c0dcf69f4091f027416cb60"
+  name = "github.com/docker/docker-credential-helpers"
+  packages = [
+    "client",
+    "credentials",
+  ]
+  pruneopts = "UT"
+  revision = "54f0238b6bf101fc3ad3b34114cb5520beb562f5"
+  version = "v0.6.3"
+
+[[projects]]
   digest = "1:0938aba6e09d72d48db029d44dcfa304851f52e2d67cda920436794248e92793"
   name = "github.com/docker/go-events"
   packages = ["."]
   pruneopts = "UT"
   revision = "9461782956ad83b30282bf90e31fa6a70c255ba9"
+
+[[projects]]
+  digest = "1:e95ef557dc3120984bb66b385ae01b4bb8ff56bcde28e7b0d1beed0cccc4d69f"
+  name = "github.com/docker/go-units"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "519db1ee28dcc9fd2474ae59fca29a810482bfb1"
+  version = "v0.4.0"
 
 [[projects]]
   digest = "1:fa6faf4a2977dc7643de38ae599a95424d82f8ffc184045510737010a82c4ecd"
@@ -525,7 +572,12 @@
     "github.com/containerd/containerd/errdefs",
     "github.com/containerd/containerd/namespaces",
     "github.com/containerd/containerd/oci",
+    "github.com/containerd/containerd/remotes",
+    "github.com/containerd/containerd/remotes/docker",
     "github.com/containerd/go-cni",
+    "github.com/docker/cli/cli/config",
+    "github.com/docker/cli/cli/config/configfile",
+    "github.com/docker/distribution/reference",
     "github.com/gorilla/mux",
     "github.com/morikuni/aec",
     "github.com/opencontainers/runtime-spec/specs-go",
