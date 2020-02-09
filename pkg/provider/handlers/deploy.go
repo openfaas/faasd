@@ -9,17 +9,17 @@ import (
 	"net/http"
 	"os"
 	"path"
-	"strings"
 
-	cninetwork "github.com/openfaas/faasd/pkg/cninetwork"
-	"github.com/openfaas/faasd/pkg/service"
 	"github.com/containerd/containerd"
 	"github.com/containerd/containerd/cio"
 	"github.com/containerd/containerd/namespaces"
 	"github.com/containerd/containerd/oci"
 	gocni "github.com/containerd/go-cni"
+	"github.com/docker/distribution/reference"
 	"github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/openfaas/faas-provider/types"
+	cninetwork "github.com/openfaas/faasd/pkg/cninetwork"
+	"github.com/openfaas/faasd/pkg/service"
 	"github.com/pkg/errors"
 )
 
@@ -64,11 +64,11 @@ func MakeDeployHandler(client *containerd.Client, cni gocni.CNI, secretMountPath
 }
 
 func deploy(ctx context.Context, req types.FunctionDeployment, client *containerd.Client, cni gocni.CNI, secretMountPath string) error {
-
-	imgRef := "docker.io/" + req.Image
-	if strings.Index(req.Image, ":") == -1 {
-		imgRef = imgRef + ":latest"
+	r, err := reference.ParseNormalizedNamed(req.Image)
+	if err != nil {
+		return err
 	}
+	imgRef := reference.TagNameOnly(r).String()
 
 	snapshotter := ""
 	if val, ok := os.LookupEnv("snapshotter"); ok {
