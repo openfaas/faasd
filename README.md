@@ -49,6 +49,10 @@ You can run this tutorial on your Raspberry Pi, or adapt the steps for a regular
 
 * [faasd - lightweight Serverless for your Raspberry Pi](https://blog.alexellis.io/faasd-for-lightweight-serverless/)
 
+### Using private repos
+
+To use private image repos, `~/.docker/config.json` needs to be copied to `/var/lib/faasd/.docker/config.json`.
+
 ### Manual / developer instructions
 
 See [here for manual / developer instructions](docs/DEV.md)

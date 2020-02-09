@@ -4,13 +4,22 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
 	"github.com/containerd/containerd"
 	"github.com/containerd/containerd/errdefs"
+	"github.com/containerd/containerd/remotes"
+	"github.com/containerd/containerd/remotes/docker"
+	"github.com/docker/cli/cli/config"
+	"github.com/docker/cli/cli/config/configfile"
 	"golang.org/x/sys/unix"
 )
+
+// dockerConfigDir contains "config.json"
+const dockerConfigDir = "/var/lib/faasd/.docker/"
 
 // Remove removes a container
 func Remove(ctx context.Context, client *containerd.Client, name string) error {
@@ -90,16 +99,59 @@ func killTask(ctx context.Context, task containerd.Task) error {
 	return err
 }
 
-func PrepareImage(ctx context.Context, client *containerd.Client, imageName, snapshotter string) (containerd.Image, error) {
+func getResolver(ctx context.Context, configFile *configfile.ConfigFile) (remotes.Resolver, error) {
+	// credsFunc is based on https://github.com/moby/buildkit/blob/0b130cca040246d2ddf55117eeff34f546417e40/session/auth/authprovider/authprovider.go#L35
+	credFunc := func(host string) (string, string, error) {
+		if host == "registry-1.docker.io" {
+			host = "https://index.docker.io/v1/"
+		}
+		ac, err := configFile.GetAuthConfig(host)
+		if err != nil {
+			return "", "", err
+		}
+		if ac.IdentityToken != "" {
+			return "", ac.IdentityToken, nil
+		}
+		return ac.Username, ac.Password, nil
+	}
+	authOpts := []docker.AuthorizerOpt{docker.WithAuthCreds(credFunc)}
+	authorizer := docker.NewDockerAuthorizer(authOpts...)
+	opts := docker.ResolverOptions{
+		Hosts: docker.ConfigureDefaultRegistries(docker.WithAuthorizer(authorizer)),
+	}
+	return docker.NewResolver(opts), nil
+}
 
-	var empty containerd.Image
+func PrepareImage(ctx context.Context, client *containerd.Client, imageName, snapshotter string) (containerd.Image, error) {
+	var (
+		empty    containerd.Image
+		resolver remotes.Resolver
+	)
+	if _, stErr := os.Stat(filepath.Join(dockerConfigDir, config.ConfigFileName)); stErr == nil {
+		configFile, err := config.Load(dockerConfigDir)
+		if err != nil {
+			return nil, err
+		}
+		resolver, err = getResolver(ctx, configFile)
+		if err != nil {
+			return empty, err
+		}
+	} else if !os.IsNotExist(stErr) {
+		return empty, stErr
+	}
+
 	image, err := client.GetImage(ctx, imageName)
 	if err != nil {
 		if !errdefs.IsNotFound(err) {
 			return empty, err
 		}
-
-		img, err := client.Pull(ctx, imageName, containerd.WithPullUnpack)
+		rOpts := []containerd.RemoteOpt{
+			containerd.WithPullUnpack,
+		}
+		if resolver != nil {
+			rOpts = append(rOpts, containerd.WithResolver(resolver))
+		}
+		img, err := client.Pull(ctx, imageName, rOpts...)
 		if err != nil {
 			return empty, fmt.Errorf("cannot pull: %s", err)
 		}
