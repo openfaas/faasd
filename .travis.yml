@@ -13,6 +13,7 @@ script:
 - make dist
 - make prepare-test
 - make test-e2e
+- docker build -t dummy-image-for-testing-dockerfile .
 
 deploy:
   provider: releases

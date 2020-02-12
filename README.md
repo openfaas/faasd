@@ -43,6 +43,15 @@ You can use the standard [faas-cli](https://github.com/openfaas/faas-cli) along 
 
 * [Get up and running with your own faasd installation on your Mac/Ubuntu or Windows with cloud-config](https://gist.github.com/alexellis/6d297e678c9243d326c151028a3ad7b9)
 
+### Run locally on Docker
+
+```console
+$ docker build -t faasd . && docker run -td --name faasd -p 127.0.0.1:8080:8080 --privileged faasd
+$ docker exec faasd cat /var/lib/faasd/secrets/basic-auth-password | faas-cli login -s
+$ faas-cli store deploy figlet
+$ echo hello | faas-cli invoke figlet
+```
+
 ### Get started on armhf / Raspberry Pi
 
 You can run this tutorial on your Raspberry Pi, or adapt the steps for a regular Linux VM/VPS host.
