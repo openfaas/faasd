@@ -49,9 +49,11 @@ You can run this tutorial on your Raspberry Pi, or adapt the steps for a regular
 
 * [faasd - lightweight Serverless for your Raspberry Pi](https://blog.alexellis.io/faasd-for-lightweight-serverless/)
 
-### Using private repos
+### Using private repos / registries
 
 To use private image repos, `~/.docker/config.json` needs to be copied to `/var/lib/faasd/.docker/config.json`.
+
+If you'd like to set up your own private registry, [see this tutorial](https://blog.alexellis.io/get-a-tls-enabled-docker-registry-in-5-minutes/).
 
 ### Manual / developer instructions
 
