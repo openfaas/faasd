@@ -3,10 +3,11 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"log"
 
-	"github.com/openfaas/faasd/pkg/cninetwork"
 	"github.com/containerd/containerd"
 	"github.com/containerd/containerd/namespaces"
+	"github.com/openfaas/faasd/pkg/cninetwork"
 )
 
 type Function struct {
@@ -16,6 +17,7 @@ type Function struct {
 	pid       uint32
 	replicas  int
 	IP        string
+	labels    map[string]string
 }
 
 const (
@@ -44,10 +46,18 @@ func GetFunction(client *containerd.Client, name string) (Function, error) {
 	if err == nil {
 
 		image, _ := c.Image(ctx)
+
+		containerName := c.ID()
+		labels, labelErr := c.Labels(ctx)
+		if labelErr != nil {
+			log.Printf("cannot list container %s labels: %s", containerName, labelErr.Error())
+		}
+
 		f := Function{
-			name:      c.ID(),
+			name:      containerName,
 			namespace: FunctionNamespace,
 			image:     image.Name(),
+			labels:    labels,
 		}
 
 		replicas := 0

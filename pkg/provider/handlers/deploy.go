@@ -107,6 +107,7 @@ func deploy(ctx context.Context, req types.FunctionDeployment, client *container
 			oci.WithCapabilities([]string{"CAP_NET_RAW"}),
 			oci.WithMounts(mounts),
 			oci.WithEnv(envs)),
+		containerd.WithContainerLabels(*req.Labels),
 	)
 
 	if err != nil {
