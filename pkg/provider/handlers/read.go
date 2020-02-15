@@ -26,6 +26,7 @@ func MakeReadHandler(client *containerd.Client) func(w http.ResponseWriter, r *h
 				Image:     function.image,
 				Replicas:  uint64(function.replicas),
 				Namespace: function.namespace,
+				Labels:    &function.labels,
 			})
 		}
 
