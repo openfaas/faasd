@@ -49,7 +49,13 @@ You can run this tutorial on your Raspberry Pi, or adapt the steps for a regular
 
 * [faasd - lightweight Serverless for your Raspberry Pi](https://blog.alexellis.io/faasd-for-lightweight-serverless/)
 
-### Using private repos / registries
+### Terraform for DigitalOcean
+
+Automate everything within < 60 seconds and get a public URL and IP address back. Customise as required, or adapt to your preferred cloud such as AWS EC2.
+
+* [Provision faasd 0.7.5 on DigitalOcean with Terraform 0.12.0](https://gist.github.com/alexellis/fd618bd2f957eb08c44d086ef2fc3906)
+
+### A note on private repos / registries
 
 To use private image repos, `~/.docker/config.json` needs to be copied to `/var/lib/faasd/.docker/config.json`.
 
@@ -80,8 +86,8 @@ Scale from and to zero is also supported. On a Dell XPS with a small, pre-pulled
 
 Other operations are pending development in the provider such as:
 
-* `faas logs` - to stream logs on-demand for a known function
-* `faas auth` - for the OAuth2 and OIDC integration
+* `faas logs` - to stream logs on-demand for a known function, for the time being you can find logs via `journalctl -u faasd-provider`
+* `faas auth` - supported for Basic Authentication, but OAuth2 & OIDC require a patch
 
 ## Todo
 
