@@ -19,10 +19,10 @@ faasd is the same OpenFaaS experience and ecosystem, but without Kubernetes. Fun
 
 ## What does faasd deploy?
 
-* faasd - itself, and its [faas-provider](https://github.com/openfaas/faas-provider) for containerd
-* [Prometheus](https://github.com/prometheus/prometheus)
-* [OpenFaaS Gateway & UI](https://github.com/openfaas/faas/tree/master/gateway)
-* [OpenFaaS queue-worker for NATS](https://github.com/openfaas/nats-queue-worker)
+* faasd - itself, and its [faas-provider](https://github.com/openfaas/faas-provider) for containerd - CRUD for functions and services, implements the OpenFaaS REST API
+* [Prometheus](https://github.com/prometheus/prometheus) - for monitoring of services, metrics, scaling and dashboards
+* [OpenFaaS Gateway](https://github.com/openfaas/faas/tree/master/gateway) - the UI portal, CLI, and other OpenFaaS tooling can talk to this.
+* [OpenFaaS queue-worker for NATS](https://github.com/openfaas/nats-queue-worker) - run your invocations in the background without adding any code. See also: [asynchronous invocations](https://docs.openfaas.com/reference/triggers/#async-nats-streaming)
 * [NATS](https://nats.io) for asynchronous processing and queues
 
 You'll also need:
@@ -64,6 +64,28 @@ If you'd like to set up your own private registry, [see this tutorial](https://b
 ### Manual / developer instructions
 
 See [here for manual / developer instructions](docs/DEV.md)
+
+## Getting help
+
+### Docs
+
+The [OpenFaaS docs](https://docs.openfaas.com/) provide a wealth of information and are kept up to date with new features.
+
+### Function and template store
+
+For community functions see `faas-cli store --help`
+
+For templates built by the community see: `faas-cli template store list`, you can also use the `dockerfile` template if you just want to migrate an existing service without the benefits of using a template.
+
+### Workshop
+
+[The OpenFaaS workshop](https://github.com/openfaas/workshop/) is a set of 12 self-paced labs and provides a great starting point
+
+### Community support
+
+An active community of almost 3000 users awaits you on Slack. Over 250 of those users are also contributors and help maintain the code.
+
+* [Join Slack](https://slack.openfaas.io/)
 
 ## Backlog
 
