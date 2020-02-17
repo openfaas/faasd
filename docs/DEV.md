@@ -1,5 +1,7 @@
 ## Manual installation of faasd for development
 
+> Note: if you're just wanting to try out faasd, then it's likely that you're on the wrong page. This is a detailed set of instructions for those wanting to contribute or customise faasd. Feel free to go back to the homepage and pick a tutorial instead.
+
 ### Pre-reqs
 
 * Linux
@@ -30,44 +32,49 @@ curl -sLSf https://github.com/containerd/containerd/releases/download/v$VER/cont
 containerd -version
 ```
 
-* Or get my containerd binaries for armhf
+* Or get my containerd binaries for Raspberry Pi (armhf)
 
-Building containerd on armhf is extremely slow.
+    Building `containerd` on armhf is extremely slow, so I've provided binaries for you.
 
-```sh
-curl -sSL https://github.com/alexellis/containerd-armhf/releases/download/v1.3.2/containerd.tgz | sudo tar -xvz --strip-components=2 -C /usr/local/bin/
-```
+    ```sh
+    curl -sSL https://github.com/alexellis/containerd-armhf/releases/download/v1.3.2/containerd.tgz | sudo tar -xvz --strip-components=2 -C /usr/local/bin/
+    ```
 
 * Or clone / build / install [containerd](https://github.com/containerd/containerd) from source:
 
+    ```sh
+    export GOPATH=$HOME/go/
+    mkdir -p $GOPATH/src/github.com/containerd
+    cd $GOPATH/src/github.com/containerd
+    git clone https://github.com/containerd/containerd
+    cd containerd
+    git fetch origin --tags
+    git checkout v1.3.2
+
+    make
+    sudo make install
+
+    containerd --version
+    ```
+
+#### Ensure containerd is running
+
 ```sh
-export GOPATH=$HOME/go/
-mkdir -p $GOPATH/src/github.com/containerd
-cd $GOPATH/src/github.com/containerd
-git clone https://github.com/containerd/containerd
-cd containerd
-git fetch origin --tags
-git checkout v1.3.2
+curl -sLS https://raw.githubusercontent.com/containerd/containerd/master/containerd.service > /tmp/containerd.service
 
-make
-sudo make install
+sudo cp /tmp/containerd.service /lib/systemd/system/
+sudo systemctl enable containerd
 
-containerd --version
+sudo systemctl daemon-reload
+sudo systemctl restart containerd
 ```
 
-Kill any old containerd version:
-
-```sh
-# Kill any old version
-sudo killall containerd
-sudo systemctl disable containerd
-```
-
-Start containerd in a new terminal:
+Or run ad-hoc:
 
 ```sh
 sudo containerd &
 ```
+
 #### Enable forwarding
 
 > This is required to allow containers in containerd to access the Internet via your computer's primary network interface.
@@ -90,10 +97,11 @@ echo "net.ipv4.conf.all.forwarding=1" | sudo tee -a /etc/sysctl.conf
 sudo apt update \
   && sudo apt install -qy \
     runc \
-    bridge-utils
+    bridge-utils \
+    make
 ```
 
-You may find alternatives for CentOS and other distributions.
+You may find alternative package names for CentOS and other Linux distributions.
 
 #### Install Go 1.13 (x86_64)
 
@@ -107,6 +115,13 @@ export GOPATH=$HOME/go/
 export PATH=$PATH:/usr/local/go/bin/
 
 go version
+```
+
+You should also add the following to `~/.bash_profile`:
+
+```sh
+export GOPATH=$HOME/go/
+export PATH=$PATH:/usr/local/go/bin/
 ```
 
 #### Or on Raspberry Pi (armhf)
@@ -139,17 +154,20 @@ sudo mkdir -p /opt/cni/bin
 curl -sSL https://github.com/containernetworking/plugins/releases/download/${CNI_VERSION}/cni-plugins-linux-${ARCH}-${CNI_VERSION}.tgz | sudo tar -xz -C /opt/cni/bin
 ```
 
-Run or install faasd, which brings up the gateway and Prometheus as containers
+#### Clone faasd and its systemd unit files
+
+```sh
+mkdir -p $GOPATH/src/github.com/openfaas/
+cd $GOPATH/src/github.com/openfaas/
+git clone https://github.com/openfaas/faasd
+```
+
+#### Build `faasd` from source (optional)
 
 ```sh
 cd $GOPATH/src/github.com/openfaas/faasd
-go build
-
-# Install with systemd
-# sudo ./faasd install
-
-# Or run interactively
-# sudo ./faasd up
+cd faasd
+make local
 ```
 
 #### Build and run `faasd` (binaries)
@@ -169,6 +187,42 @@ sudo curl -fSLs "https://github.com/openfaas/faasd/releases/download/0.7.4/faasd
 sudo curl -fSLs "https://github.com/openfaas/faasd/releases/download/0.7.4/faasd-arm64" \
     -o "/usr/local/bin/faasd" \
     && sudo chmod a+x "/usr/local/bin/faasd"
+```
+
+#### Install `faasd`
+
+```sh
+# Install with systemd
+sudo cp bin/faasd /usr/local/bin
+sudo faasd install
+
+2020/02/17 17:38:06 Writing to: "/var/lib/faasd/secrets/basic-auth-password"
+2020/02/17 17:38:06 Writing to: "/var/lib/faasd/secrets/basic-auth-user"
+Login with:
+  sudo cat /var/lib/faasd/secrets/basic-auth-password | faas-cli login -s
+```
+
+You can now log in either from this machine or a remote machine using the OpenFaaS UI, or CLI.
+
+Check that faasd is ready:
+
+```
+sudo journalctl -u faasd
+```
+
+You should see output like:
+
+```
+Feb 17 17:46:35 gold-survive faasd[4140]: 2020/02/17 17:46:35 Starting faasd proxy on 8080
+Feb 17 17:46:35 gold-survive faasd[4140]: Gateway: 10.62.0.5:8080
+Feb 17 17:46:35 gold-survive faasd[4140]: 2020/02/17 17:46:35 [proxy] Wait for done
+Feb 17 17:46:35 gold-survive faasd[4140]: 2020/02/17 17:46:35 [proxy] Begin listen on 8080
+```
+
+To get the CLI for the command above run:
+
+```sh
+curl -sSLf https://cli.openfaas.com | sudo sh
 ```
 
 #### At run-time
