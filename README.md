@@ -35,9 +35,11 @@ You can use the standard [faas-cli](https://github.com/openfaas/faas-cli) along 
 
 ## Tutorials
 
-### Get started on DigitalOcean or with cloud-init
+### Get started on DigitalOcean, or any other IaaS
 
-* [Build a Serverless appliance with cloud-init and faasd](https://blog.alexellis.io/deploy-serverless-faasd-with-cloud-init/)
+If your IaaS supports `user_data` aka "cloud-init", then this guide is for you. If not, then checkout the approach and feel free to run each step manually.
+
+* [Build a Serverless appliance with faasd](https://blog.alexellis.io/deploy-serverless-faasd-with-cloud-init/)
 
 ### Run locally on MacOS, Linux, or Windows with Multipass.run
 
