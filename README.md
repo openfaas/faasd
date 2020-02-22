@@ -63,6 +63,18 @@ To use private image repos, `~/.docker/config.json` needs to be copied to `/var/
 
 If you'd like to set up your own private registry, [see this tutorial](https://blog.alexellis.io/get-a-tls-enabled-docker-registry-in-5-minutes/).
 
+Beware that running `docker login` on MacOS and Windows may create an empty file with your credentials stored in the system helper.
+
+Alternatively, use you can use the `registry-login` command from the OpenFaaS Cloud bootstrap tool (ofc-bootstrap):
+
+```bash
+curl -sLSf https://raw.githubusercontent.com/openfaas-incubator/ofc-bootstrap/master/get.sh | sudo sh
+
+ofc-bootstrap registry-login --username <your-registry-username> --password-stdin
+# (the enter your password and hit return)
+```
+The file will be created in `./credentials/`
+
 ### Manual / developer instructions
 
 See [here for manual / developer instructions](docs/DEV.md)
