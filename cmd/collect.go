@@ -12,6 +12,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+func CollectCommand() *cobra.Command {
+	return collectCmd
+}
+
 var collectCmd = &cobra.Command{
 	Use:   "collect",
 	Short: "Collect logs to the journal",
