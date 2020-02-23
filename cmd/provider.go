@@ -9,13 +9,13 @@ import (
 	"os"
 	"path"
 
-	"github.com/openfaas/faasd/pkg/cninetwork"
-	"github.com/openfaas/faasd/pkg/provider/config"
-	"github.com/openfaas/faasd/pkg/provider/handlers"
 	"github.com/containerd/containerd"
 	bootstrap "github.com/openfaas/faas-provider"
 	"github.com/openfaas/faas-provider/proxy"
 	"github.com/openfaas/faas-provider/types"
+	"github.com/openfaas/faasd/pkg/cninetwork"
+	"github.com/openfaas/faasd/pkg/provider/config"
+	"github.com/openfaas/faasd/pkg/provider/handlers"
 	"github.com/spf13/cobra"
 )
 
@@ -81,6 +81,14 @@ func runProvider(_ *cobra.Command, _ []string) error {
 		InfoHandler:          handlers.MakeInfoHandler(Version, GitCommit),
 		ListNamespaceHandler: listNamespaces(),
 		SecretHandler:        handlers.MakeSecretHandler(client, userSecretPath),
+		LogHandler: func(w http.ResponseWriter, r *http.Request) {
+			if r.Body != nil {
+				defer r.Body.Close()
+			}
+
+			w.WriteHeader(http.StatusNotImplemented)
+			w.Write([]byte(`Logs are not implemented for faasd`))
+		},
 	}
 
 	log.Printf("Listening on TCP port: %d\n", *config.TCPPort)
