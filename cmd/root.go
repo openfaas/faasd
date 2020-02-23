@@ -18,6 +18,10 @@ func init() {
 	rootCommand.AddCommand(collectCmd)
 }
 
+func RootCommand() *cobra.Command {
+	return rootCommand
+}
+
 var (
 	// GitCommit Git Commit SHA
 	GitCommit string

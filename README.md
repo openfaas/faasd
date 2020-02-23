@@ -75,6 +75,19 @@ ofc-bootstrap registry-login --username <your-registry-username> --password-stdi
 ```
 The file will be created in `./credentials/`
 
+### Logs for functions
+
+You can view the logs of functions using `journalctl`:
+
+```bash
+journalctl -t openfaas-fn:FUNCTION_NAME
+
+
+faas-cli store deploy figlet
+journalctl -t openfaas-fn:figlet -f &
+echo logs | faas-cli invoke figlet
+```
+
 ### Manual / developer instructions
 
 See [here for manual / developer instructions](docs/DEV.md)
