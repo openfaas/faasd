@@ -55,7 +55,7 @@
   version = "0.7.1"
 
 [[projects]]
-  digest = "1:386ca0ac781cc1b630b3ed21725759770174140164b3faf3810e6ed6366a970b"
+  digest = "1:cf83a14c8042951b0dcd74758fc32258111ecc7838cbdf5007717172cab9ca9b"
   name = "github.com/containerd/containerd"
   packages = [
     ".",
@@ -103,6 +103,7 @@
     "remotes/docker/schema1",
     "rootfs",
     "runtime/linux/runctypes",
+    "runtime/v2/logging",
     "runtime/v2/runc/options",
     "snapshots",
     "snapshots/proxy",
@@ -168,6 +169,14 @@
   pruneopts = "UT"
   revision = "4cfb7b568922a3c79a23e438dc52fe537fc9687e"
   version = "v0.7.1"
+
+[[projects]]
+  digest = "1:bcf36df8d43860bfde913d008301aef27c6e9a303582118a837c4a34c0d18167"
+  name = "github.com/coreos/go-systemd"
+  packages = ["journal"]
+  pruneopts = "UT"
+  revision = "2d78030078ef61b3cae27f42ad6d0e46db51b339"
+  version = "v22.0.0"
 
 [[projects]]
   digest = "1:92ebc9c068ab8e3fff03a58694ee33830964f6febd0130069aadce328802de14"
@@ -574,7 +583,9 @@
     "github.com/containerd/containerd/oci",
     "github.com/containerd/containerd/remotes",
     "github.com/containerd/containerd/remotes/docker",
+    "github.com/containerd/containerd/runtime/v2/logging",
     "github.com/containerd/go-cni",
+    "github.com/coreos/go-systemd/journal",
     "github.com/docker/cli/cli/config",
     "github.com/docker/cli/cli/config/configfile",
     "github.com/docker/distribution/reference",
