@@ -15,6 +15,7 @@ func init() {
 	rootCommand.AddCommand(upCmd)
 	rootCommand.AddCommand(installCmd)
 	rootCommand.AddCommand(providerCmd)
+	rootCommand.AddCommand(collectCmd)
 }
 
 var (
