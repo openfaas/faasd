@@ -21,6 +21,7 @@ func MakeReplicaReaderHandler(client *containerd.Client) func(w http.ResponseWri
 				AvailableReplicas: uint64(f.replicas),
 				Replicas:          uint64(f.replicas),
 				Namespace:         f.namespace,
+				Labels:            &f.labels,
 			}
 
 			functionBytes, _ := json.Marshal(found)
