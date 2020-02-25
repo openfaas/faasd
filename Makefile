@@ -37,9 +37,10 @@ prepare-test:
 .PHONY: test-e2e
 test-e2e:
 	sudo cat /var/lib/faasd/secrets/basic-auth-password | /usr/local/bin/faas-cli login --password-stdin
-	/usr/local/bin/faas-cli store deploy figlet --env write_timeout=1s --env read_timeout=1s
+	/usr/local/bin/faas-cli store deploy figlet --env write_timeout=1s --env read_timeout=1s --label testing=true
 	sleep 5
 	/usr/local/bin/faas-cli list -v
+	/usr/local/bin/faas-cli describe figlet | grep testing
 	uname | /usr/local/bin/faas-cli invoke figlet
 	uname | /usr/local/bin/faas-cli invoke figlet --async
 	sleep 10
