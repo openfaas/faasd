@@ -173,7 +173,7 @@ func makeServiceDefinitions(archSuffix string) []pkg.Service {
 	wd, _ := os.Getwd()
 
 	return []pkg.Service{
-		pkg.Service{
+		{
 			Name:  "basic-auth-plugin",
 			Image: "docker.io/openfaas/basic-auth-plugin:0.18.10" + archSuffix,
 			Env: []string{
@@ -183,11 +183,11 @@ func makeServiceDefinitions(archSuffix string) []pkg.Service {
 				"pass_filename=basic-auth-password",
 			},
 			Mounts: []pkg.Mount{
-				pkg.Mount{
+				{
 					Src:  path.Join(path.Join(wd, "secrets"), "basic-auth-password"),
 					Dest: path.Join(containerSecretMountDir, "basic-auth-password"),
 				},
-				pkg.Mount{
+				{
 					Src:  path.Join(path.Join(wd, "secrets"), "basic-auth-user"),
 					Dest: path.Join(containerSecretMountDir, "basic-auth-user"),
 				},
@@ -195,26 +195,26 @@ func makeServiceDefinitions(archSuffix string) []pkg.Service {
 			Caps: []string{"CAP_NET_RAW"},
 			Args: nil,
 		},
-		pkg.Service{
+		{
 			Name:  "nats",
 			Env:   []string{""},
 			Image: "docker.io/library/nats-streaming:0.11.2",
 			Caps:  []string{},
 			Args:  []string{"/nats-streaming-server", "-m", "8222", "--store=memory", "--cluster_id=faas-cluster"},
 		},
-		pkg.Service{
+		{
 			Name:  "prometheus",
 			Env:   []string{},
 			Image: "docker.io/prom/prometheus:v2.14.0",
 			Mounts: []pkg.Mount{
-				pkg.Mount{
+				{
 					Src:  path.Join(wd, "prometheus.yml"),
 					Dest: "/etc/prometheus/prometheus.yml",
 				},
 			},
 			Caps: []string{"CAP_NET_RAW"},
 		},
-		pkg.Service{
+		{
 			Name: "gateway",
 			Env: []string{
 				"basic_auth=true",
@@ -232,18 +232,18 @@ func makeServiceDefinitions(archSuffix string) []pkg.Service {
 			},
 			Image: "docker.io/openfaas/gateway:0.18.8" + archSuffix,
 			Mounts: []pkg.Mount{
-				pkg.Mount{
+				{
 					Src:  path.Join(path.Join(wd, "secrets"), "basic-auth-password"),
 					Dest: path.Join(containerSecretMountDir, "basic-auth-password"),
 				},
-				pkg.Mount{
+				{
 					Src:  path.Join(path.Join(wd, "secrets"), "basic-auth-user"),
 					Dest: path.Join(containerSecretMountDir, "basic-auth-user"),
 				},
 			},
 			Caps: []string{"CAP_NET_RAW"},
 		},
-		pkg.Service{
+		{
 			Name: "queue-worker",
 			Env: []string{
 				"faas_nats_address=nats",
@@ -258,11 +258,11 @@ func makeServiceDefinitions(archSuffix string) []pkg.Service {
 			},
 			Image: "docker.io/openfaas/queue-worker:0.9.0",
 			Mounts: []pkg.Mount{
-				pkg.Mount{
+				{
 					Src:  path.Join(path.Join(wd, "secrets"), "basic-auth-password"),
 					Dest: path.Join(containerSecretMountDir, "basic-auth-password"),
 				},
-				pkg.Mount{
+				{
 					Src:  path.Join(path.Join(wd, "secrets"), "basic-auth-user"),
 					Dest: path.Join(containerSecretMountDir, "basic-auth-user"),
 				},
