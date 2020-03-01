@@ -8,15 +8,15 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/openfaas/faasd/pkg/cninetwork"
-	"github.com/openfaas/faasd/pkg/service"
 	"github.com/containerd/containerd"
 	"github.com/containerd/containerd/namespaces"
 	gocni "github.com/containerd/go-cni"
 	"github.com/openfaas/faas-provider/types"
+	"github.com/openfaas/faasd/pkg/cninetwork"
+	"github.com/openfaas/faasd/pkg/service"
 )
 
-func MakeUpdateHandler(client *containerd.Client, cni gocni.CNI, secretMountPath string) func(w http.ResponseWriter, r *http.Request) {
+func MakeUpdateHandler(client *containerd.Client, cni gocni.CNI, secretMountPath string, alwaysPull bool) func(w http.ResponseWriter, r *http.Request) {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -68,7 +68,7 @@ func MakeUpdateHandler(client *containerd.Client, cni gocni.CNI, secretMountPath
 			return
 		}
 
-		deployErr := deploy(ctx, req, client, cni, secretMountPath)
+		deployErr := deploy(ctx, req, client, cni, secretMountPath, alwaysPull)
 		if deployErr != nil {
 			log.Printf("[Update] error deploying %s, error: %s\n", name, deployErr)
 			http.Error(w, deployErr.Error(), http.StatusBadRequest)

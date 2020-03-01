@@ -8,13 +8,13 @@ import (
 	"os"
 	"path"
 
-	"github.com/openfaas/faasd/pkg/cninetwork"
-	"github.com/openfaas/faasd/pkg/service"
 	"github.com/containerd/containerd"
 	"github.com/containerd/containerd/cio"
 	"github.com/containerd/containerd/containers"
 	"github.com/containerd/containerd/oci"
 	gocni "github.com/containerd/go-cni"
+	"github.com/openfaas/faasd/pkg/cninetwork"
+	"github.com/openfaas/faasd/pkg/service"
 
 	"github.com/containerd/containerd/namespaces"
 	"github.com/opencontainers/runtime-spec/specs-go"
@@ -24,7 +24,8 @@ const (
 	defaultSnapshotter         = "overlayfs"
 	workingDirectoryPermission = 0644
 	// faasdNamespace is the containerd namespace services are created
-	faasdNamespace = "default"
+	faasdNamespace         = "default"
+	faasServicesPullAlways = false
 )
 
 type Service struct {
@@ -88,7 +89,7 @@ func (s *Supervisor) Start(svcs []Service) error {
 	for _, svc := range svcs {
 		fmt.Printf("Preparing: %s with image: %s\n", svc.Name, svc.Image)
 
-		img, err := service.PrepareImage(ctx, s.client, svc.Image, defaultSnapshotter)
+		img, err := service.PrepareImage(ctx, s.client, svc.Image, defaultSnapshotter, faasServicesPullAlways)
 		if err != nil {
 			return err
 		}

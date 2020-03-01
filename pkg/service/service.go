@@ -122,11 +122,12 @@ func getResolver(ctx context.Context, configFile *configfile.ConfigFile) (remote
 	return docker.NewResolver(opts), nil
 }
 
-func PrepareImage(ctx context.Context, client *containerd.Client, imageName, snapshotter string) (containerd.Image, error) {
+func PrepareImage(ctx context.Context, client *containerd.Client, imageName, snapshotter string, pullAlways bool) (containerd.Image, error) {
 	var (
 		empty    containerd.Image
 		resolver remotes.Resolver
 	)
+
 	if _, stErr := os.Stat(filepath.Join(dockerConfigDir, config.ConfigFileName)); stErr == nil {
 		configFile, err := config.Load(dockerConfigDir)
 		if err != nil {
@@ -140,22 +141,29 @@ func PrepareImage(ctx context.Context, client *containerd.Client, imageName, sna
 		return empty, stErr
 	}
 
-	image, err := client.GetImage(ctx, imageName)
-	if err != nil {
-		if !errdefs.IsNotFound(err) {
+	var image containerd.Image
+	if pullAlways {
+		img, err := pullImage(ctx, client, resolver, imageName)
+		if err != nil {
 			return empty, err
 		}
-		rOpts := []containerd.RemoteOpt{
-			containerd.WithPullUnpack,
-		}
-		if resolver != nil {
-			rOpts = append(rOpts, containerd.WithResolver(resolver))
-		}
-		img, err := client.Pull(ctx, imageName, rOpts...)
-		if err != nil {
-			return empty, fmt.Errorf("cannot pull: %s", err)
-		}
+
 		image = img
+	} else {
+
+		img, err := client.GetImage(ctx, imageName)
+		if err != nil {
+			if !errdefs.IsNotFound(err) {
+				return empty, err
+			}
+			img, err := pullImage(ctx, client, resolver, imageName)
+			if err != nil {
+				return empty, err
+			}
+			image = img
+		} else {
+			image = img
+		}
 	}
 
 	unpacked, err := image.IsUnpacked(ctx, snapshotter)
@@ -170,4 +178,22 @@ func PrepareImage(ctx context.Context, client *containerd.Client, imageName, sna
 	}
 
 	return image, nil
+}
+
+func pullImage(ctx context.Context, client *containerd.Client, resolver remotes.Resolver, imageName string) (containerd.Image, error) {
+
+	var empty containerd.Image
+
+	rOpts := []containerd.RemoteOpt{
+		containerd.WithPullUnpack,
+	}
+	if resolver != nil {
+		rOpts = append(rOpts, containerd.WithResolver(resolver))
+	}
+	img, err := client.Pull(ctx, imageName, rOpts...)
+	if err != nil {
+		return empty, fmt.Errorf("cannot pull: %s", err)
+	}
+
+	return img, nil
 }

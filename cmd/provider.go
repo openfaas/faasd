@@ -19,82 +19,96 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var providerCmd = &cobra.Command{
-	Use:   "provider",
-	Short: "Run the faasd-provider",
-	RunE:  runProvider,
-}
-
-func runProvider(_ *cobra.Command, _ []string) error {
-
-	config, providerConfig, err := config.ReadFromEnv(types.OsEnv{})
-	if err != nil {
-		return err
+func makeProviderCmd() *cobra.Command {
+	var command = &cobra.Command{
+		Use:   "provider",
+		Short: "Run the faasd-provider",
 	}
 
-	log.Printf("faasd-provider starting..\tService Timeout: %s\n", config.WriteTimeout.String())
+	command.Flags().String("pull-policy", "Always", `Set to "Always" to force a pull of images upon deployment, or "IfNotPresent" to try to use a cached image.`)
 
-	wd, err := os.Getwd()
-	if err != nil {
-		return err
+	command.RunE = func(_ *cobra.Command, _ []string) error {
+
+		pullPolicy, flagErr := command.Flags().GetString("pull-policy")
+		if flagErr != nil {
+			return flagErr
+		}
+
+		alwaysPull := false
+		if pullPolicy == "Always" {
+			alwaysPull = true
+		}
+
+		config, providerConfig, err := config.ReadFromEnv(types.OsEnv{})
+		if err != nil {
+			return err
+		}
+
+		log.Printf("faasd-provider starting..\tService Timeout: %s\n", config.WriteTimeout.String())
+
+		wd, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+
+		writeHostsErr := ioutil.WriteFile(path.Join(wd, "hosts"),
+			[]byte(`127.0.0.1	localhost`), workingDirectoryPermission)
+
+		if writeHostsErr != nil {
+			return fmt.Errorf("cannot write hosts file: %s", writeHostsErr)
+		}
+
+		writeResolvErr := ioutil.WriteFile(path.Join(wd, "resolv.conf"),
+			[]byte(`nameserver 8.8.8.8`), workingDirectoryPermission)
+
+		if writeResolvErr != nil {
+			return fmt.Errorf("cannot write resolv.conf file: %s", writeResolvErr)
+		}
+
+		cni, err := cninetwork.InitNetwork()
+		if err != nil {
+			return err
+		}
+
+		client, err := containerd.New(providerConfig.Sock)
+		if err != nil {
+			return err
+		}
+
+		defer client.Close()
+
+		invokeResolver := handlers.NewInvokeResolver(client)
+
+		userSecretPath := path.Join(wd, "secrets")
+
+		bootstrapHandlers := types.FaaSHandlers{
+			FunctionProxy:        proxy.NewHandlerFunc(*config, invokeResolver),
+			DeleteHandler:        handlers.MakeDeleteHandler(client, cni),
+			DeployHandler:        handlers.MakeDeployHandler(client, cni, userSecretPath, alwaysPull),
+			FunctionReader:       handlers.MakeReadHandler(client),
+			ReplicaReader:        handlers.MakeReplicaReaderHandler(client),
+			ReplicaUpdater:       handlers.MakeReplicaUpdateHandler(client, cni),
+			UpdateHandler:        handlers.MakeUpdateHandler(client, cni, userSecretPath, alwaysPull),
+			HealthHandler:        func(w http.ResponseWriter, r *http.Request) {},
+			InfoHandler:          handlers.MakeInfoHandler(Version, GitCommit),
+			ListNamespaceHandler: listNamespaces(),
+			SecretHandler:        handlers.MakeSecretHandler(client, userSecretPath),
+			LogHandler: func(w http.ResponseWriter, r *http.Request) {
+				if r.Body != nil {
+					defer r.Body.Close()
+				}
+
+				w.WriteHeader(http.StatusNotImplemented)
+				w.Write([]byte(`Logs are not implemented for faasd`))
+			},
+		}
+
+		log.Printf("Listening on TCP port: %d\n", *config.TCPPort)
+		bootstrap.Serve(&bootstrapHandlers, config)
+		return nil
 	}
 
-	writeHostsErr := ioutil.WriteFile(path.Join(wd, "hosts"),
-		[]byte(`127.0.0.1	localhost`), workingDirectoryPermission)
-
-	if writeHostsErr != nil {
-		return fmt.Errorf("cannot write hosts file: %s", writeHostsErr)
-	}
-
-	writeResolvErr := ioutil.WriteFile(path.Join(wd, "resolv.conf"),
-		[]byte(`nameserver 8.8.8.8`), workingDirectoryPermission)
-
-	if writeResolvErr != nil {
-		return fmt.Errorf("cannot write resolv.conf file: %s", writeResolvErr)
-	}
-
-	cni, err := cninetwork.InitNetwork()
-	if err != nil {
-		return err
-	}
-
-	client, err := containerd.New(providerConfig.Sock)
-	if err != nil {
-		return err
-	}
-
-	defer client.Close()
-
-	invokeResolver := handlers.NewInvokeResolver(client)
-
-	userSecretPath := path.Join(wd, "secrets")
-
-	bootstrapHandlers := types.FaaSHandlers{
-		FunctionProxy:        proxy.NewHandlerFunc(*config, invokeResolver),
-		DeleteHandler:        handlers.MakeDeleteHandler(client, cni),
-		DeployHandler:        handlers.MakeDeployHandler(client, cni, userSecretPath),
-		FunctionReader:       handlers.MakeReadHandler(client),
-		ReplicaReader:        handlers.MakeReplicaReaderHandler(client),
-		ReplicaUpdater:       handlers.MakeReplicaUpdateHandler(client, cni),
-		UpdateHandler:        handlers.MakeUpdateHandler(client, cni, userSecretPath),
-		HealthHandler:        func(w http.ResponseWriter, r *http.Request) {},
-		InfoHandler:          handlers.MakeInfoHandler(Version, GitCommit),
-		ListNamespaceHandler: listNamespaces(),
-		SecretHandler:        handlers.MakeSecretHandler(client, userSecretPath),
-		LogHandler: func(w http.ResponseWriter, r *http.Request) {
-			if r.Body != nil {
-				defer r.Body.Close()
-			}
-
-			w.WriteHeader(http.StatusNotImplemented)
-			w.Write([]byte(`Logs are not implemented for faasd`))
-		},
-	}
-
-	log.Printf("Listening on TCP port: %d\n", *config.TCPPort)
-	bootstrap.Serve(&bootstrapHandlers, config)
-
-	return nil
+	return command
 }
 
 func listNamespaces() func(w http.ResponseWriter, r *http.Request) {
