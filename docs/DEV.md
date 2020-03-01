@@ -225,6 +225,54 @@ To get the CLI for the command above run:
 curl -sSLf https://cli.openfaas.com | sudo sh
 ```
 
+#### Make a change to `faasd`
+
+There are two components you can hack on:
+
+For function CRUD you will work on `faasd provider` which is started from `cmd/provider.go`
+
+For faasd itself, you will work on the code from `faasd up`, which is started from `cmd/up.go`
+
+Before working on either, stop the systemd services:
+
+```
+sudo systemctl stop faasd &    # up command
+sudo systemctl stop provider   # provider command
+```
+
+Here is a workflow you can use for each code change:
+
+Enter the directory of the source code, and build a new binary:
+
+```bash
+cd $GOPATH/src/github.com/openfaas/faasd
+go build
+```
+
+Copy that binary to `/usr/local/bin/`
+
+```bash
+cp faasd /usr/local/bin/
+```
+
+To run `faasd up`, run it from its working directory as root
+
+```bash
+sudo -i
+cd /var/lib/faasd
+
+faasd up
+```
+
+Now to run `faasd provider`, run it from its working directory:
+
+```bash
+sudo -i
+cd /var/lib/faasd-provider
+
+faasd provider
+```
+
 #### At run-time
 
 Look in `hosts` in the current working folder or in `/var/lib/faasd/` to get the IP for the gateway or Prometheus
