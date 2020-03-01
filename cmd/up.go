@@ -14,8 +14,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/openfaas/faasd/pkg"
 	"github.com/alexellis/k3sup/pkg/env"
+	"github.com/openfaas/faasd/pkg"
 	"github.com/sethvargo/go-password/password"
 	"github.com/spf13/cobra"
 )
@@ -116,6 +116,7 @@ func runUp(_ *cobra.Command, _ []string) error {
 			log.Println(fileErr)
 			return
 		}
+
 		host := ""
 		lines := strings.Split(string(fileData), "\n")
 		for _, line := range lines {

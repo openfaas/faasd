@@ -23,7 +23,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func MakeDeployHandler(client *containerd.Client, cni gocni.CNI, secretMountPath string) func(w http.ResponseWriter, r *http.Request) {
+func MakeDeployHandler(client *containerd.Client, cni gocni.CNI, secretMountPath string, alwaysPull bool) func(w http.ResponseWriter, r *http.Request) {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -54,7 +54,7 @@ func MakeDeployHandler(client *containerd.Client, cni gocni.CNI, secretMountPath
 		name := req.Service
 		ctx := namespaces.WithNamespace(context.Background(), FunctionNamespace)
 
-		deployErr := deploy(ctx, req, client, cni, secretMountPath)
+		deployErr := deploy(ctx, req, client, cni, secretMountPath, alwaysPull)
 		if deployErr != nil {
 			log.Printf("[Deploy] error deploying %s, error: %s\n", name, deployErr)
 			http.Error(w, deployErr.Error(), http.StatusBadRequest)
@@ -63,7 +63,7 @@ func MakeDeployHandler(client *containerd.Client, cni gocni.CNI, secretMountPath
 	}
 }
 
-func deploy(ctx context.Context, req types.FunctionDeployment, client *containerd.Client, cni gocni.CNI, secretMountPath string) error {
+func deploy(ctx context.Context, req types.FunctionDeployment, client *containerd.Client, cni gocni.CNI, secretMountPath string, alwaysPull bool) error {
 	r, err := reference.ParseNormalizedNamed(req.Image)
 	if err != nil {
 		return err
@@ -75,7 +75,7 @@ func deploy(ctx context.Context, req types.FunctionDeployment, client *container
 		snapshotter = val
 	}
 
-	image, err := service.PrepareImage(ctx, client, imgRef, snapshotter)
+	image, err := service.PrepareImage(ctx, client, imgRef, snapshotter, alwaysPull)
 	if err != nil {
 		return errors.Wrapf(err, "unable to pull image %s", imgRef)
 	}
