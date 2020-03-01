@@ -12,6 +12,8 @@ import (
 	"github.com/containerd/containerd/namespaces"
 	gocni "github.com/containerd/go-cni"
 	"github.com/openfaas/faas/gateway/requests"
+
+	faasd "github.com/openfaas/faasd/pkg"
 	cninetwork "github.com/openfaas/faasd/pkg/cninetwork"
 	"github.com/openfaas/faasd/pkg/service"
 )
@@ -49,7 +51,7 @@ func MakeDeleteHandler(client *containerd.Client, cni gocni.CNI) func(w http.Res
 			return
 		}
 
-		ctx := namespaces.WithNamespace(context.Background(), FunctionNamespace)
+		ctx := namespaces.WithNamespace(context.Background(), faasd.FunctionNamespace)
 
 		// TODO: this needs to still happen if the task is paused
 		if function.replicas != 0 {

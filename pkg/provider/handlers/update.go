@@ -12,6 +12,8 @@ import (
 	"github.com/containerd/containerd/namespaces"
 	gocni "github.com/containerd/go-cni"
 	"github.com/openfaas/faas-provider/types"
+
+	faasd "github.com/openfaas/faasd/pkg"
 	"github.com/openfaas/faasd/pkg/cninetwork"
 	"github.com/openfaas/faasd/pkg/service"
 )
@@ -53,7 +55,7 @@ func MakeUpdateHandler(client *containerd.Client, cni gocni.CNI, secretMountPath
 			http.Error(w, err.Error(), http.StatusBadRequest)
 		}
 
-		ctx := namespaces.WithNamespace(context.Background(), FunctionNamespace)
+		ctx := namespaces.WithNamespace(context.Background(), faasd.FunctionNamespace)
 		if function.replicas != 0 {
 			err = cninetwork.DeleteCNINetwork(ctx, cni, client, name)
 			if err != nil {
