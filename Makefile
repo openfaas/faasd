@@ -48,3 +48,5 @@ test-e2e:
 	/usr/local/bin/faas-cli remove figlet
 	sleep 3
 	/usr/local/bin/faas-cli list
+	sleep 1
+	/usr/local/bin/faas-cli logs figlet | grep Forking

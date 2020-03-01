@@ -121,7 +121,7 @@ An active community of almost 3000 users awaits you on Slack. Over 250 of those 
 * `faas login`
 * `faas up`
 * `faas list`
-* `faas describe` 
+* `faas describe`
 * `faas deploy --update=true --replace=false`
 * `faas invoke --async`
 * `faas invoke`
@@ -130,12 +130,12 @@ An active community of almost 3000 users awaits you on Slack. Over 250 of those 
 * `faas version`
 * `faas namespace`
 * `faas secret`
+* `faas logs`
 
 Scale from and to zero is also supported. On a Dell XPS with a small, pre-pulled image unpausing an existing task took 0.19s and starting a task for a killed function took 0.39s. There may be further optimizations to be gained.
 
 Other operations are pending development in the provider such as:
 
-* `faas logs` - to stream logs on-demand for a known function, for the time being you can find logs via `journalctl -u faasd-provider`
 * `faas auth` - supported for Basic Authentication, but OAuth2 & OIDC require a patch
 
 ## Todo

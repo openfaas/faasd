@@ -8,6 +8,8 @@ import (
 	"github.com/containerd/containerd"
 	"github.com/containerd/containerd/namespaces"
 	"github.com/openfaas/faasd/pkg/cninetwork"
+
+	faasd "github.com/openfaas/faasd/pkg"
 )
 
 type Function struct {
@@ -20,14 +22,9 @@ type Function struct {
 	labels    map[string]string
 }
 
-const (
-	// FunctionNamespace is the containerd namespace functions are created
-	FunctionNamespace = "openfaas-fn"
-)
-
 // ListFunctions returns a map of all functions with running tasks on namespace
 func ListFunctions(client *containerd.Client) (map[string]Function, error) {
-	ctx := namespaces.WithNamespace(context.Background(), FunctionNamespace)
+	ctx := namespaces.WithNamespace(context.Background(), faasd.FunctionNamespace)
 	functions := make(map[string]Function)
 
 	containers, _ := client.Containers(ctx)
@@ -44,7 +41,7 @@ func ListFunctions(client *containerd.Client) (map[string]Function, error) {
 
 // GetFunction returns a function that matches name
 func GetFunction(client *containerd.Client, name string) (Function, error) {
-	ctx := namespaces.WithNamespace(context.Background(), FunctionNamespace)
+	ctx := namespaces.WithNamespace(context.Background(), faasd.FunctionNamespace)
 	c, err := client.LoadContainer(ctx, name)
 
 	if err == nil {
@@ -58,7 +55,7 @@ func GetFunction(client *containerd.Client, name string) (Function, error) {
 
 		f := Function{
 			name:      containerName,
-			namespace: FunctionNamespace,
+			namespace: faasd.FunctionNamespace,
 			image:     image.Name(),
 			labels:    labels,
 		}

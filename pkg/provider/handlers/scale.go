@@ -12,6 +12,7 @@ import (
 	"github.com/containerd/containerd/namespaces"
 	gocni "github.com/containerd/go-cni"
 	"github.com/openfaas/faas-provider/types"
+	faasd "github.com/openfaas/faasd/pkg"
 )
 
 func MakeReplicaUpdateHandler(client *containerd.Client, cni gocni.CNI) func(w http.ResponseWriter, r *http.Request) {
@@ -47,7 +48,7 @@ func MakeReplicaUpdateHandler(client *containerd.Client, cni gocni.CNI) func(w h
 			return
 		}
 
-		ctx := namespaces.WithNamespace(context.Background(), FunctionNamespace)
+		ctx := namespaces.WithNamespace(context.Background(), faasd.FunctionNamespace)
 
 		ctr, ctrErr := client.LoadContainer(ctx, name)
 		if ctrErr != nil {
