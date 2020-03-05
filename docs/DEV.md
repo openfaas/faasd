@@ -237,7 +237,7 @@ Before working on either, stop the systemd services:
 
 ```
 sudo systemctl stop faasd &    # up command
-sudo systemctl stop provider   # provider command
+sudo systemctl stop faasd-provider   # provider command
 ```
 
 Here is a workflow you can use for each code change:
