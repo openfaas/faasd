@@ -33,7 +33,11 @@ func ListFunctions(client *containerd.Client) (map[string]Function, error) {
 	containers, _ := client.Containers(ctx)
 	for _, k := range containers {
 		name := k.ID()
-		functions[name], _ = GetFunction(client, name)
+		f, err := GetFunction(client, name)
+		if err != nil {
+			continue
+		}
+		functions[name] = f
 	}
 	return functions, nil
 }
@@ -44,7 +48,6 @@ func GetFunction(client *containerd.Client, name string) (Function, error) {
 	c, err := client.LoadContainer(ctx, name)
 
 	if err == nil {
-
 		image, _ := c.Image(ctx)
 
 		containerName := c.ID()
