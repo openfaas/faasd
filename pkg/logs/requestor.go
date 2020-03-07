@@ -83,7 +83,6 @@ func buildCmd(ctx context.Context, req logs.Request) *exec.Cmd {
 		"--utc",
 		"--no-pager",
 		"--output=json",
-		"--output-fields=SYSLOG_IDENTIFIER,MESSAGE,_PID,_SOURCE_REALTIME_TIMESTAMP",
 		"--identifier=" + namespace + ":" + req.Name,
 		fmt.Sprintf("--since=%s", since.UTC().Format("2006-01-02 15:04:05")),
 	}
@@ -103,6 +102,10 @@ func buildCmd(ctx context.Context, req logs.Request) *exec.Cmd {
 // the loop is based on the Decoder example in the docs
 // https://golang.org/pkg/encoding/json/#Decoder.Decode
 func streamLogs(ctx context.Context, cmd *exec.Cmd, out io.ReadCloser, msgs chan logs.Message) {
+	// without this sleep the channel seems to get stuck. This results in either no log messages
+	// being read by the Handler _or_ the messages are read but only flushed when the request
+	// timesout
+	time.Sleep(time.Millisecond)
 	log.Println("starting journal stream using ", cmd.String())
 
 	// will ensure `out` is closed and all related resources cleaned up

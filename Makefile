@@ -49,4 +49,4 @@ test-e2e:
 	sleep 3
 	/usr/local/bin/faas-cli list
 	sleep 1
-	/usr/local/bin/faas-cli logs figlet | grep Forking
+	/usr/local/bin/faas-cli logs figlet --follow=false | grep Forking
