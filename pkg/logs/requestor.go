@@ -49,7 +49,7 @@ func (r *requester) Query(ctx context.Context, req logs.Request) (<-chan logs.Me
 	// call start and get the stdout prior to streaming so that we can return a meaningful
 	// error for as long as possible. If the cmd starts correctly, we are highly likely to
 	// succeed anyway
-	msgs := make(chan logs.Message, 100)
+	msgs := make(chan logs.Message)
 	go streamLogs(ctx, cmd, stdout, msgs)
 	go logErrOut(stderr)
 
@@ -102,10 +102,6 @@ func buildCmd(ctx context.Context, req logs.Request) *exec.Cmd {
 // the loop is based on the Decoder example in the docs
 // https://golang.org/pkg/encoding/json/#Decoder.Decode
 func streamLogs(ctx context.Context, cmd *exec.Cmd, out io.ReadCloser, msgs chan logs.Message) {
-	// without this sleep the channel seems to get stuck. This results in either no log messages
-	// being read by the Handler _or_ the messages are read but only flushed when the request
-	// timesout
-	time.Sleep(time.Millisecond)
 	log.Println("starting journal stream using ", cmd.String())
 
 	// will ensure `out` is closed and all related resources cleaned up
