@@ -22,11 +22,11 @@ func MakeReadHandler(client *containerd.Client) func(w http.ResponseWriter, r *h
 		}
 		for _, function := range funcs {
 			res = append(res, types.FunctionStatus{
-				Name:      function.name,
-				Image:     function.image,
-				Replicas:  uint64(function.replicas),
-				Namespace: function.namespace,
-				Labels:    &function.labels,
+				Name:      function.Name,
+				Image:     function.Image,
+				Replicas:  uint64(function.Replicas),
+				Namespace: function.Namespace,
+				Labels:    &function.Labels,
 			})
 		}
 

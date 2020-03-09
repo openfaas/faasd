@@ -13,13 +13,13 @@ import (
 )
 
 type Function struct {
-	name      string
-	namespace string
-	image     string
-	pid       uint32
-	replicas  int
+	Name      string
+	Namespace string
+	Image     string
+	Pid       uint32
+	Replicas  int
 	IP        string
-	labels    map[string]string
+	Labels    map[string]string
 }
 
 // ListFunctions returns a map of all functions with running tasks on namespace
@@ -54,10 +54,10 @@ func GetFunction(client *containerd.Client, name string) (Function, error) {
 		}
 
 		f := Function{
-			name:      containerName,
-			namespace: faasd.FunctionNamespace,
-			image:     image.Name(),
-			labels:    labels,
+			Name:      containerName,
+			Namespace: faasd.FunctionNamespace,
+			Image:     image.Name(),
+			Labels:    labels,
 		}
 
 		replicas := 0
@@ -70,7 +70,7 @@ func GetFunction(client *containerd.Client, name string) (Function, error) {
 			}
 			if svc.Status == "running" {
 				replicas = 1
-				f.pid = task.Pid()
+				f.Pid = task.Pid()
 
 				// Get container IP address
 				ip, err := cninetwork.GetIPfromPID(int(task.Pid()))
@@ -83,7 +83,7 @@ func GetFunction(client *containerd.Client, name string) (Function, error) {
 			replicas = 0
 		}
 
-		f.replicas = replicas
+		f.Replicas = replicas
 		return f, nil
 
 	}

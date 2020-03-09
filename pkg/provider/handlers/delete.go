@@ -54,7 +54,7 @@ func MakeDeleteHandler(client *containerd.Client, cni gocni.CNI) func(w http.Res
 		ctx := namespaces.WithNamespace(context.Background(), faasd.FunctionNamespace)
 
 		// TODO: this needs to still happen if the task is paused
-		if function.replicas != 0 {
+		if function.Replicas != 0 {
 			err = cninetwork.DeleteCNINetwork(ctx, cni, client, name)
 			if err != nil {
 				log.Printf("[Delete] error removing CNI network for %s, %s\n", name, err)

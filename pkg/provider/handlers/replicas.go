@@ -18,10 +18,10 @@ func MakeReplicaReaderHandler(client *containerd.Client) func(w http.ResponseWri
 		if f, err := GetFunction(client, functionName); err == nil {
 			found := types.FunctionStatus{
 				Name:              functionName,
-				AvailableReplicas: uint64(f.replicas),
-				Replicas:          uint64(f.replicas),
-				Namespace:         f.namespace,
-				Labels:            &f.labels,
+				AvailableReplicas: uint64(f.Replicas),
+				Replicas:          uint64(f.Replicas),
+				Namespace:         f.Namespace,
+				Labels:            &f.Labels,
 			}
 
 			functionBytes, _ := json.Marshal(found)

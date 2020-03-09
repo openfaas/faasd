@@ -91,7 +91,7 @@ func runUp(_ *cobra.Command, _ []string) error {
 		log.Printf("Signal received.. shutting down server in %s\n", shutdownTimeout.String())
 		err := supervisor.Remove(services)
 		if err != nil {
-			fmt.Println(err)
+			fmt.Printf("Error removing services: %s\n", err)
 		}
 
 		// Close proxy

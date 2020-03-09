@@ -56,7 +56,7 @@ func MakeUpdateHandler(client *containerd.Client, cni gocni.CNI, secretMountPath
 		}
 
 		ctx := namespaces.WithNamespace(context.Background(), faasd.FunctionNamespace)
-		if function.replicas != 0 {
+		if function.Replicas != 0 {
 			err = cninetwork.DeleteCNINetwork(ctx, cni, client, name)
 			if err != nil {
 				log.Printf("[Update] error removing CNI network for %s, %s\n", name, err)

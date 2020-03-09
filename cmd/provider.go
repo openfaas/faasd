@@ -7,7 +7,10 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"path"
+	"sync"
+	"syscall"
 
 	"github.com/containerd/containerd"
 	bootstrap "github.com/openfaas/faas-provider"
@@ -78,6 +81,31 @@ func makeProviderCmd() *cobra.Command {
 		}
 
 		defer client.Close()
+		wg := sync.WaitGroup{}
+		wg.Add(1)
+		sig := make(chan os.Signal, 1)
+		signal.Notify(sig, syscall.SIGTERM, syscall.SIGINT)
+		go func() {
+
+			log.Printf("faasd-provider: waiting for SIGTERM or SIGINT to stop.\n")
+			<-sig
+
+			log.Printf("Signal received.. shutting down provider and functions.\n")
+
+			functions, err := handlers.ListFunctions(client)
+			if err != nil {
+				log.Printf("[Read] error listing functions. Error: %s\n", err)
+			}
+
+			for _, function := range functions {
+				log.Printf("Stopping function %s.\n", function.Name)
+				handlers.ScaleFunction(client, cni, function.Name, 0)
+			}
+			fmt.Println("Finished scaling functions to 0.")
+			wg.Done()
+			// Shouldn't do this since bootstrap.Serve won't exit gracefully
+			os.Exit(0)
+		}()
 
 		invokeResolver := handlers.NewInvokeResolver(client)
 
@@ -100,6 +128,8 @@ func makeProviderCmd() *cobra.Command {
 
 		log.Printf("Listening on TCP port: %d\n", *config.TCPPort)
 		bootstrap.Serve(&bootstrapHandlers, config)
+
+		wg.Wait()
 		return nil
 	}
 

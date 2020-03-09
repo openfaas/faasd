@@ -211,6 +211,7 @@ func (s *Supervisor) Remove(svcs []Service) error {
 	ctx := namespaces.WithNamespace(context.Background(), faasdNamespace)
 
 	for _, svc := range svcs {
+		log.Printf("Removing service %s\n", svc.Name)
 		err := cninetwork.DeleteCNINetwork(ctx, s.cni, s.client, svc.Name)
 		if err != nil {
 			log.Printf("[Delete] error removing CNI network for %s, %s\n", svc.Name, err)
