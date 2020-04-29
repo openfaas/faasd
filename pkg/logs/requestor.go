@@ -62,7 +62,6 @@ func (r *requester) Query(ctx context.Context, req logs.Request) (<-chan logs.Me
 // 		--output=json \
 // 		--since=<timestamp> \
 // 		<--follow> \
-// 		--output-fields=SYSLOG_IDENTIFIER,MESSAGE,_PID,_SOURCE_REALTIME_TIMESTAMP
 func buildCmd(ctx context.Context, req logs.Request) *exec.Cmd {
 	// // set the cursor position based on req, default to 5m
 	since := time.Now().Add(-5 * time.Minute)
