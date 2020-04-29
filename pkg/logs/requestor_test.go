@@ -29,19 +29,19 @@ func Test_parseEntry(t *testing.T) {
 	}
 
 	if entry.Name != expectedEntry.Name {
-		t.Fatalf("expected Name %s, got %s", expectedEntry.Name, entry.Name)
+		t.Fatalf("want Name: %q, got %q", expectedEntry.Name, entry.Name)
 	}
 
 	if entry.Namespace != expectedEntry.Namespace {
-		t.Fatalf("expected Namespace %s, got %s", expectedEntry.Namespace, entry.Namespace)
+		t.Fatalf("want Namespace: %q, got %q", expectedEntry.Namespace, entry.Namespace)
 	}
 
 	if entry.Timestamp != expectedEntry.Timestamp {
-		t.Fatalf("expected Timestamp %s, got %s", expectedEntry.Timestamp, entry.Timestamp)
+		t.Fatalf("want Timestamp: %q, got %q", expectedEntry.Timestamp, entry.Timestamp)
 	}
 
 	if entry.Text != expectedEntry.Text {
-		t.Fatalf("expected Text %s, got %s", expectedEntry.Text, entry.Text)
+		t.Fatalf("want Text: %q, got %q", expectedEntry.Text, entry.Text)
 	}
 }
 
