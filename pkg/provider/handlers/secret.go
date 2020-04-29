@@ -2,11 +2,13 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/containerd/containerd"
 	"github.com/openfaas/faas-provider/types"
@@ -76,17 +78,6 @@ func createSecret(c *containerd.Client, w http.ResponseWriter, r *http.Request, 
 	}
 }
 
-func parseSecret(r *http.Request) (types.Secret, error) {
-	secret := types.Secret{}
-	bytesOut, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		return secret, err
-	}
-
-	err = json.Unmarshal(bytesOut, &secret)
-	return secret, err
-}
-
 func deleteSecret(c *containerd.Client, w http.ResponseWriter, r *http.Request, mountPath string) {
 	secret, err := parseSecret(r)
 	if err != nil {
@@ -102,4 +93,30 @@ func deleteSecret(c *containerd.Client, w http.ResponseWriter, r *http.Request, 
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+}
+
+func parseSecret(r *http.Request) (types.Secret, error) {
+	secret := types.Secret{}
+	bytesOut, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return secret, err
+	}
+
+	err = json.Unmarshal(bytesOut, &secret)
+	if err != nil {
+		return secret, err
+	}
+
+	if isTraversal(secret.Name) {
+		return secret, fmt.Errorf(traverseErrorSt)
+	}
+
+	return secret, err
+}
+
+const traverseErrorSt = "directory traversal found in name"
+
+func isTraversal(name string) bool {
+	return strings.Contains(name, fmt.Sprintf("%s", string(os.PathSeparator))) ||
+		strings.Contains(name, "..")
 }

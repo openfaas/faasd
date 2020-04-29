@@ -11,6 +11,10 @@ all: local
 local:
 	CGO_ENABLED=0 GOOS=linux go build -o bin/faasd
 
+.PHONY: test
+test:
+	CGO_ENABLED=0 GOOS=linux go test -ldflags $(LDFLAGS) ./...
+
 .PHONY: dist
 dist:
 	CGO_ENABLED=0 GOOS=linux go build -ldflags $(LDFLAGS) -a -installsuffix cgo -o bin/faasd

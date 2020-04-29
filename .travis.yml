@@ -10,6 +10,7 @@ addons:
       - runc
 
 script:
+- make test
 - make dist
 - make prepare-test
 - make test-e2e
