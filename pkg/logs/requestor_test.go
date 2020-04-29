@@ -62,12 +62,12 @@ func Test_buildCmd(t *testing.T) {
 	)
 
 	cmd := buildCmd(ctx, req).String()
-
-	if !strings.Contains(cmd, "journalctl") {
-		t.Fatalf("expected journalctl cmd, got cmd %s", cmd)
+	wantCmd := "journalctl"
+	if !strings.Contains(cmd, wantCmd) {
+		t.Fatalf("cmd want: %q, got: %q", wantCmd, cmd)
 	}
 
 	if !strings.HasSuffix(cmd, expectedArgs) {
-		t.Fatalf("expected arg %s,\ngot cmd %s", expectedArgs, cmd)
+		t.Fatalf("arg want: %q\ngot: %q", expectedArgs, cmd)
 	}
 }
