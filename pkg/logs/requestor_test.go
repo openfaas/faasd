@@ -57,7 +57,7 @@ func Test_buildCmd(t *testing.T) {
 	}
 
 	expectedArgs := fmt.Sprintf(
-		"--utc --no-pager --output=json --output-fields=SYSLOG_IDENTIFIER,MESSAGE,_PID,_SOURCE_REALTIME_TIMESTAMP --identifier=spacetwo:loggyfunc --since=%s --follow --lines=5",
+		"--utc --no-pager --output=json --identifier=spacetwo:loggyfunc --since=%s --follow --lines=5",
 		now.UTC().Format("2006-01-02 15:04:05"),
 	)
 
