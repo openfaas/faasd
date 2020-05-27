@@ -174,19 +174,19 @@ make local
 
 ```sh
 # For x86_64
-sudo curl -fSLs "https://github.com/openfaas/faasd/releases/download/0.8.2/faasd" \
-    -o "/usr/local/bin/faasd" \
-    && sudo chmod a+x "/usr/local/bin/faasd"
+export SUFFIX=""
 
 # armhf
-sudo curl -fSLs "https://github.com/openfaas/faasd/releases/download/0.8.2/faasd-armhf" \
-    -o "/usr/local/bin/faasd" \
-    && sudo chmod a+x "/usr/local/bin/faasd"
+export SUFFIX="-armhf"
 
 # arm64
-sudo curl -fSLs "https://github.com/openfaas/faasd/releases/download/0.8.2/faasd-arm64" \
-    -o "/usr/local/bin/faasd" \
-    && sudo chmod a+x "/usr/local/bin/faasd"
+export SUFFIX="-arm64"
+
+# Then download
+curl -fSLs "https://github.com/openfaas/faasd/releases/download/0.8.2/faasd$SUFFIX" \
+    -o "/tmp/faasd" \
+    && chmod +x "/tmp/faasd" 
+sudo mv /tmp/faasd /usr/local/bin/
 ```
 
 #### Install `faasd`
