@@ -175,7 +175,7 @@ func makeServiceDefinitions(archSuffix string) []pkg.Service {
 	return []pkg.Service{
 		{
 			Name:  "basic-auth-plugin",
-			Image: "docker.io/openfaas/basic-auth-plugin:0.18.10" + archSuffix,
+			Image: "docker.io/openfaas/basic-auth-plugin:0.18.17" + archSuffix,
 			Env: []string{
 				"port=8080",
 				"secret_mount_path=" + containerSecretMountDir,
@@ -230,7 +230,7 @@ func makeServiceDefinitions(archSuffix string) []pkg.Service {
 				"secret_mount_path=" + containerSecretMountDir,
 				"scale_from_zero=true",
 			},
-			Image: "docker.io/openfaas/gateway:0.18.8" + archSuffix,
+			Image: "docker.io/openfaas/gateway:0.18.17" + archSuffix,
 			Mounts: []pkg.Mount{
 				{
 					Src:  path.Join(path.Join(wd, "secrets"), "basic-auth-password"),
@@ -256,7 +256,7 @@ func makeServiceDefinitions(archSuffix string) []pkg.Service {
 				"basic_auth=true",
 				"secret_mount_path=" + containerSecretMountDir,
 			},
-			Image: "docker.io/openfaas/queue-worker:0.9.0",
+			Image: "docker.io/openfaas/queue-worker:0.11.2",
 			Mounts: []pkg.Mount{
 				{
 					Src:  path.Join(path.Join(wd, "secrets"), "basic-auth-password"),
