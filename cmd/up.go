@@ -251,7 +251,7 @@ func makeServiceDefinitions(archSuffix string) []pkg.Service {
 				"gateway_invoke=true",
 				"faas_gateway_address=gateway",
 				"ack_wait=5m5s",
-				"max_inflight=1",
+				"max_inflight=5",
 				"write_debug=false",
 				"basic_auth=true",
 				"secret_mount_path=" + containerSecretMountDir,
