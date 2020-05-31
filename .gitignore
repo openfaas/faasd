@@ -7,3 +7,4 @@ basic-auth-user
 basic-auth-password
 /bin
 /secrets
+.vscode

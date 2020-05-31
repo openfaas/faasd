@@ -7,7 +7,11 @@ import (
 	"log"
 	"os"
 	"path"
+	"sort"
 
+	"github.com/alexellis/k3sup/pkg/env"
+	"github.com/compose-spec/compose-go/loader"
+	compose "github.com/compose-spec/compose-go/types"
 	"github.com/containerd/containerd"
 	"github.com/containerd/containerd/cio"
 	"github.com/containerd/containerd/containers"
@@ -15,6 +19,7 @@ import (
 	gocni "github.com/containerd/go-cni"
 	"github.com/openfaas/faasd/pkg/cninetwork"
 	"github.com/openfaas/faasd/pkg/service"
+	"github.com/pkg/errors"
 
 	"github.com/containerd/containerd/namespaces"
 	"github.com/opencontainers/runtime-spec/specs-go"
@@ -232,5 +237,110 @@ func withOCIArgs(args []string) oci.SpecOpts {
 
 	return func(_ context.Context, _ oci.Client, _ *containers.Container, s *oci.Spec) error {
 		return nil
+	}
+}
+
+// ParseCompose converts a docker-compose Config into a service list that we can
+// pass to the supervisor client Start.
+//
+// The only anticipated error is a failure if the value mounts are not of type 	`bind`.
+func ParseCompose(config *compose.Config) ([]Service, error) {
+	services := make([]Service, len(config.Services))
+	for idx, s := range config.Services {
+		// environment is a map[string]*string
+		// but we want a []string
+
+		var env []string
+
+		envKeys := sortedEnvKeys(s.Environment)
+		for _, name := range envKeys {
+			value := s.Environment[name]
+			if value == nil {
+				env = append(env, fmt.Sprintf(`%s=""`, name))
+			} else {
+				env = append(env, fmt.Sprintf(`%s=%s`, name, *value))
+			}
+		}
+
+		var mounts []Mount
+		for _, v := range s.Volumes {
+			if v.Type != "bind" {
+				return nil, errors.Errorf("unsupported volume mount type '%s' when parsing service '%s'", v.Type, s.Name)
+			}
+			mounts = append(mounts, Mount{
+				Src:  v.Source,
+				Dest: v.Target,
+			})
+		}
+
+		services[idx] = Service{
+			Name:  s.Name,
+			Image: s.Image,
+			// ShellCommand is just an alias of string slice
+			Args:   []string(s.Command),
+			Caps:   s.CapAdd,
+			Env:    env,
+			Mounts: mounts,
+		}
+	}
+
+	return services, nil
+}
+
+// LoadComposeFile is a helper method for loading a docker-compose file
+func LoadComposeFile(wd string, file string) (*compose.Config, error) {
+	file = path.Join(wd, file)
+	b, err := ioutil.ReadFile(file)
+	if err != nil {
+		return nil, err
+	}
+	config, err := loader.ParseYAML(b)
+	if err != nil {
+		return nil, err
+	}
+
+	archSuffix, err := GetArchSuffix(env.GetClientArch)
+	if err != nil {
+		return nil, err
+	}
+
+	var files []compose.ConfigFile
+	files = append(files, compose.ConfigFile{Filename: file, Config: config})
+	return loader.Load(compose.ConfigDetails{
+		WorkingDir:  wd,
+		ConfigFiles: files,
+		Environment: map[string]string{
+			"ARCH_SUFFIX": archSuffix,
+		},
+	})
+}
+
+func sortedEnvKeys(env map[string]*string) (keys []string) {
+	for k := range env {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+type ArchGetter func() (string, string)
+
+func GetArchSuffix(getClientArch ArchGetter) (suffix string, err error) {
+	clientArch, clientOS := getClientArch()
+
+	if clientOS != "Linux" {
+		return "", fmt.Errorf("You can only use faasd on Linux")
+	}
+	switch clientArch {
+	case "x86_64":
+		// no suffix needed
+		return "", nil
+	case "armhf", "armv7l":
+		return "-armhf", nil
+	case "arm64", "aarch64":
+		return "-arm64", nil
+	default:
+		// unknown, so use the default without suffix for now
+		return "", nil
 	}
 }
