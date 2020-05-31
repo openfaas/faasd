@@ -1,0 +1,82 @@
+version: "3.7"
+services:
+  basic-auth-plugin:
+    image: docker.io/openfaas/basic-auth-plugin:0.18.17
+    environment:
+      port: "8080"
+      secret_mount_path: "/run/secrets"
+      user_filename: "basic-auth-user"
+      pass_filename: "basic-auth-password"
+    volumes:
+      # we assume cwd == /var/lib/faasd
+      - type: bind
+        source: ./secrets/basic-auth-password
+        target: /run/secrets/basic-auth-password
+      - type: bind
+        source: ./secrets/basic-auth-user
+        target: /run/secrets/basic-auth-user
+    cap_add:
+      - CAP_NET_RAW
+  nats:
+    image: docker.io/library/nats-streaming:0.11.2
+    command:
+      - "/nats-streaming-server"
+      - "-m"
+      - "8222"
+      - "--store=memory"
+      - "--cluster_id=faas-cluster"
+  prometheus:
+    image: docker.io/prom/prometheus:v2.14.0
+    volumes:
+      - type: bind
+        source: ./prometheus.yml
+        target: /etc/prometheus/prometheus.yml
+    cap_add:
+      - CAP_NET_RAW
+  gateway:
+    image: docker.io/openfaas/gateway:0.18.17
+    environment:
+      basic_auth: "true"
+      functions_provider_url: "http://faasd-provider:8081/"
+      direct_functions: "false"
+      read_timeout: "60s"
+      write_timeout: "60s"
+      upstream_timeout: "65s"
+      faas_nats_address: "nats"
+      faas_nats_port: "4222"
+      auth_proxy_url: "http://basic-auth-plugin:8080/validate"
+      auth_proxy_pass_body: "false"
+      secret_mount_path: "/run/secrets"
+      scale_from_zero: "true"
+    volumes:
+      # we assume cwd == /var/lib/faasd
+      - type: bind
+        source: ./secrets/basic-auth-password
+        target: /run/secrets/basic-auth-password
+      - type: bind
+        source: ./secrets/basic-auth-user
+        target: /run/secrets/basic-auth-user
+    cap_add:
+      - CAP_NET_RAW
+  queue-worker:
+    image: docker.io/openfaas/queue-worker:0.11.2
+    environment:
+      faas_nats_address: "nats"
+      faas_nats_port: "4222"
+      gateway_invoke: "true"
+      faas_gateway_address: "gateway"
+      ack_wait: "5m5s"
+      max_inflight: "1"
+      write_debug: "false"
+      basic_auth: "true"
+      secret_mount_path: "/run/secrets"
+    volumes:
+      # we assume cwd == /var/lib/faasd
+      - type: bind
+        source: ./secrets/basic-auth-password
+        target: /run/secrets/basic-auth-password
+      - type: bind
+        source: ./secrets/basic-auth-user
+        target: /run/secrets/basic-auth-user
+    cap_add:
+      - CAP_NET_RAW

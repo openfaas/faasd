@@ -38,6 +38,10 @@ func runInstall(_ *cobra.Command, _ []string) error {
 		return errors.Wrap(basicAuthErr, "cannot create basic-auth-* files")
 	}
 
+	if err := cp("docker-compose.yaml", faasdwd); err != nil {
+		return err
+	}
+
 	if err := cp("prometheus.yml", faasdwd); err != nil {
 		return err
 	}

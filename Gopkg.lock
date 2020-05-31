@@ -47,12 +47,27 @@
   version = "0.3.0"
 
 [[projects]]
-  digest = "1:6076d857867a70e87dd1994407deb142f27436f1293b13e75cc053192d14eb0c"
+  digest = "1:6e4df70ce37cf5e682ea90ee865fc65725208b0d42d48e3470e546a3121b9dd9"
   name = "github.com/alexellis/k3sup"
   packages = ["pkg/env"]
   pruneopts = "UT"
-  revision = "f9a4adddc732742a9ee7962609408fb0999f2d7b"
-  version = "0.7.1"
+  revision = "aec00235bcc36b6b2cc0799a0b89d9e7bccdd8c6"
+  version = "0.7.9"
+
+[[projects]]
+  branch = "master"
+  digest = "1:cda177c07c87c648b1aaa37290717064a86d337a5dc6b317540426872d12de52"
+  name = "github.com/compose-spec/compose-go"
+  packages = [
+    "envfile",
+    "interpolation",
+    "loader",
+    "schema",
+    "template",
+    "types",
+  ]
+  pruneopts = "UT"
+  revision = "36d8ce368e05d2ae83c86b2987f20f7c20d534a6"
 
 [[projects]]
   digest = "1:cf83a14c8042951b0dcd74758fc32258111ecc7838cbdf5007717172cab9ca9b"
@@ -227,6 +242,14 @@
   version = "v0.6.3"
 
 [[projects]]
+  digest = "1:ade935c55cd6d0367c843b109b09c9d748b1982952031414740750fdf94747eb"
+  name = "github.com/docker/go-connections"
+  packages = ["nat"]
+  pruneopts = "UT"
+  revision = "7395e3f8aa162843a74ed6d48e79627d9792ac55"
+  version = "v0.4.0"
+
+[[projects]]
   digest = "1:0938aba6e09d72d48db029d44dcfa304851f52e2d67cda920436794248e92793"
   name = "github.com/docker/go-events"
   packages = ["."]
@@ -292,6 +315,14 @@
   version = "v1.7.3"
 
 [[projects]]
+  digest = "1:1a7059d684f8972987e4b6f0703083f207d63f63da0ea19610ef2e6bb73db059"
+  name = "github.com/imdario/mergo"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "66f88b4ae75f5edcc556623b96ff32c06360fbb7"
+  version = "v0.3.9"
+
+[[projects]]
   digest = "1:870d441fe217b8e689d7949fef6e43efbc787e50f200cb1e70dbca9204a1d6be"
   name = "github.com/inconshreveable/mousetrap"
   packages = ["."]
@@ -306,6 +337,22 @@
   pruneopts = "UT"
   revision = "f55edac94c9bbba5d6182a4be46d86a2c9b5b50e"
   version = "v1.0.2"
+
+[[projects]]
+  digest = "1:528e84b49342ec33c96022f8d7dd4c8bd36881798afbb44e2744bda0ec72299c"
+  name = "github.com/mattn/go-shellwords"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "28e4fdf351f0744b1249317edb45e4c2aa7a5e43"
+  version = "v1.0.10"
+
+[[projects]]
+  digest = "1:dd34285411cd7599f1fe588ef9451d5237095963ecc85c1212016c6769866306"
+  name = "github.com/mitchellh/mapstructure"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "20e21c67c4d0e1b4244f83449b7cdd10435ee998"
+  version = "v1.3.1"
 
 [[projects]]
   digest = "1:906eb1ca3c8455e447b99a45237b2b9615b665608fd07ad12cce847dd9a1ec43"
@@ -443,6 +490,30 @@
   revision = "0a2b9b5464df8343199164a0321edf3313202f7e"
 
 [[projects]]
+  branch = "master"
+  digest = "1:87fe9bca786484cef53d52adeec7d1c52bc2bfbee75734eddeb75fc5c7023871"
+  name = "github.com/xeipuuv/gojsonpointer"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "02993c407bfbf5f6dae44c4f4b1cf6a39b5fc5bb"
+
+[[projects]]
+  branch = "master"
+  digest = "1:dc6a6c28ca45d38cfce9f7cb61681ee38c5b99ec1425339bfc1e1a7ba769c807"
+  name = "github.com/xeipuuv/gojsonreference"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "bd5ef7bd5415a7ac448318e64f11a24cd21e594b"
+
+[[projects]]
+  digest = "1:a8a0ed98532819a3b0dc5cf3264a14e30aba5284b793ba2850d6f381ada5f987"
+  name = "github.com/xeipuuv/gojsonschema"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "82fcdeb203eb6ab2a67d0a623d9c19e5e5a64927"
+  version = "v1.2.0"
+
+[[projects]]
   digest = "1:aed53a5fa03c1270457e331cf8b7e210e3088a2278fec552c5c5d29c1664e161"
   name = "go.opencensus.io"
   packages = [
@@ -570,12 +641,22 @@
   revision = "6eaf6f47437a6b4e2153a190160ef39a92c7eceb"
   version = "v1.23.0"
 
+[[projects]]
+  digest = "1:d7f1bd887dc650737a421b872ca883059580e9f8314d601f88025df4f4802dce"
+  name = "gopkg.in/yaml.v2"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "0b1645d91e851e735d3e23330303ce81f70adbe3"
+  version = "v2.3.0"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
     "github.com/alexellis/go-execute/pkg/v1",
     "github.com/alexellis/k3sup/pkg/env",
+    "github.com/compose-spec/compose-go/loader",
+    "github.com/compose-spec/compose-go/types",
     "github.com/containerd/containerd",
     "github.com/containerd/containerd/cio",
     "github.com/containerd/containerd/containers",
@@ -601,6 +682,7 @@
     "github.com/pkg/errors",
     "github.com/sethvargo/go-password/password",
     "github.com/spf13/cobra",
+    "github.com/spf13/pflag",
     "github.com/vishvananda/netlink",
     "github.com/vishvananda/netns",
     "golang.org/x/sys/unix",
