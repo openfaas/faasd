@@ -12,14 +12,16 @@ import (
 	faasd "github.com/openfaas/faasd/pkg"
 )
 
+// TODO add annotations map here ?
 type Function struct {
-	name      string
-	namespace string
-	image     string
-	pid       uint32
-	replicas  int
-	IP        string
-	labels    map[string]string
+	name        string
+	namespace   string
+	image       string
+	pid         uint32
+	replicas    int
+	IP          string
+	labels      map[string]string
+	annotations map[string]string
 }
 
 // ListFunctions returns a map of all functions with running tasks on namespace
@@ -49,15 +51,19 @@ func GetFunction(client *containerd.Client, name string) (Function, error) {
 
 		containerName := c.ID()
 		labels, labelErr := c.Labels(ctx)
-		if labelErr != nil {
+                // TODO Here need to retrieve the special list of labels that are actually
+		// annotations?
+		annotations, annotationErr := c.Labels(ctx)
+		if labelErr != nil || annotationErr != nil {
 			log.Printf("cannot list container %s labels: %s", containerName, labelErr.Error())
 		}
 
 		f := Function{
-			name:      containerName,
-			namespace: faasd.FunctionNamespace,
-			image:     image.Name(),
-			labels:    labels,
+			name:        containerName,
+			namespace:   faasd.FunctionNamespace,
+			image:       image.Name(),
+			labels:      labels,
+			annotations: annotations,
 		}
 
 		replicas := 0

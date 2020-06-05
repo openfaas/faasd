@@ -98,6 +98,9 @@ func deploy(ctx context.Context, req types.FunctionDeployment, client *container
 
 	name := req.Service
 
+	/* TODO Need to add contents of req.Annotations to a special type of label here? Looks like there's no way to make labels
+	hidden with containerd but approach taken by faas-swarm seems to be to use a designated prefix for the label key */
+
 	container, err := client.NewContainer(
 		ctx,
 		name,
@@ -110,6 +113,7 @@ func deploy(ctx context.Context, req types.FunctionDeployment, client *container
 			oci.WithEnv(envs)),
 		containerd.WithContainerLabels(*req.Labels),
 	)
+
 
 	if err != nil {
 		return fmt.Errorf("unable to create container: %s, error: %s", name, err)
