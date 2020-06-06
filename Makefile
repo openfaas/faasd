@@ -5,21 +5,29 @@ CONTAINERD_VER := 1.3.2
 CNI_VERSION := v0.8.5
 ARCH := amd64
 
+.ASSETS := $(wildcard pkg/assets/config/*)
+
 .PHONY: all
 all: local
 
-local:
+local: generate
 	CGO_ENABLED=0 GOOS=linux go build -o bin/faasd
 
 .PHONY: test
-test:
+test: generate
 	CGO_ENABLED=0 GOOS=linux go test -ldflags $(LDFLAGS) ./...
 
 .PHONY: dist
-dist:
+dist: generate
 	CGO_ENABLED=0 GOOS=linux go build -ldflags $(LDFLAGS) -a -installsuffix cgo -o bin/faasd
 	CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7 go build -ldflags $(LDFLAGS) -a -installsuffix cgo -o bin/faasd-armhf
 	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags $(LDFLAGS) -a -installsuffix cgo -o bin/faasd-arm64
+
+pkg/assets/config_vfsdata.go: $(.ASSETS)
+	@echo "+ generate config assets"
+	@go generate ./pkg/assets
+
+generate: pkg/assets/config_vfsdata.go
 
 .PHONY: prepare-test
 prepare-test:

@@ -10,6 +10,7 @@ addons:
       - runc
 
 script:
+- go get -u github.com/shurcooL/vfsgen/cmd/vfsgendev
 - make test
 - make dist
 - make prepare-test

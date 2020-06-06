@@ -80,3 +80,4 @@ services:
         target: /run/secrets/basic-auth-user
     cap_add:
       - CAP_NET_RAW
+

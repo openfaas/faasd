@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 
+	"github.com/openfaas/faasd/pkg/assets"
 	systemd "github.com/openfaas/faasd/pkg/systemd"
 	"github.com/pkg/errors"
 
@@ -38,15 +39,7 @@ func runInstall(_ *cobra.Command, _ []string) error {
 		return errors.Wrap(basicAuthErr, "cannot create basic-auth-* files")
 	}
 
-	if err := cp("docker-compose.yaml", faasdwd); err != nil {
-		return err
-	}
-
-	if err := cp("prometheus.yml", faasdwd); err != nil {
-		return err
-	}
-
-	if err := cp("resolv.conf", faasdwd); err != nil {
+	if err := copyConfig(faasdwd); err != nil {
 		return err
 	}
 
@@ -118,6 +111,44 @@ func ensureWorkingDir(folder string) error {
 	return nil
 }
 
+// copyConfig writes the required faasd configuration files to the destFolder
+// if the files exist locally, those files will be used, otherwise the default embedded
+// assets are used.  This allows the user to customize the installation by using `faasd generate`
+// to create and then edit the configuration files.
+func copyConfig(destFolder string) (err error) {
+	if fileExists("docker-compose.yaml") {
+		err = cp("docker-compose.yaml", destFolder)
+	} else {
+		err = assets.WriteCompose(destFolder)
+	}
+
+	if err != nil {
+		return err
+	}
+
+	if fileExists("prometheus.yml") {
+		err = cp("prometheus.yml", destFolder)
+	} else {
+		err = assets.WritePrometheus(destFolder)
+	}
+
+	if err != nil {
+		return err
+	}
+
+	if fileExists("resolv.conf") {
+		err = cp("resolv.conf", destFolder)
+	} else {
+		err = assets.WriteResolv(destFolder)
+	}
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func cp(source, destFolder string) error {
 	file, err := os.Open(source)
 	if err != nil {
@@ -135,4 +166,14 @@ func cp(source, destFolder string) error {
 	_, err = io.Copy(out, file)
 
 	return err
+}
+
+// fileExists checks if a file exists and is not a directory before we
+// try using it to prevent further errors.
+func fileExists(filename string) bool {
+	info, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return !info.IsDir()
 }
