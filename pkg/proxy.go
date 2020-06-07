@@ -11,6 +11,8 @@ import (
 	"time"
 )
 
+// NewProxy creates a HTTP proxy to expose the gateway container
+// from OpenFaaS to the host
 func NewProxy(port int, timeout time.Duration) *Proxy {
 
 	return &Proxy{
@@ -19,11 +21,13 @@ func NewProxy(port int, timeout time.Duration) *Proxy {
 	}
 }
 
+// Proxy for exposing a private container
 type Proxy struct {
 	Timeout time.Duration
 	Port    int
 }
 
+// Start listening and forwarding HTTP to the host
 func (p *Proxy) Start(gatewayChan chan string, done chan bool) error {
 	tcp := p.Port
 

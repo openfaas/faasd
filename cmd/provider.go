@@ -47,6 +47,7 @@ func makeProviderCmd() *cobra.Command {
 		}
 
 		log.Printf("faasd-provider starting..\tService Timeout: %s\n", config.WriteTimeout.String())
+		printVersion()
 
 		wd, err := os.Getwd()
 		if err != nil {

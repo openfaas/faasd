@@ -186,7 +186,7 @@ func Test_GetArchSuffix(t *testing.T) {
 		{
 			name:    "error if os is not linux",
 			foundOS: "mac",
-			err:     "You can only use faasd on Linux",
+			err:     "you can only use faasd with Linux",
 		},
 		{
 			name:      "x86 has no suffix",

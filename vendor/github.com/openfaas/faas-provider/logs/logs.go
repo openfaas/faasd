@@ -33,7 +33,7 @@ type Request struct {
 // allows you to safely compare if two requests have the same value.
 func (r Request) String() string {
 	return fmt.Sprintf(
-		"name:%s namespace: %s instance:%s since:%v tail:%d follow:%v",
+		"name: %s namespace: %s instance: %s since: %v tail: %d follow: %v",
 		r.Name, r.Namespace, r.Instance, r.Since, r.Tail, r.Follow,
 	)
 }
@@ -55,8 +55,12 @@ type Message struct {
 
 // String implements the Stringer interface and allows for nice and simple string formatting of a log Message.
 func (m Message) String() string {
+	ns := ""
+	if len(m.Namespace) > 0 {
+		ns = fmt.Sprintf("%s ", m.Namespace)
+	}
 	return fmt.Sprintf(
-		"%s %s (%s %s) %s",
-		m.Timestamp.String(), m.Name, m.Namespace, m.Instance, m.Text,
+		"%s %s (%s%s) %s",
+		m.Timestamp.String(), m.Name, ns, m.Instance, m.Text,
 	)
 }

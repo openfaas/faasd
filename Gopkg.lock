@@ -39,20 +39,20 @@
   revision = "9e921883ac929bbe515b39793ece99ce3a9d7706"
 
 [[projects]]
-  digest = "1:74860eb071d52337d67e9ffd6893b29affebd026505aa917ec23131576a91a77"
+  digest = "1:d7086e6a64a9e4fa54aaf56ce42ead0be1300b0285604c4d306438880db946ad"
   name = "github.com/alexellis/go-execute"
   packages = ["pkg/v1"]
   pruneopts = "UT"
-  revision = "961405ea754427780f2151adff607fa740d377f7"
-  version = "0.3.0"
+  revision = "8697e4e28c5e3ce441ff8b2b6073035606af2fe9"
+  version = "0.4.0"
 
 [[projects]]
-  digest = "1:6e4df70ce37cf5e682ea90ee865fc65725208b0d42d48e3470e546a3121b9dd9"
+  digest = "1:345f6fa182d72edfa3abc493881c3fa338a464d93b1e2169cda9c822fde31655"
   name = "github.com/alexellis/k3sup"
   packages = ["pkg/env"]
   pruneopts = "UT"
-  revision = "aec00235bcc36b6b2cc0799a0b89d9e7bccdd8c6"
-  version = "0.7.9"
+  revision = "629c0bc6b50f71ab93a1fbc8971a5bd05dc581eb"
+  version = "0.9.3"
 
 [[projects]]
   branch = "master"
@@ -408,7 +408,7 @@
   version = "0.18.10"
 
 [[projects]]
-  digest = "1:7a20be0bdfb2c05a4a7b955cb71645fe2983aa3c0bbae10d6bba3e2dd26ddd0d"
+  digest = "1:4d972c6728f8cbaded7d2ee6349fbe5f9278cabcd51d1ecad97b2e79c72bea9d"
   name = "github.com/openfaas/faas-provider"
   packages = [
     ".",
@@ -419,8 +419,8 @@
     "types",
   ]
   pruneopts = "UT"
-  revision = "8f7c35975e1b2bf8286c2f90ee51633eec427491"
-  version = "0.14.0"
+  revision = "db19209aa27f42a9cf6a23448fc2b8c9cc4fbb5d"
+  version = "v0.15.1"
 
 [[projects]]
   digest = "1:cf31692c14422fa27c83a05292eb5cbe0fb2775972e8f1f8446a71549bd8980b"

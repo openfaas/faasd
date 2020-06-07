@@ -294,6 +294,7 @@ func LoadComposeFile(wd string, file string) (*compose.Config, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	config, err := loader.ParseYAML(b)
 	if err != nil {
 		return nil, err
@@ -306,6 +307,7 @@ func LoadComposeFile(wd string, file string) (*compose.Config, error) {
 
 	var files []compose.ConfigFile
 	files = append(files, compose.ConfigFile{Filename: file, Config: config})
+
 	return loader.Load(compose.ConfigDetails{
 		WorkingDir:  wd,
 		ConfigFiles: files,
@@ -323,14 +325,19 @@ func sortedEnvKeys(env map[string]*string) (keys []string) {
 	return keys
 }
 
+// ArchGetter provides client CPU architecture and
+// client OS
 type ArchGetter func() (string, string)
 
+// GetArchSuffix provides client CPU architecture and
+// client OS from ArchGetter
 func GetArchSuffix(getClientArch ArchGetter) (suffix string, err error) {
 	clientArch, clientOS := getClientArch()
 
 	if clientOS != "Linux" {
-		return "", fmt.Errorf("You can only use faasd on Linux")
+		return "", fmt.Errorf("you can only use faasd with Linux")
 	}
+
 	switch clientArch {
 	case "x86_64":
 		// no suffix needed
