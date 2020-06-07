@@ -1,8 +1,8 @@
 Version := $(shell git describe --tags --dirty)
 GitCommit := $(shell git rev-parse HEAD)
 LDFLAGS := "-s -w -X main.Version=$(Version) -X main.GitCommit=$(GitCommit)"
-CONTAINERD_VER := 1.3.2
-CNI_VERSION := v0.8.5
+CONTAINERD_VER := 1.3.4
+CNI_VERSION := v0.8.6
 ARCH := amd64
 
 .PHONY: all
@@ -36,7 +36,7 @@ prepare-test:
 	sudo systemctl status -l faasd-provider --no-pager
 	sudo systemctl status -l faasd --no-pager
 	curl -sSLf https://cli.openfaas.com | sudo sh
-	sleep 120 && sudo journalctl -u faasd --no-pager
+	echo "Sleeping for 2m" && sleep 120 && sudo journalctl -u faasd --no-pager
 
 .PHONY: test-e2e
 test-e2e:

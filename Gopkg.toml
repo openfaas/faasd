@@ -16,11 +16,11 @@
 
 [[constraint]]
   name = "github.com/alexellis/k3sup"
-  version = "0.7.1"
+  version = "0.9.3"
 
 [[constraint]]
   name = "github.com/alexellis/go-execute"
-  version = "0.3.0"
+  version = "0.4.0"
 
 [[constraint]]
   name = "github.com/gorilla/mux"
@@ -40,7 +40,7 @@
 
 [[constraint]]
   name = "github.com/openfaas/faas-provider"
-  version = "0.14.0"
+  version = "v0.15.1"
 
 [[constraint]]
   name = "github.com/docker/cli"

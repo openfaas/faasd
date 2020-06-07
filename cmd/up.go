@@ -46,6 +46,8 @@ var upCmd = &cobra.Command{
 
 func runUp(cmd *cobra.Command, _ []string) error {
 
+	printVersion()
+
 	cfg, err := parseUpFlags(cmd)
 	if err != nil {
 		return err

@@ -69,11 +69,11 @@ var versionCmd = &cobra.Command{
 func parseBaseCommand(_ *cobra.Command, _ []string) {
 	printLogo()
 
-	fmt.Printf(
-		`faasd
-Commit: %s
-Version: %s
-`, GitCommit, GetVersion())
+	printVersion()
+}
+
+func printVersion() {
+	fmt.Printf("faasd version: %s\tcommit: %s\n", GetVersion(), GitCommit)
 }
 
 func printLogo() {
