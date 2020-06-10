@@ -16,13 +16,13 @@ runcmd:
 - mkdir -p /opt/cni/bin
 - curl -sSL https://github.com/containernetworking/plugins/releases/download/v0.8.5/cni-plugins-linux-amd64-v0.8.5.tgz | tar -xz -C /opt/cni/bin
 - mkdir -p /go/src/github.com/openfaas/
-- cd /go/src/github.com/openfaas/ && git clone https://github.com/openfaas/faasd
-- curl -fSLs "https://github.com/openfaas/faasd/releases/download/0.8.2/faasd" --output "/usr/local/bin/faasd" && chmod a+x "/usr/local/bin/faasd"
+- cd /go/src/github.com/openfaas/ && git clone https://github.com/openfaas/faasd && git checkout 0.9.0
+- curl -fSLs "https://github.com/openfaas/faasd/releases/download/0.9.0/faasd" --output "/usr/local/bin/faasd" && chmod a+x "/usr/local/bin/faasd"
 - cd /go/src/github.com/openfaas/faasd/ && /usr/local/bin/faasd install
 - systemctl status -l containerd --no-pager
 - journalctl -u faasd-provider --no-pager
 - systemctl status -l faasd-provider --no-pager
 - systemctl status -l faasd --no-pager
 - curl -sSLf https://cli.openfaas.com | sh
-- sleep 5 && journalctl -u faasd --no-pager
+- sleep 60 && journalctl -u faasd --no-pager
 - cat /var/lib/faasd/secrets/basic-auth-password | /usr/local/bin/faas-cli login --password-stdin
