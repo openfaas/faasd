@@ -44,7 +44,7 @@ If your IaaS supports `user_data` aka "cloud-init", then this guide is for you. 
 
 ### Run locally on MacOS, Linux, or Windows with Multipass.run
 
-* [Get up and running with your own faasd installation on your Mac/Ubuntu or Windows with cloud-config](https://gist.github.com/alexellis/6d297e678c9243d326c151028a3ad7b9)
+* [Get up and running with your own faasd installation on your Mac/Ubuntu or Windows with cloud-config](docs/FAASD_MULTIPASS.md)
 
 ### Get started on armhf / Raspberry Pi
 
