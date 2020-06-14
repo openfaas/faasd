@@ -1,9 +1,6 @@
-> Note: this has now moved to github.com/openfaas/faasd <- check for the latest version
-
-
 ## Get up and running with your own faasd installation on your Mac
 
-[multipass from Canoncial](https://multipass.run) is like Docker Desktop, but for getting Ubuntu instead of a Docker daemon. It works on MacOS, Linux, and Windows with the same consistent UX. It's not fully open-source, and uses some proprietary add-ons / binaries, but is free to use.
+[multipass from Canonical](https://multipass.run) is like Docker Desktop, but for getting Ubuntu instead of a Docker daemon. It works on MacOS, Linux, and Windows with the same consistent UX. It's not fully open-source, and uses some proprietary add-ons / binaries, but is free to use.
 
 For Linux using Ubuntu, you can install the packages directly, or use `sudo snap install multipass --classic` and follow this tutorial. For Raspberry Pi, [see my tutorial here](https://blog.alexellis.io/faasd-for-lightweight-serverless/).
 
