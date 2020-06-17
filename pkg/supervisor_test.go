@@ -7,8 +7,10 @@ import (
 )
 
 func Test_ParseCompose(t *testing.T) {
+
 	wd := "testdata"
-	expected := map[string]Service{
+
+	want := map[string]Service{
 		"basic-auth-plugin": {
 			Name:  "basic-auth-plugin",
 			Image: "docker.io/openfaas/basic-auth-plugin:0.18.17",
@@ -73,7 +75,8 @@ func Test_ParseCompose(t *testing.T) {
 					Dest: path.Join("/run/secrets", "basic-auth-user"),
 				},
 			},
-			Caps: []string{"CAP_NET_RAW"},
+			Caps:      []string{"CAP_NET_RAW"},
+			DependsOn: []string{"nats"},
 		},
 		"queue-worker": {
 			Name: "queue-worker",
@@ -103,32 +106,39 @@ func Test_ParseCompose(t *testing.T) {
 		},
 	}
 
-	compose, err := LoadComposeFile(wd, "docker-compose.yaml")
+	compose, err := LoadComposeFileWithArch(wd, "docker-compose.yaml", func() (string, string) { return "x86_64", "Linux" })
 	if err != nil {
-		t.Fatalf("can not read docker-compose fixture: %s", err)
+		t.Fatalf("can't read docker-compose file: %s", err)
 	}
 
 	services, err := ParseCompose(compose)
 	if err != nil {
-		t.Fatalf("can not parse compose services: %s", err)
+		t.Fatalf("can't parse compose services: %s", err)
 	}
 
-	if len(services) != len(expected) {
-		t.Fatalf("expected: %d services, got: %d", len(expected), len(services))
+	if len(services) != len(want) {
+		t.Fatalf("want: %d services, got: %d", len(want), len(services))
 	}
 
 	for _, service := range services {
-		exp, ok := expected[service.Name]
+		exp, ok := want[service.Name]
+
+		if service.Name == "gateway" {
+			if len(service.DependsOn) == 0 {
+				t.Fatalf("gateway should have at least one depends_on entry")
+			}
+		}
+
 		if !ok {
-			t.Fatalf("unexpected service: %s", service.Name)
+			t.Fatalf("incorrect service: %s", service.Name)
 		}
 
 		if service.Name != exp.Name {
-			t.Fatalf("incorrect service Name:\n\texpected: %s,\n\tgot: %s", exp.Name, service.Name)
+			t.Fatalf("incorrect service Name:\n\twant: %s,\n\tgot: %s", exp.Name, service.Name)
 		}
 
 		if service.Image != exp.Image {
-			t.Fatalf("incorrect service Image:\n\texpected: %s,\n\tgot: %s", exp.Image, service.Image)
+			t.Fatalf("incorrect service Image:\n\twant: %s,\n\tgot: %s", exp.Image, service.Image)
 		}
 
 		equalStringSlice(t, exp.Env, service.Env)
@@ -136,41 +146,41 @@ func Test_ParseCompose(t *testing.T) {
 		equalStringSlice(t, exp.Args, service.Args)
 
 		if !reflect.DeepEqual(exp.Mounts, service.Mounts) {
-			t.Fatalf("incorrect service Mounts:\n\texpected: %+v,\n\tgot: %+v", exp.Mounts, service.Mounts)
+			t.Fatalf("incorrect service Mounts:\n\twant: %+v,\n\tgot: %+v", exp.Mounts, service.Mounts)
 		}
 	}
 }
 
-func equalStringSlice(t *testing.T, expected, found []string) {
+func equalStringSlice(t *testing.T, want, found []string) {
 	t.Helper()
-	if (expected == nil) != (found == nil) {
-		t.Fatalf("unexpected nil slice: expected %+v, got %+v", expected, found)
+	if (want == nil) != (found == nil) {
+		t.Fatalf("unexpected nil slice: want %+v, got %+v", want, found)
 	}
 
-	if len(expected) != len(found) {
-		t.Fatalf("unequal slice length: expected %+v, got %+v", expected, found)
+	if len(want) != len(found) {
+		t.Fatalf("unequal slice length: want %+v, got %+v", want, found)
 	}
 
-	for i := range expected {
-		if expected[i] != found[i] {
-			t.Fatalf("unexpected value at postition %d: expected %s, got %s", i, expected[i], found[i])
+	for i := range want {
+		if want[i] != found[i] {
+			t.Fatalf("unexpected value at postition %d: want %s, got %s", i, want[i], found[i])
 		}
 	}
 }
 
-func equalMountSlice(t *testing.T, expected, found []Mount) {
+func equalMountSlice(t *testing.T, want, found []Mount) {
 	t.Helper()
-	if (expected == nil) != (found == nil) {
-		t.Fatalf("unexpected nil slice: expected %+v, got %+v", expected, found)
+	if (want == nil) != (found == nil) {
+		t.Fatalf("unexpected nil slice: want %+v, got %+v", want, found)
 	}
 
-	if len(expected) != len(found) {
-		t.Fatalf("unequal slice length: expected %+v, got %+v", expected, found)
+	if len(want) != len(found) {
+		t.Fatalf("unequal slice length: want %+v, got %+v", want, found)
 	}
 
-	for i := range expected {
-		if !reflect.DeepEqual(expected[i], found[i]) {
-			t.Fatalf("unexpected value at postition %d: expected %s, got %s", i, expected[i], found[i])
+	for i := range want {
+		if !reflect.DeepEqual(want[i], found[i]) {
+			t.Fatalf("unexpected value at postition %d: want %s, got %s", i, want[i], found[i])
 		}
 	}
 }
@@ -178,7 +188,7 @@ func equalMountSlice(t *testing.T, expected, found []Mount) {
 func Test_GetArchSuffix(t *testing.T) {
 	cases := []struct {
 		name      string
-		expected  string
+		want      string
 		foundArch string
 		foundOS   string
 		err       string
@@ -192,37 +202,37 @@ func Test_GetArchSuffix(t *testing.T) {
 			name:      "x86 has no suffix",
 			foundOS:   "Linux",
 			foundArch: "x86_64",
-			expected:  "",
+			want:      "",
 		},
 		{
 			name:      "unknown arch has no suffix",
 			foundOS:   "Linux",
 			foundArch: "anything_else",
-			expected:  "",
+			want:      "",
 		},
 		{
 			name:      "armhf has armhf suffix",
 			foundOS:   "Linux",
 			foundArch: "armhf",
-			expected:  "-armhf",
+			want:      "-armhf",
 		},
 		{
 			name:      "armv7l has armhf suffix",
 			foundOS:   "Linux",
 			foundArch: "armv7l",
-			expected:  "-armhf",
+			want:      "-armhf",
 		},
 		{
 			name:      "arm64 has arm64 suffix",
 			foundOS:   "Linux",
 			foundArch: "arm64",
-			expected:  "-arm64",
+			want:      "-arm64",
 		},
 		{
 			name:      "aarch64 has arm64 suffix",
 			foundOS:   "Linux",
 			foundArch: "aarch64",
-			expected:  "-arm64",
+			want:      "-arm64",
 		},
 	}
 
@@ -231,15 +241,15 @@ func Test_GetArchSuffix(t *testing.T) {
 
 			suffix, err := GetArchSuffix(testArchGetter(tc.foundArch, tc.foundOS))
 			if tc.err != "" && err == nil {
-				t.Fatalf("expected error %s but got nil", tc.err)
+				t.Fatalf("want error %s but got nil", tc.err)
 			} else if tc.err != "" && err.Error() != tc.err {
-				t.Fatalf("expected error %s, got %s", tc.err, err.Error())
+				t.Fatalf("want error %s, got %s", tc.err, err.Error())
 			} else if tc.err == "" && err != nil {
 				t.Fatalf("unexpected error %s", err.Error())
 			}
 
-			if suffix != tc.expected {
-				t.Fatalf("expected suffix %s, got %s", tc.expected, suffix)
+			if suffix != tc.want {
+				t.Fatalf("want suffix %s, got %s", tc.want, suffix)
 			}
 		})
 	}

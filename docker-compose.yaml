@@ -17,6 +17,7 @@ services:
         target: /run/secrets/basic-auth-user
     cap_add:
       - CAP_NET_RAW
+
   nats:
     image: docker.io/library/nats-streaming:0.11.2
     command:
@@ -25,6 +26,7 @@ services:
       - "8222"
       - "--store=memory"
       - "--cluster_id=faas-cluster"
+
   prometheus:
     image: docker.io/prom/prometheus:v2.14.0
     volumes:
@@ -33,6 +35,7 @@ services:
         target: /etc/prometheus/prometheus.yml
     cap_add:
       - CAP_NET_RAW
+
   gateway:
     image: "docker.io/openfaas/gateway:0.18.17${ARCH_SUFFIX}"
     environment:
@@ -58,6 +61,11 @@ services:
         target: /run/secrets/basic-auth-user
     cap_add:
       - CAP_NET_RAW
+    depends_on:
+      - basic-auth-plugin
+      - nats
+      - prometheus
+
   queue-worker:
     image: docker.io/openfaas/queue-worker:0.11.2
     environment:
@@ -80,3 +88,5 @@ services:
         target: /run/secrets/basic-auth-user
     cap_add:
       - CAP_NET_RAW
+    depends_on:
+      - nats
