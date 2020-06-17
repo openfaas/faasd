@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/containerd/containerd"
 	"github.com/containerd/containerd/namespaces"
@@ -13,13 +14,14 @@ import (
 )
 
 type Function struct {
-	name      string
-	namespace string
-	image     string
-	pid       uint32
-	replicas  int
-	IP        string
-	labels    map[string]string
+	name        string
+	namespace   string
+	image       string
+	pid         uint32
+	replicas    int
+	IP          string
+	labels      map[string]string
+	annotations map[string]string
 }
 
 // ListFunctions returns a map of all functions with running tasks on namespace
@@ -48,16 +50,20 @@ func GetFunction(client *containerd.Client, name string) (Function, error) {
 		image, _ := c.Image(ctx)
 
 		containerName := c.ID()
-		labels, labelErr := c.Labels(ctx)
+		allLabels, labelErr := c.Labels(ctx)
+
 		if labelErr != nil {
 			log.Printf("cannot list container %s labels: %s", containerName, labelErr.Error())
 		}
 
+		labels, annotations := buildLabelsAndAnnotations(allLabels)
+
 		f := Function{
-			name:      containerName,
-			namespace: faasd.FunctionNamespace,
-			image:     image.Name(),
-			labels:    labels,
+			name:        containerName,
+			namespace:   faasd.FunctionNamespace,
+			image:       image.Name(),
+			labels:      labels,
+			annotations: annotations,
 		}
 
 		replicas := 0
@@ -89,4 +95,24 @@ func GetFunction(client *containerd.Client, name string) (Function, error) {
 	}
 
 	return Function{}, fmt.Errorf("unable to find function: %s, error %s", name, err)
+}
+
+func buildLabelsAndAnnotations(ctrLabels map[string]string) (labels map[string]string, annotations map[string]string) {
+	for k, v := range ctrLabels {
+		if strings.HasPrefix(k, annotationLabelPrefix) {
+			if annotations == nil {
+				annotations = make(map[string]string)
+			}
+
+			annotations[strings.TrimPrefix(k, annotationLabelPrefix)] = v
+		} else {
+			if labels == nil {
+				labels = make(map[string]string)
+			}
+
+			labels[k] = v
+		}
+	}
+
+	return labels, annotations
 }
