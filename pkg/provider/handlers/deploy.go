@@ -26,6 +26,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
+const annotationLabelPrefix = "com.openfaas.annotations."
+
 func MakeDeployHandler(client *containerd.Client, cni gocni.CNI, secretMountPath string, alwaysPull bool) func(w http.ResponseWriter, r *http.Request) {
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -101,9 +103,9 @@ func deploy(ctx context.Context, req types.FunctionDeployment, client *container
 
 	name := req.Service
 
-	labels := map[string]string{}
-	if req.Labels != nil {
-		labels = *req.Labels
+	labels, err := buildLabels(&req)
+	if err != nil {
+		return fmt.Errorf("Unable to apply labels to conatiner: %s, error: %s", name, err)
 	}
 
 	var memory *specs.LinuxMemory
@@ -138,6 +140,30 @@ func deploy(ctx context.Context, req types.FunctionDeployment, client *container
 
 	return createTask(ctx, client, container, cni)
 
+}
+
+func buildLabels(request *types.FunctionDeployment) (map[string]string, error) {
+	// Adapted from faas-swarm/handlers/deploy.go:buildLabels
+	labels := map[string]string{}
+
+	if request.Labels != nil {
+		for k, v := range *request.Labels {
+			labels[k] = v
+		}
+	}
+
+	if request.Annotations != nil {
+		for k, v := range *request.Annotations {
+			key := fmt.Sprintf("%s%s", annotationLabelPrefix, k)
+			if _, ok := labels[key]; !ok {
+				labels[key] = v
+			} else {
+				return nil, errors.New(fmt.Sprintf("Key %s cannot be used as a label due to a conflict with annotation prefix %s", k, annotationLabelPrefix))
+			}
+		}
+	}
+
+	return labels, nil
 }
 
 func createTask(ctx context.Context, client *containerd.Client, container containerd.Container, cni gocni.CNI) error {
