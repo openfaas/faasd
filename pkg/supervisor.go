@@ -34,12 +34,13 @@ const (
 )
 
 type Service struct {
-	Image  string
-	Env    []string
-	Name   string
-	Mounts []Mount
-	Caps   []string
-	Args   []string
+	Image     string
+	Env       []string
+	Name      string
+	Mounts    []Mount
+	Caps      []string
+	Args      []string
+	DependsOn []string
 }
 
 type Mount struct {
@@ -92,7 +93,7 @@ func (s *Supervisor) Start(svcs []Service) error {
 	images := map[string]containerd.Image{}
 
 	for _, svc := range svcs {
-		fmt.Printf("Preparing: %s with image: %s\n", svc.Name, svc.Image)
+		fmt.Printf("Preparing %s with image: %s\n", svc.Name, svc.Image)
 
 		img, err := service.PrepareImage(ctx, s.client, svc.Image, defaultSnapshotter, faasServicesPullAlways)
 		if err != nil {
@@ -104,12 +105,26 @@ func (s *Supervisor) Start(svcs []Service) error {
 	}
 
 	for _, svc := range svcs {
-		fmt.Printf("Reconciling: %s\n", svc.Name)
-
+		fmt.Printf("Removing old container for: %s\n", svc.Name)
 		containerErr := service.Remove(ctx, s.client, svc.Name)
 		if containerErr != nil {
 			return containerErr
 		}
+	}
+
+	order := buildInstallOrder(svcs)
+
+	for _, key := range order {
+
+		var svc *Service
+		for _, s := range svcs {
+			if s.Name == key {
+				svc = &s
+				break
+			}
+		}
+
+		fmt.Printf("Starting: %s\n", svc.Name)
 
 		image := images[svc.Name]
 
@@ -123,7 +138,6 @@ func (s *Supervisor) Start(svcs []Service) error {
 					Options:     []string{"rbind", "rw"},
 				})
 			}
-
 		}
 
 		mounts = append(mounts, specs.Mount{
@@ -153,11 +167,11 @@ func (s *Supervisor) Start(svcs []Service) error {
 		)
 
 		if containerCreateErr != nil {
-			log.Printf("Error creating container %s\n", containerCreateErr)
+			log.Printf("Error creating container: %s\n", containerCreateErr)
 			return containerCreateErr
 		}
 
-		log.Printf("Created container %s\n", newContainer.ID())
+		log.Printf("Created container: %s\n", newContainer.ID())
 
 		task, err := newContainer.NewTask(ctx, cio.NewCreator(cio.WithStdio))
 		if err != nil {
@@ -176,6 +190,7 @@ func (s *Supervisor) Start(svcs []Service) error {
 		if err != nil {
 			return err
 		}
+
 		log.Printf("%s has IP: %s\n", newContainer.ID(), ip.String())
 
 		hosts, _ := ioutil.ReadFile("hosts")
@@ -277,10 +292,11 @@ func ParseCompose(config *compose.Config) ([]Service, error) {
 			Name:  s.Name,
 			Image: s.Image,
 			// ShellCommand is just an alias of string slice
-			Args:   []string(s.Command),
-			Caps:   s.CapAdd,
-			Env:    env,
-			Mounts: mounts,
+			Args:      []string(s.Command),
+			Caps:      s.CapAdd,
+			Env:       env,
+			Mounts:    mounts,
+			DependsOn: s.DependsOn,
 		}
 	}
 
@@ -289,6 +305,12 @@ func ParseCompose(config *compose.Config) ([]Service, error) {
 
 // LoadComposeFile is a helper method for loading a docker-compose file
 func LoadComposeFile(wd string, file string) (*compose.Config, error) {
+	return LoadComposeFileWithArch(wd, file, env.GetClientArch)
+}
+
+// LoadComposeFileWithArch is a helper method for loading a docker-compose file
+func LoadComposeFileWithArch(wd string, file string, archGetter ArchGetter) (*compose.Config, error) {
+
 	file = path.Join(wd, file)
 	b, err := ioutil.ReadFile(file)
 	if err != nil {
@@ -300,7 +322,7 @@ func LoadComposeFile(wd string, file string) (*compose.Config, error) {
 		return nil, err
 	}
 
-	archSuffix, err := GetArchSuffix(env.GetClientArch)
+	archSuffix, err := GetArchSuffix(archGetter)
 	if err != nil {
 		return nil, err
 	}
