@@ -1,6 +1,8 @@
 package pkg
 
-import "fmt"
+import (
+	"log"
+)
 
 func buildInstallOrder(svcs []Service) []string {
 	graph := Graph{nodes: []*Node{}}
@@ -24,10 +26,10 @@ func buildInstallOrder(svcs []Service) []string {
 		resolve(g, resolved, unresolved)
 	}
 
-	fmt.Printf("Installation order:\n")
+	log.Printf("Start-up order:\n")
 	order := []string{}
 	for _, node := range resolved.nodes {
-		fmt.Printf("- %s\n", node.Name)
+		log.Printf("- %s\n", node.Name)
 		order = append(order, node.Name)
 	}
 
