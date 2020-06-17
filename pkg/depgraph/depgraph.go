@@ -1,4 +1,4 @@
-package pkg
+package depgraph
 
 import "log"
 
@@ -12,6 +12,17 @@ type Node struct {
 // Graph is a collection of nodes
 type Graph struct {
 	nodes []*Node
+}
+
+func NewDepgraph() *Graph {
+	return &Graph{
+		nodes: []*Node{},
+	}
+}
+
+// Nodes returns the nodes within the graph
+func (g *Graph) Nodes() []*Node {
+	return g.nodes
 }
 
 // Contains returns true if the target Node is found
@@ -47,10 +58,31 @@ func (g *Graph) Remove(target *Node) {
 	}
 }
 
-// resolve finds the order of dependencies for a graph
-// of nodes.
-// Inspired by algorithm from
+// Resolve retruns a list of node names in order of their dependencies.
+// A use case may be for determining the correct order to install
+// software packages, or to start services.
+// Based upon the algorithm described by Ferry Boender in the following article
 // https://www.electricmonk.nl/log/2008/08/07/dependency-resolving-algorithm/
+func (g *Graph) Resolve() []string {
+	resolved := &Graph{}
+	unresolved := &Graph{}
+	for _, node := range g.nodes {
+		resolve(node, resolved, unresolved)
+	}
+
+	order := []string{}
+
+	for _, node := range resolved.Nodes() {
+		order = append(order, node.Name)
+	}
+
+	return order
+}
+
+// resolve mutates the resolved graph for a given starting
+// node. The unresolved graph is used to detect a circular graph
+// error and will throw a panic. This can be caught with a resolve
+// in a go routine.
 func resolve(node *Node, resolved, unresolved *Graph) {
 	unresolved.Add(node)
 

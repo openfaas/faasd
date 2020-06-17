@@ -112,7 +112,7 @@ func (s *Supervisor) Start(svcs []Service) error {
 		}
 	}
 
-	order := buildInstallOrder(svcs)
+	order := buildDeploymentOrder(svcs)
 
 	for _, key := range order {
 

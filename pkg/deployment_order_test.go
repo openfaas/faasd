@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func Test_buildInstallOrder_ARequiresB(t *testing.T) {
+func Test_buildDeploymentOrder_ARequiresB(t *testing.T) {
 	svcs := []Service{
 		{
 			Name:      "A",
@@ -17,7 +17,7 @@ func Test_buildInstallOrder_ARequiresB(t *testing.T) {
 		},
 	}
 
-	order := buildInstallOrder(svcs)
+	order := buildDeploymentOrder(svcs)
 
 	if len(order) < len(svcs) {
 		t.Fatalf("length of order too short: %d", len(order))
@@ -30,7 +30,7 @@ func Test_buildInstallOrder_ARequiresB(t *testing.T) {
 	}
 }
 
-func Test_buildInstallOrder_ARequiresBAndC(t *testing.T) {
+func Test_buildDeploymentOrder_ARequiresBAndC(t *testing.T) {
 	svcs := []Service{
 		{
 			Name:      "A",
@@ -46,7 +46,7 @@ func Test_buildInstallOrder_ARequiresBAndC(t *testing.T) {
 		},
 	}
 
-	order := buildInstallOrder(svcs)
+	order := buildDeploymentOrder(svcs)
 
 	if len(order) < len(svcs) {
 		t.Fatalf("length of order too short: %d", len(order))
@@ -65,7 +65,7 @@ func Test_buildInstallOrder_ARequiresBAndC(t *testing.T) {
 
 }
 
-func Test_buildInstallOrder_ARequiresBRequiresC(t *testing.T) {
+func Test_buildDeploymentOrder_ARequiresBRequiresC(t *testing.T) {
 	svcs := []Service{
 		{
 			Name:      "A",
@@ -81,7 +81,7 @@ func Test_buildInstallOrder_ARequiresBRequiresC(t *testing.T) {
 		},
 	}
 
-	order := buildInstallOrder(svcs)
+	order := buildDeploymentOrder(svcs)
 
 	if len(order) < len(svcs) {
 		t.Fatalf("length of order too short: %d", len(order))
@@ -104,7 +104,7 @@ func Test_buildInstallOrder_ARequiresBRequiresC(t *testing.T) {
 	}
 }
 
-func Test_buildInstallOrderCircularARequiresBRequiresA(t *testing.T) {
+func Test_buildDeploymentOrderCircularARequiresBRequiresA(t *testing.T) {
 	svcs := []Service{
 		{
 			Name:      "A",
@@ -118,12 +118,12 @@ func Test_buildInstallOrderCircularARequiresBRequiresA(t *testing.T) {
 
 	defer func() { recover() }()
 
-	buildInstallOrder(svcs)
+	buildDeploymentOrder(svcs)
 
 	t.Fatalf("did not panic as expected")
 }
 
-func Test_buildInstallOrderComposeFile(t *testing.T) {
+func Test_buildDeploymentOrderComposeFile(t *testing.T) {
 	// svcs := []Service{}
 	file, err := LoadComposeFileWithArch("../", "docker-compose.yaml", func() (string, string) {
 		return "x86_64", "Linux"
@@ -145,7 +145,7 @@ func Test_buildInstallOrderComposeFile(t *testing.T) {
 		}
 	}
 
-	order := buildInstallOrder(svcs)
+	order := buildDeploymentOrder(svcs)
 
 	if len(order) < len(svcs) {
 		t.Fatalf("length of order too short: %d", len(order))
@@ -167,7 +167,7 @@ func Test_buildInstallOrderComposeFile(t *testing.T) {
 	}
 }
 
-func Test_buildInstallOrderOpenFaaS(t *testing.T) {
+func Test_buildDeploymentOrderOpenFaaS(t *testing.T) {
 	svcs := []Service{
 		{
 			Name:      "queue-worker",
@@ -191,7 +191,7 @@ func Test_buildInstallOrderOpenFaaS(t *testing.T) {
 		},
 	}
 
-	order := buildInstallOrder(svcs)
+	order := buildDeploymentOrder(svcs)
 
 	if len(order) < len(svcs) {
 		t.Fatalf("length of order too short: %d", len(order))
