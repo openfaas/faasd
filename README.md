@@ -109,7 +109,7 @@ For templates built by the community see: `faas-cli template store list`, you ca
 
 ### Workshop
 
-[The OpenFaaS workshop](https://github.com/openfaas/workshop/) is a set of 12 self-paced labs and provides a great starting point
+[The OpenFaaS workshop](https://github.com/openfaas/workshop/) is a set of 12 self-paced labs and provides a great starting point for learning the features of openfaas. Not all features will be available or usable with faasd.
 
 ### Community support
 
@@ -117,7 +117,7 @@ An active community of almost 3000 users awaits you on Slack. Over 250 of those 
 
 * [Join Slack](https://slack.openfaas.io/)
 
-## Backlog
+## Roadmap
 
 ### Supported operations
 
@@ -141,19 +141,21 @@ Other operations are pending development in the provider such as:
 
 * `faas auth` - supported for Basic Authentication, but OAuth2 & OIDC require a patch
 
-## Todo
+### Backlog
 
-Pending:
-
-* [ ] Add support for using container images in third-party public registries
-* [ ] Add support for using container images in private third-party registries
 * [ ] Monitor and restart any of the core components at runtime if the container stops
-* [ ] Bundle/package/automate installation of containerd - [see bootstrap from k3s](https://github.com/rancher/k3s)
+* [ ] Store and retrieve annotations in function spec
+* [ ] An installer for faasd and dependencies - runc, containerd
 * [ ] Provide ufw rules / example for blocking access to everything but a reverse proxy to the gateway container
 * [ ] Provide [simple Caddyfile example](https://blog.alexellis.io/https-inlets-local-endpoints/) in the README showing how to expose the faasd proxy on port 80/443 with TLS
 
-Done:
+### Completed
 
+* [x] Provide a cloud-init configuration for faasd bootstrap
+* [x] Configure core services from a docker-compose.yaml file
+* [x] Store and fetch logs from the journal
+* [x] Add support for using container images in third-party public registries
+* [x] Add support for using container images in private third-party registries
 * [x] Provide a cloud-config.txt file for automated deployments of `faasd`
 * [x] Inject / manage IPs between core components for service to service communication - i.e. so Prometheus can scrape the OpenFaaS gateway - done via `/etc/hosts` mount
 * [x] Add queue-worker and NATS
