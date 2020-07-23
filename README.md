@@ -1,38 +1,34 @@
-# faasd - lightweight OSS serverless 🐳
+# faasd - Serverless for everyone else
+
+Lightweight serverless, without managing expensive infrastructure.
 
 [![Build Status](https://travis-ci.com/openfaas/faasd.svg?branch=master)](https://travis-ci.com/openfaas/faasd)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![OpenFaaS](https://img.shields.io/badge/openfaas-serverless-blue.svg)](https://www.openfaas.com)
 ![Downloads](https://img.shields.io/github/downloads/openfaas/faasd/total)
 
-faasd is the same OpenFaaS experience and ecosystem, but without Kubernetes. Functions and microservices can be deployed anywhere with reduced overheads whilst retaining the portability of containers and cloud-native tooling such as containerd and CNI.
+faasd is OpenFaaS, reimagined without the complexity and cost of Kubernetes. It runs well on a single host with very modest requirements, and can be deployed in a few moments. Under the hood it uses containerd and CNI along with the same core OpenFaaS components from the main project.
+
+## When should you use faasd over OpenFaaS on Kubernetes?
+
+* You have a cost sensitive project - run faasd on a 5-10 USD VPS or on your Raspberry Pi
+* When you just need a few functions or microservices, without the cost of a cluster
+* When you don't have the bandwidth to learn or manage Kubernetes
+* To deploy embedded apps in IoT and edge use-cases
+* To shrink-wrap applications for use with a customer or client
+
+faasd does not create the same maintenance burden you'll find with maintaining, upgrading, and securing a Kubernetes cluster. You can deploy it and walk away, in the worst case, just deploy a new VM and deploy your functions again.
 
 ## About faasd
 
 * is a single Golang binary
-* can be set-up and left alone to run your applications
-* is multi-arch, so works on Intel `x86_64` and ARM out the box
 * uses the same core components and ecosystem of OpenFaaS
+* is multi-arch, so works on Intel `x86_64` and ARM out the box
+* can be set-up and left alone to run your applications
 
 ![demo](https://pbs.twimg.com/media/EPNQz00W4AEwDxM?format=jpg&name=small)
 
 > Demo of faasd running in KVM
-
-## What does faasd deploy?
-
-* faasd - itself, and its [faas-provider](https://github.com/openfaas/faas-provider) for containerd - CRUD for functions and services, implements the OpenFaaS REST API
-* [Prometheus](https://github.com/prometheus/prometheus) - for monitoring of services, metrics, scaling and dashboards
-* [OpenFaaS Gateway](https://github.com/openfaas/faas/tree/master/gateway) - the UI portal, CLI, and other OpenFaaS tooling can talk to this.
-* [OpenFaaS queue-worker for NATS](https://github.com/openfaas/nats-queue-worker) - run your invocations in the background without adding any code. See also: [asynchronous invocations](https://docs.openfaas.com/reference/triggers/#async-nats-streaming)
-* [NATS](https://nats.io) for asynchronous processing and queues
-
-You'll also need:
-
-* [CNI](https://github.com/containernetworking/plugins)
-* [containerd](https://github.com/containerd/containerd)
-* [runc](https://github.com/opencontainers/runc)
-
-You can use the standard [faas-cli](https://github.com/openfaas/faas-cli) along with pre-packaged functions from *the Function Store*, or build your own using any OpenFaaS template.
 
 ## Tutorials
 
@@ -90,6 +86,22 @@ faas-cli store deploy figlet
 journalctl -t openfaas-fn:figlet -f &
 echo logs | faas-cli invoke figlet
 ```
+
+## What does faasd deploy?
+
+* faasd - itself, and its [faas-provider](https://github.com/openfaas/faas-provider) for containerd - CRUD for functions and services, implements the OpenFaaS REST API
+* [Prometheus](https://github.com/prometheus/prometheus) - for monitoring of services, metrics, scaling and dashboards
+* [OpenFaaS Gateway](https://github.com/openfaas/faas/tree/master/gateway) - the UI portal, CLI, and other OpenFaaS tooling can talk to this.
+* [OpenFaaS queue-worker for NATS](https://github.com/openfaas/nats-queue-worker) - run your invocations in the background without adding any code. See also: [asynchronous invocations](https://docs.openfaas.com/reference/triggers/#async-nats-streaming)
+* [NATS](https://nats.io) for asynchronous processing and queues
+
+You'll also need:
+
+* [CNI](https://github.com/containernetworking/plugins)
+* [containerd](https://github.com/containerd/containerd)
+* [runc](https://github.com/opencontainers/runc)
+
+You can use the standard [faas-cli](https://github.com/openfaas/faas-cli) along with pre-packaged functions from *the Function Store*, or build your own using any OpenFaaS template.
 
 ### Manual / developer instructions
 
