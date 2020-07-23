@@ -7,7 +7,7 @@ Lightweight serverless, without managing expensive infrastructure.
 [![OpenFaaS](https://img.shields.io/badge/openfaas-serverless-blue.svg)](https://www.openfaas.com)
 ![Downloads](https://img.shields.io/github/downloads/openfaas/faasd/total)
 
-faasd is OpenFaaS, reimagined without the complexity and cost of Kubernetes. It runs well on a single host with very modest requirements, and can be deployed in a few moments. Under the hood it uses containerd and CNI along with the same core OpenFaaS components from the main project.
+faasd is OpenFaaS, reimagined without the complexity and cost of Kubernetes. It runs well on a single host with very modest requirements, and can be deployed in a few moments. Under the hood it uses [containerd](https://containerd.io/) and [Container Networking Interface (CNI)](https://github.com/containernetworking/cni) along with the same core OpenFaaS components from the main project.
 
 ## When should you use faasd over OpenFaaS on Kubernetes?
 
