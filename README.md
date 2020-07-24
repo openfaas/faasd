@@ -155,11 +155,16 @@ Other operations are pending development in the provider such as:
 
 ### Backlog
 
-* [ ] Monitor and restart any of the core components at runtime if the container stops
-* [ ] Store and retrieve annotations in function spec
+* [ ] [Store and retrieve annotations in function spec](https://github.com/openfaas/faasd/pull/86) - in progress
+* [ ] Offer live rolling-updates, with zero downtime - requires moving to IDs vs. names for function containers
 * [ ] An installer for faasd and dependencies - runc, containerd
+* [ ] Monitor and restart any of the core components at runtime if the container stops
 * [ ] Provide ufw rules / example for blocking access to everything but a reverse proxy to the gateway container
 * [ ] Provide [simple Caddyfile example](https://blog.alexellis.io/https-inlets-local-endpoints/) in the README showing how to expose the faasd proxy on port 80/443 with TLS
+
+### Known-issues
+
+* [ ] [containerd can't pull image from Github Docker Package Registry](https://github.com/containerd/containerd/issues/3291)
 
 ### Completed
 
