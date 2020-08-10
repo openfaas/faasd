@@ -14,9 +14,21 @@
 
     For Windows users, install [Git Bash](https://git-scm.com/downloads) along with multipass or vagrant. You can also use WSL1 or WSL2 which provides a Linux environment.
 
-    You will also need [containerd v1.3.2](https://github.com/containerd/containerd) and the [CNI plugins v0.8.5](https://github.com/containernetworking/plugins)
+    You will also need [containerd v1.3.5](https://github.com/containerd/containerd) and the [CNI plugins v0.8.5](https://github.com/containernetworking/plugins)
 
     [faas-cli](https://github.com/openfaas/faas-cli) is optional, but recommended.
+
+If you're using multipass, then allocate sufficient resources:
+
+```sh
+multipass launch \
+  --mem 4G \
+  -c 2 \
+  -n faasd
+
+# Then access its shell
+multipass shell faasd
+```
 
 ### Get runc
 
@@ -25,6 +37,7 @@ sudo apt update \
   && sudo apt install -qy \
     runc \
     bridge-utils \
+    make
 ```
 
 #### Install the CNI plugins:
@@ -61,8 +74,8 @@ You have three options - binaries for PC, binaries for armhf, or build from sour
 * Install containerd `x86_64` only
 
 ```sh
-export VER=1.3.2
-curl -sLSf https://github.com/containerd/containerd/releases/download/v$VER/containerd-$VER.linux-amd64.tar.gz > /tmp/containerd.tar.gz \
+export VER=1.3.5
+curl -sSL https://github.com/containerd/containerd/releases/download/v$VER/containerd-$VER-linux-amd64.tar.gz > /tmp/containerd.tar.gz \
   && sudo tar -xvf /tmp/containerd.tar.gz -C /usr/local/bin/ --strip-components=1
 
 containerd -version
@@ -73,7 +86,7 @@ containerd -version
     Building `containerd` on armhf is extremely slow, so I've provided binaries for you.
 
     ```sh
-    curl -sSL https://github.com/alexellis/containerd-armhf/releases/download/v1.3.2/containerd.tgz | sudo tar -xvz --strip-components=2 -C /usr/local/bin/
+    curl -sSL https://github.com/alexellis/containerd-armhf/releases/download/v1.3.5/containerd.tgz | sudo tar -xvz --strip-components=2 -C /usr/local/bin/
     ```
 
 * Or clone / build / install [containerd](https://github.com/containerd/containerd) from source:
@@ -85,7 +98,7 @@ containerd -version
     git clone https://github.com/containerd/containerd
     cd containerd
     git fetch origin --tags
-    git checkout v1.3.2
+    git checkout v1.3.5
 
     make
     sudo make install
@@ -96,7 +109,11 @@ containerd -version
 #### Ensure containerd is running
 
 ```sh
-curl -sLS https://raw.githubusercontent.com/containerd/containerd/master/containerd.service > /tmp/containerd.service
+curl -sLS https://raw.githubusercontent.com/containerd/containerd/v1.3.5/containerd.service > /tmp/containerd.service
+
+# Extend the timeouts for low-performance VMs
+echo "[Manager]" | tee -a /tmp/containerd.service
+echo "DefaultTimeoutStartSec=3m" | tee -a /tmp/containerd.service
 
 sudo cp /tmp/containerd.service /lib/systemd/system/
 sudo systemctl enable containerd
@@ -156,8 +173,8 @@ go version
 You should also add the following to `~/.bash_profile`:
 
 ```sh
-export GOPATH=$HOME/go/
-export PATH=$PATH:/usr/local/go/bin/
+echo "export GOPATH=\$HOME/go/" | tee -a $HOME/.bash_profile
+echo "export PATH=\$PATH:/usr/local/go/bin/" | tee -a $HOME/.bash_profile
 ```
 
 #### Or on Raspberry Pi (armhf)
