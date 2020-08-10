@@ -40,6 +40,14 @@ sudo apt update \
     make
 ```
 
+### Get faas-cli (optional)
+
+Having `faas-cli` on your dev machine is useful for testing and debug.
+
+```bash
+curl -sLS https://cli.openfaas.com | sudo sh
+```
+
 #### Install the CNI plugins:
 
 * For PC run `export ARCH=amd64`
