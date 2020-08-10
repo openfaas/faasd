@@ -18,6 +18,42 @@
 
     [faas-cli](https://github.com/openfaas/faas-cli) is optional, but recommended.
 
+### Get runc
+
+```sh
+sudo apt update \
+  && sudo apt install -qy \
+    runc \
+    bridge-utils \
+```
+
+#### Install the CNI plugins:
+
+* For PC run `export ARCH=amd64`
+* For RPi/armhf run `export ARCH=arm`
+* For arm64 run `export ARCH=arm64`
+
+Then run:
+
+```sh
+export ARCH=amd64
+export CNI_VERSION=v0.8.5
+
+sudo mkdir -p /opt/cni/bin
+curl -sSL https://github.com/containernetworking/plugins/releases/download/${CNI_VERSION}/cni-plugins-linux-${ARCH}-${CNI_VERSION}.tgz | sudo tar -xz -C /opt/cni/bin
+
+# Make a config folder for CNI definitions
+sudo mkdir -p /etc/cni/net.d
+
+# Make an initial loopback configuration
+sudo sh -c 'cat >/etc/cni/net.d/99-loopback.conf <<-EOF
+{
+    "cniVersion": "0.3.1",
+    "type": "loopback"
+}
+EOF'
+```
+
 ### Get containerd
 
 You have three options - binaries for PC, binaries for armhf, or build from source.
@@ -69,7 +105,7 @@ sudo systemctl daemon-reload
 sudo systemctl restart containerd
 ```
 
-Or run ad-hoc:
+Or run ad-hoc. This step can be useful for exploring why containerd might fail to start.
 
 ```sh
 sudo containerd &
@@ -106,10 +142,10 @@ You may find alternative package names for CentOS and other Linux distributions.
 #### Install Go 1.13 (x86_64)
 
 ```sh
-curl -sSLf https://dl.google.com/go/go1.13.6.linux-amd64.tar.gz > go.tgz
+curl -sSLf https://dl.google.com/go/go1.13.6.linux-amd64.tar.gz > /tmp/go.tgz
 sudo rm -rf /usr/local/go/
 sudo mkdir -p /usr/local/go/
-sudo tar -xvf go.tgz -C /usr/local/go/ --strip-components=1
+sudo tar -xvf /tmp/go.tgz -C /usr/local/go/ --strip-components=1
 
 export GOPATH=$HOME/go/
 export PATH=$PATH:/usr/local/go/bin/
@@ -138,22 +174,6 @@ export PATH=$PATH:/usr/local/go/bin/
 go version
 ```
 
-#### Install the CNI plugins:
-
-* For PC run `export ARCH=amd64`
-* For RPi/armhf run `export ARCH=arm`
-* For arm64 run `export ARCH=arm64`
-
-Then run:
-
-```sh
-export ARCH=amd64
-export CNI_VERSION=v0.8.5
-
-sudo mkdir -p /opt/cni/bin
-curl -sSL https://github.com/containernetworking/plugins/releases/download/${CNI_VERSION}/cni-plugins-linux-${ARCH}-${CNI_VERSION}.tgz | sudo tar -xz -C /opt/cni/bin
-```
-
 #### Clone faasd and its systemd unit files
 
 ```sh
@@ -168,9 +188,12 @@ git clone https://github.com/openfaas/faasd
 cd $GOPATH/src/github.com/openfaas/faasd
 cd faasd
 make local
+
+# Install the binary
+sudo cp bin/faasd /usr/local/bin
 ```
 
-#### Build and run `faasd` (binaries)
+#### Or, download and run `faasd` (binaries)
 
 ```sh
 # For x86_64
@@ -191,9 +214,9 @@ sudo mv /tmp/faasd /usr/local/bin/
 
 #### Install `faasd`
 
+This step installs faasd as a systemd unit file, creates files in `/var/lib/faasd`, and writes out networking configuration for the CNI bridge networking plugin.
+
 ```sh
-# Install with systemd
-sudo cp bin/faasd /usr/local/bin
 sudo faasd install
 
 2020/02/17 17:38:06 Writing to: "/var/lib/faasd/secrets/basic-auth-password"
