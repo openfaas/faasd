@@ -1,9 +1,12 @@
 package logs
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"log"
 	"strings"
 	"testing"
 	"time"
@@ -70,4 +73,33 @@ func Test_buildCmd(t *testing.T) {
 	if !strings.HasSuffix(cmd, expectedArgs) {
 		t.Fatalf("arg want: %q\ngot: %q", expectedArgs, cmd)
 	}
+}
+
+func Test_streamLogs_withDelayedLogStreamOutput(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	var b bytes.Buffer
+	out := ioutil.NopCloser(&b)
+
+	msgs := make(chan logs.Message)
+	go streamLogs(ctx, out, msgs)
+
+	time.Sleep(500 * time.Millisecond)
+	n, err := b.Write([]byte(`{ "__CURSOR" : "s=9be00b9a7f6a4a0e93020e9ec5a688c4;i=d24;b=ee9ef3d8a1c24299935c0327e06714bf;m=118a4e86a;t=5acebc02e069f;x=b9a854940506d6ac", "__REALTIME_TIMESTAMP" : "1597503425087135", "__MONOTONIC_TIMESTAMP" : "4708427882", "_BOOT_ID" : "ee9ef3d8a1c24299935c0327e06714bf", "_MACHINE_ID" : "47f476b755cb4cd3878f20cb339718f2", "PRIORITY" : "3", "_UID" : "0", "_GID" : "0", "_SELINUX_CONTEXT" : "unconfined\n", "_SYSTEMD_SLICE" : "system.slice", "_TRANSPORT" : "journal", "_CAP_EFFECTIVE" : "3fffffffff", "_HOSTNAME" : "primary", "_SYSTEMD_CGROUP" : "/system.slice/containerd.service", "_SYSTEMD_UNIT" : "containerd.service", "_SYSTEMD_INVOCATION_ID" : "01528ec3a87242c382c3a6b2e5df7567", "_COMM" : "faasd", "_EXE" : "/usr/local/bin/faasd", "SYSLOG_IDENTIFIER" : "openfaas-fn:nodeinfo", "_CMDLINE" : "/usr/local/bin/faasd", "_PID" : "15278", "MESSAGE" : "2020/08/15 14:57:05 POST / - 200 OK - ContentLength: 85", "_SOURCE_REALTIME_TIMESTAMP" : "1597503425087112" }`))
+	if err != nil {
+		t.Fatalf("failed to write test log line: %s", err)
+	}
+
+	log.Printf("log line length %d\n", n)
+
+	line := <-msgs
+	if line.Name != "nodeinfo" {
+		t.Fatalf("wrong function name; expected: %q, got:%q", "nodeinfo", line.Name)
+	}
+
+	if line.Text != "2020/08/15 14:57:05 POST / - 200 OK - ContentLength: 85" {
+		t.Fatalf("wrong log text; expected: %q, got:%q", "2020/08/15 14:57:05 POST / - 200 OK - ContentLength: 85", line.Text)
+	}
+
 }

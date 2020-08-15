@@ -9,7 +9,7 @@ ARCH := amd64
 all: local
 
 local:
-	CGO_ENABLED=0 GOOS=linux go build -o bin/faasd
+	CGO_ENABLED=0 GOOS=linux go build -ldflags $(LDFLAGS) -o bin/faasd
 
 .PHONY: test
 test:

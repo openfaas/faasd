@@ -25,24 +25,29 @@ func New() logs.Requester {
 
 // Query submits a log request to the actual logging system.
 func (r *requester) Query(ctx context.Context, req logs.Request) (<-chan logs.Message, error) {
+	ctx, cancel := context.WithCancel(ctx)
 	_, err := exec.LookPath("journalctl")
 	if err != nil {
+		cancel()
 		return nil, fmt.Errorf("can not find journalctl: %w", err)
 	}
 
 	cmd := buildCmd(ctx, req)
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
+		cancel()
 		return nil, fmt.Errorf("failed to create journalctl pipe: %w", err)
 	}
 
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
+		cancel()
 		return nil, fmt.Errorf("failed to create journalctl err pipe: %w", err)
 	}
 
 	err = cmd.Start()
 	if err != nil {
+		cancel()
 		return nil, fmt.Errorf("failed to create journalctl: %w", err)
 	}
 
@@ -50,7 +55,15 @@ func (r *requester) Query(ctx context.Context, req logs.Request) (<-chan logs.Me
 	// error for as long as possible. If the cmd starts correctly, we are highly likely to
 	// succeed anyway
 	msgs := make(chan logs.Message)
-	go streamLogs(ctx, cmd, stdout, msgs)
+
+	log.Println("starting journal stream using ", cmd.String())
+	// will ensure `stdout` is closed and all related resources cleaned up
+	go func() {
+		err := cmd.Wait()
+		log.Println("wait result", err)
+		cancel()
+	}()
+	go streamLogs(ctx, stdout, msgs)
 	go logErrOut(stderr)
 
 	return msgs, nil
@@ -100,14 +113,8 @@ func buildCmd(ctx context.Context, req logs.Request) *exec.Cmd {
 // streamLogs copies log entries from the journalctl `cmd`/`out` to `msgs`
 // the loop is based on the Decoder example in the docs
 // https://golang.org/pkg/encoding/json/#Decoder.Decode
-func streamLogs(ctx context.Context, cmd *exec.Cmd, out io.ReadCloser, msgs chan logs.Message) {
-	log.Println("starting journal stream using ", cmd.String())
-
-	// will ensure `out` is closed and all related resources cleaned up
-	go func() {
-		err := cmd.Wait()
-		log.Println("wait result", err)
-	}()
+func streamLogs(ctx context.Context, out io.ReadCloser, msgs chan logs.Message) {
+	log.Println("log stream started")
 
 	defer func() {
 		log.Println("closing journal stream")
@@ -115,7 +122,18 @@ func streamLogs(ctx context.Context, cmd *exec.Cmd, out io.ReadCloser, msgs chan
 	}()
 
 	dec := json.NewDecoder(out)
-	for dec.More() {
+	for ctx.Err() == nil {
+
+		// wait until the output has filled with some json, this is required so that
+		// we don't have any race condition with journalctl filling stdout
+		// if we do not wait, `out` is empty and `dec.More()` is false and we will never
+		// attempt to decode and then immediately close the stream.
+		foundMore := false
+		for !foundMore && ctx.Err() == nil {
+			foundMore = dec.More()
+			time.Sleep(time.Millisecond)
+		}
+
 		if ctx.Err() != nil {
 			log.Println("log stream context cancelled")
 			return
@@ -125,6 +143,11 @@ func streamLogs(ctx context.Context, cmd *exec.Cmd, out io.ReadCloser, msgs chan
 		// tags wont help much
 		entry := map[string]string{}
 		err := dec.Decode(&entry)
+		if err == io.EOF {
+			// stream is done
+			log.Println("log stream ended")
+			return
+		}
 		if err != nil {
 			log.Printf("error decoding journalctl output: %s", err)
 			return
@@ -179,5 +202,5 @@ func logErrOut(out io.ReadCloser) {
 	defer log.Println("stderr closed")
 	defer out.Close()
 
-	io.Copy(log.Writer(), out)
+	_, _ = io.Copy(log.Writer(), out)
 }
