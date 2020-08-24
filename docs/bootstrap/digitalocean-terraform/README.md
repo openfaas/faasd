@@ -10,6 +10,7 @@
    | ------------ | ------------------- | --------------- |
    | `do_token` | Digitalocean API token | None |
    | `do_domain` | Public domain used for the faasd gateway | None |
+   | `do_subdomain` | Public subdomain used for the faasd gateway | `faasd` |
    | `letsencrypt_email` | Email used by when ordering TLS certificate from Letsencrypt | `""` |
    | `do_create_record` | When set to `true`, a new DNS record will be created. This works only if your domain (`do_domain`) is managed by Digitalocean | `false` |
    | `do_region` | Digitalocean region for creating the droplet | `fra1` |
