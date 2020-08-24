@@ -8,6 +8,10 @@ variable "do_token" {
 variable "do_domain" {
   description = "Your public domain"
 }
+variable "do_subdomain" {
+  description = "Your public subdomain"
+  default = "faasd"
+}
 variable "letsencrypt_email" {
   description = "Email used to order a certificate from Letsencrypt"
 }
@@ -43,7 +47,7 @@ data "template_file" "cloud_init" {
     vars = {
       gw_password=random_password.password.result,
       ssh_key=data.local_file.ssh_key.content,
-      faasd_domain_name="faasd.${var.do_domain}"
+      faasd_domain_name="${var.do_subdomain}.${var.do_domain}"
       letsencrypt_email=var.letsencrypt_email
     }
 }
@@ -70,7 +74,7 @@ output "droplet_ip" {
 }
 
 output "gateway_url" {
-  value = "https://faasd.${var.do_domain}/"
+  value = "https://${var.do_subdomain}.${var.do_domain}/"
 }
 
 output "password" {
@@ -78,5 +82,5 @@ output "password" {
 }
 
 output "login_cmd" {
-  value = "faas-cli login -g https://faasd.${var.do_domain}/ -p ${random_password.password.result}"
+  value = "faas-cli login -g https://${var.do_subdomain}.${var.do_domain}/ -p ${random_password.password.result}"
 }
