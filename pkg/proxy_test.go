@@ -34,7 +34,7 @@ func Test_Proxy_ToPrivateServer(t *testing.T) {
 	gwChan := make(chan string, 1)
 	doneCh := make(chan bool)
 
-	go proxy.Start(gwChan, doneCh)
+	go proxy.Start(gwChan, doneCh, "Gateway")
 
 	u, _ := url.Parse(upstream.URL)
 	log.Println("Host", u.Host)

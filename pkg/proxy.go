@@ -28,7 +28,7 @@ type Proxy struct {
 }
 
 // Start listening and forwarding HTTP to the host
-func (p *Proxy) Start(gatewayChan chan string, done chan bool) error {
+func (p *Proxy) Start(proxyChan chan string, done chan bool, proxyName string) error {
 	tcp := p.Port
 
 	http.DefaultClient.CheckRedirect = func(req *http.Request, via []*http.Request) error {
@@ -38,11 +38,11 @@ func (p *Proxy) Start(gatewayChan chan string, done chan bool) error {
 		Host: "",
 	}
 
-	ps.Host = <-gatewayChan
+	ps.Host = <-proxyChan
 
 	log.Printf("Starting faasd proxy on %d\n", tcp)
 
-	fmt.Printf("Gateway: %s\n", ps.Host)
+	fmt.Printf("%s: %s\n", proxyName, ps.Host)
 
 	s := &http.Server{
 		Addr:           fmt.Sprintf(":%d", tcp),

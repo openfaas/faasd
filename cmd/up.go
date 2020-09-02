@@ -112,7 +112,12 @@ func runUp(cmd *cobra.Command, _ []string) error {
 	gatewayURLChan := make(chan string, 1)
 	proxyPort := 8080
 	proxy := pkg.NewProxy(proxyPort, timeout)
-	go proxy.Start(gatewayURLChan, proxyDoneCh)
+	go proxy.Start(gatewayURLChan, proxyDoneCh, "Gateway")
+
+	prometheusURLChan := make(chan string, 1)
+	prometheusProxyPort := 9090
+	prometheusProxy := pkg.NewProxy(prometheusProxyPort, timeout)
+	go prometheusProxy.Start(prometheusURLChan, proxyDoneCh, "Prometheus")
 
 	go func() {
 		time.Sleep(3 * time.Second)
@@ -124,15 +129,23 @@ func runUp(cmd *cobra.Command, _ []string) error {
 		}
 
 		host := ""
+		prometheusHost := ""
 		lines := strings.Split(string(fileData), "\n")
 		for _, line := range lines {
 			if strings.Index(line, "gateway") > -1 {
 				host = line[:strings.Index(line, "\t")]
 			}
+
+			if strings.Index(line, "prometheus") > -1 {
+				prometheusHost = line[:strings.Index(line, "\t")]
+			}
 		}
-		log.Printf("[up] Sending %s to proxy\n", host)
+		log.Printf("[up] Sending %s to Gateway proxy\n", host)
 		gatewayURLChan <- host + ":8080"
+		log.Printf("[up] Sending %s to Prometheus proxy\n", prometheusHost)
+		prometheusURLChan <- prometheusHost + ":9090"
 		close(gatewayURLChan)
+		close(prometheusURLChan)
 	}()
 
 	wg.Wait()
