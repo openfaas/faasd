@@ -69,6 +69,7 @@ func deploy(ctx context.Context, req types.FunctionDeployment, client *container
 	if err != nil {
 		return err
 	}
+
 	imgRef := reference.TagNameOnly(r).String()
 
 	snapshotter := ""
@@ -98,6 +99,11 @@ func deploy(ctx context.Context, req types.FunctionDeployment, client *container
 
 	name := req.Service
 
+	labels := map[string]string{}
+	if req.Labels != nil {
+		labels = *req.Labels
+	}
+
 	container, err := client.NewContainer(
 		ctx,
 		name,
@@ -108,7 +114,7 @@ func deploy(ctx context.Context, req types.FunctionDeployment, client *container
 			oci.WithCapabilities([]string{"CAP_NET_RAW"}),
 			oci.WithMounts(mounts),
 			oci.WithEnv(envs)),
-		containerd.WithContainerLabels(*req.Labels),
+		containerd.WithContainerLabels(labels),
 	)
 
 	if err != nil {
