@@ -52,9 +52,9 @@ You can run this tutorial on your Raspberry Pi, or adapt the steps for a regular
 
 Automate everything within < 60 seconds and get a public URL and IP address back. Customise as required, or adapt to your preferred cloud such as AWS EC2.
 
-* [Provision faasd 0.8.1 on DigitalOcean with Terraform 0.12.0](docs/bootstrap/README.md)
+* [Provision faasd 0.8.1 on DigitalOcean with Terraform](docs/bootstrap/digitalocean-nossl/README.md)
 
-* [Provision faasd on DigitalOcean with built-in TLS support](docs/bootstrap/digitalocean-terraform/README.md)
+* [Provision faasd on DigitalOcean with built-in TLS support](docs/bootstrap/digitalocean/README.md)
 
 ### A note on private repos / registries
 
