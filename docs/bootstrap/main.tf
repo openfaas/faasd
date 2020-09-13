@@ -1,5 +1,11 @@
 terraform {
   required_version = ">= 0.12"
+  required_providers {
+    digitalocean = {
+      source = "digitalocean/digitalocean"
+      version = "~> 1.22.0"
+    }
+  }
 }
 
 variable "do_token" {}
@@ -10,7 +16,7 @@ variable "ssh_key_file" {
 }
 
 provider "digitalocean" {
-  token = var.do_token	
+  token = var.do_token
 }
 
 resource "random_password" "password" {
