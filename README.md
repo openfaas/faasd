@@ -56,6 +56,10 @@ Automate everything within < 60 seconds and get a public URL and IP address back
 
 * [Provision faasd on DigitalOcean with built-in TLS support](docs/bootstrap/digitalocean/README.md)
 
+### Terraform for AWS
+
+* [Provision faasd on AWS](aws/README.md)
+
 ### A note on private repos / registries
 
 To use private image repos, `~/.docker/config.json` needs to be copied to `/var/lib/faasd/.docker/config.json`.
