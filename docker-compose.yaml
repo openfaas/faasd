@@ -26,6 +26,8 @@ services:
       - "8222"
       - "--store=memory"
       - "--cluster_id=faas-cluster"
+    ports:
+       - "127.0.0.1:8222:8222"
 
   prometheus:
     image: docker.io/prom/prometheus:v2.14.0
@@ -35,6 +37,8 @@ services:
         target: /etc/prometheus/prometheus.yml
     cap_add:
       - CAP_NET_RAW
+    ports:
+       - "127.0.0.1:9090:9090"
 
   gateway:
     image: "docker.io/openfaas/gateway:0.18.17${ARCH_SUFFIX}"
@@ -65,6 +69,8 @@ services:
       - basic-auth-plugin
       - nats
       - prometheus
+    ports:
+       - "8080:8080"
 
   queue-worker:
     image: docker.io/openfaas/queue-worker:0.11.2

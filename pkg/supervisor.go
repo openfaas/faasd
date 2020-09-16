@@ -41,6 +41,13 @@ type Service struct {
 	Caps      []string
 	Args      []string
 	DependsOn []string
+	Ports     []ServicePort
+}
+
+type ServicePort struct {
+	TargetPort uint32
+	Port       uint32
+	HostIP     string
 }
 
 type Mount struct {
@@ -288,6 +295,8 @@ func ParseCompose(config *compose.Config) ([]Service, error) {
 			})
 		}
 
+		fmt.Printf("Service: %s - %v\n", s.Name, s.Ports)
+
 		services[idx] = Service{
 			Name:  s.Name,
 			Image: s.Image,
@@ -297,10 +306,24 @@ func ParseCompose(config *compose.Config) ([]Service, error) {
 			Env:       env,
 			Mounts:    mounts,
 			DependsOn: s.DependsOn,
+			Ports:     convertPorts(s.Ports),
 		}
 	}
 
 	return services, nil
+}
+
+func convertPorts(ports []compose.ServicePortConfig) []ServicePort {
+	servicePorts := []ServicePort{}
+	for _, p := range ports {
+		servicePorts = append(servicePorts, ServicePort{
+			Port:       p.Published,
+			TargetPort: p.Target,
+			HostIP:     p.HostIP,
+		})
+	}
+
+	return servicePorts
 }
 
 // LoadComposeFile is a helper method for loading a docker-compose file
