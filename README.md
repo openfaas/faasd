@@ -87,6 +87,26 @@ journalctl -t openfaas-fn:figlet -f &
 echo logs | faas-cli invoke figlet
 ```
 
+### Exposing core services
+
+The OpenFaaS stack is made up of several core services including NATS and Prometheus. You can expose these through the `docker-compose.yaml` file located at `/var/lib/faasd`.
+
+Expose the gateway to all adapters:
+
+```yaml
+  gateway:
+    ports:
+       - "8080:8080"
+```
+
+Expose Prometheus only to 127.0.0.1:
+
+```yaml
+  prometheus:
+    ports:
+       - "127.0.0.1:9090:9090"
+```
+
 ## What does faasd deploy?
 
 * faasd - itself, and its [faas-provider](https://github.com/openfaas/faas-provider) for containerd - CRUD for functions and services, implements the OpenFaaS REST API
