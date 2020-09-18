@@ -128,7 +128,6 @@ func deploy(ctx context.Context, req types.FunctionDeployment, client *container
 func createTask(ctx context.Context, client *containerd.Client, container containerd.Container, cni gocni.CNI) error {
 
 	name := container.ID()
-	// task, taskErr := container.NewTask(ctx, cio.NewCreator(cio.WithStdio))
 
 	task, taskErr := container.NewTask(ctx, cio.BinaryIO("/usr/local/bin/faasd", nil))
 

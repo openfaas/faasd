@@ -26,8 +26,8 @@ services:
       - "8222"
       - "--store=memory"
       - "--cluster_id=faas-cluster"
-    ports:
-       - "127.0.0.1:8222:8222"
+    # ports:
+    #    - "127.0.0.1:8222:8222"
 
   prometheus:
     image: docker.io/prom/prometheus:v2.14.0

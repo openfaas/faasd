@@ -180,10 +180,10 @@ func (s *Supervisor) Start(svcs []Service) error {
 
 		log.Printf("Created container: %s\n", newContainer.ID())
 
-		task, err := newContainer.NewTask(ctx, cio.NewCreator(cio.WithStdio))
-		if err != nil {
+		task, taskErr := newContainer.NewTask(ctx, cio.BinaryIO("/usr/local/bin/faasd", nil))
+		if taskErr != nil {
 			log.Printf("Error creating task: %s\n", err)
-			return err
+			return taskErr
 		}
 
 		labels := map[string]string{}
