@@ -71,20 +71,15 @@ func runUp(cmd *cobra.Command, _ []string) error {
 	log.Printf("Supervisor created in: %s\n", time.Since(start).String())
 
 	start = time.Now()
-
-	err = supervisor.Start(services)
-
-	if err != nil {
+	if err := supervisor.Start(services); err != nil {
 		return err
 	}
-
 	defer supervisor.Close()
 
 	log.Printf("Supervisor init done in: %s\n", time.Since(start).String())
 
 	shutdownTimeout := time.Second * 1
 	timeout := time.Second * 60
-	// proxyDoneCh := make(chan bool)
 
 	wg := sync.WaitGroup{}
 	wg.Add(1)
@@ -101,8 +96,7 @@ func runUp(cmd *cobra.Command, _ []string) error {
 			fmt.Println(err)
 		}
 
-		// Close proxy
-		// proxyDoneCh <- true
+		// TODO: close proxies
 		time.AfterFunc(shutdownTimeout, func() {
 			wg.Done()
 		})
@@ -130,8 +124,7 @@ func runUp(cmd *cobra.Command, _ []string) error {
 		}
 	}
 
-	// wg.Add(len(proxies))
-
+	// TODO: track proxies for later cancellation when receiving sigint/term
 	for _, v := range proxies {
 		go v.Start()
 	}

@@ -9,17 +9,14 @@ import (
 	"time"
 )
 
-type Resolver interface {
-	Start()
-	Get(upstream string, got chan<- string, timeout time.Duration)
-}
-
+// LocalResolver provides hostname to IP look-up for faasd core services
 type LocalResolver struct {
 	Path  string
 	Map   map[string]string
 	Mutex *sync.RWMutex
 }
 
+// NewLocalResolver creates a new resolver for reading from a hosts file
 func NewLocalResolver(path string) Resolver {
 	return &LocalResolver{
 		Path:  path,
@@ -28,6 +25,7 @@ func NewLocalResolver(path string) Resolver {
 	}
 }
 
+// Start polling the disk for the hosts file in Path
 func (l *LocalResolver) Start() {
 	var lastStat os.FileInfo
 
@@ -76,7 +74,7 @@ func (l *LocalResolver) rebuild() {
 	}
 }
 
-// Get resolve an entry
+// Get resolves a hostname to an IP, or timesout after the duration has passed
 func (l *LocalResolver) Get(upstream string, got chan<- string, timeout time.Duration) {
 	start := time.Now()
 	for {
