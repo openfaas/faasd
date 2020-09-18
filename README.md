@@ -148,6 +148,21 @@ You could also perform this task over SSH, or use a configuration management too
 
 > Note: if you are using Caddy or Let's Encrypt for free SSL certificates, that you may hit rate-limits for generating new certificates if you do this too often within a given week.
 
+### Memory limits for functions
+
+Memory limits for functions are supported. When the limit is exceeded the function will be killed.
+
+Example:
+
+```yaml
+functions:
+  figlet:
+    skip_build: true
+    image: functions/figlet:latest
+    limits:
+      memory: 20Mi
+```
+
 ## What does faasd deploy?
 
 * faasd - itself, and its [faas-provider](https://github.com/openfaas/faas-provider) for containerd - CRUD for functions and services, implements the OpenFaaS REST API
