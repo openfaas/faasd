@@ -16,7 +16,7 @@ func Test_Proxy_ToPrivateServer(t *testing.T) {
 
 	wantBodyText := "OK"
 	wantBody := []byte(wantBodyText)
-	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	upstreamSvr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		if r.Body != nil {
 			defer r.Body.Close()
@@ -27,17 +27,19 @@ func Test_Proxy_ToPrivateServer(t *testing.T) {
 
 	}))
 
-	defer upstream.Close()
+	defer upstreamSvr.Close()
 	port := 8080
-	proxy := NewProxy(port, time.Second*1)
+	u, _ := url.Parse(upstreamSvr.URL)
+	log.Println("Host", u.Host)
+
+	upstreamAddr := u.Host
+	proxy := NewProxy(upstreamAddr, 8080, "127.0.0.1", time.Second*1, &mockResolver{})
 
 	gwChan := make(chan string, 1)
 	doneCh := make(chan bool)
 
-	go proxy.Start(gwChan, doneCh)
+	go proxy.Start()
 
-	u, _ := url.Parse(upstream.URL)
-	log.Println("Host", u.Host)
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
@@ -70,4 +72,15 @@ func Test_Proxy_ToPrivateServer(t *testing.T) {
 	go func() {
 		doneCh <- true
 	}()
+}
+
+type mockResolver struct {
+}
+
+func (m *mockResolver) Start() {
+
+}
+
+func (m *mockResolver) Get(upstream string, got chan<- string, timeout time.Duration) {
+	got <- upstream
 }

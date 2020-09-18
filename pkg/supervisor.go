@@ -295,8 +295,6 @@ func ParseCompose(config *compose.Config) ([]Service, error) {
 			})
 		}
 
-		fmt.Printf("Service: %s - %v\n", s.Name, s.Ports)
-
 		services[idx] = Service{
 			Name:  s.Name,
 			Image: s.Image,
