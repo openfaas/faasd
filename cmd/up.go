@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/signal"
 	"path"
-	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -85,7 +84,7 @@ func runUp(cmd *cobra.Command, _ []string) error {
 
 	shutdownTimeout := time.Second * 1
 	timeout := time.Second * 60
-	proxyDoneCh := make(chan bool)
+	// proxyDoneCh := make(chan bool)
 
 	wg := sync.WaitGroup{}
 	wg.Add(1)
@@ -103,37 +102,39 @@ func runUp(cmd *cobra.Command, _ []string) error {
 		}
 
 		// Close proxy
-		proxyDoneCh <- true
+		// proxyDoneCh <- true
 		time.AfterFunc(shutdownTimeout, func() {
 			wg.Done()
 		})
 	}()
 
-	gatewayURLChan := make(chan string, 1)
-	proxyPort := 8080
-	proxy := pkg.NewProxy(proxyPort, timeout)
-	go proxy.Start(gatewayURLChan, proxyDoneCh)
+	localResolver := pkg.NewLocalResolver(path.Join(cfg.workingDir, "hosts"))
+	go localResolver.Start()
 
-	go func() {
-		time.Sleep(3 * time.Second)
+	proxies := map[uint32]*pkg.Proxy{}
+	for _, svc := range services {
+		for _, port := range svc.Ports {
 
-		fileData, fileErr := ioutil.ReadFile(path.Join(cfg.workingDir, "hosts"))
-		if fileErr != nil {
-			log.Println(fileErr)
-			return
-		}
-
-		host := ""
-		lines := strings.Split(string(fileData), "\n")
-		for _, line := range lines {
-			if strings.Index(line, "gateway") > -1 {
-				host = line[:strings.Index(line, "\t")]
+			listenPort := port.Port
+			if _, ok := proxies[listenPort]; ok {
+				return fmt.Errorf("port %d already allocated", listenPort)
 			}
+
+			hostIP := "0.0.0.0"
+			if len(port.HostIP) > 0 {
+				hostIP = port.HostIP
+			}
+
+			upstream := fmt.Sprintf("%s:%d", svc.Name, port.TargetPort)
+			proxies[listenPort] = pkg.NewProxy(upstream, listenPort, hostIP, timeout, localResolver)
 		}
-		log.Printf("[up] Sending %s to proxy\n", host)
-		gatewayURLChan <- host + ":8080"
-		close(gatewayURLChan)
-	}()
+	}
+
+	// wg.Add(len(proxies))
+
+	for _, v := range proxies {
+		go v.Start()
+	}
 
 	wg.Wait()
 	return nil
