@@ -12,6 +12,7 @@ import (
 
 	"github.com/containerd/containerd"
 	"github.com/containerd/containerd/cio"
+	"github.com/containerd/containerd/containers"
 	"github.com/containerd/containerd/namespaces"
 	"github.com/containerd/containerd/oci"
 	gocni "github.com/containerd/go-cni"
@@ -22,6 +23,7 @@ import (
 	cninetwork "github.com/openfaas/faasd/pkg/cninetwork"
 	"github.com/openfaas/faasd/pkg/service"
 	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 func MakeDeployHandler(client *containerd.Client, cni gocni.CNI, secretMountPath string, alwaysPull bool) func(w http.ResponseWriter, r *http.Request) {
@@ -104,6 +106,18 @@ func deploy(ctx context.Context, req types.FunctionDeployment, client *container
 		labels = *req.Labels
 	}
 
+	var memory *specs.LinuxMemory
+	if req.Limits != nil && len(req.Limits.Memory) > 0 {
+		memory = &specs.LinuxMemory{}
+
+		qty, err := resource.ParseQuantity(req.Limits.Memory)
+		if err != nil {
+			log.Printf("error parsing (%q) as quantity: %s", req.Limits.Memory, err.Error())
+		}
+		v := qty.Value()
+		memory.Limit = &v
+	}
+
 	container, err := client.NewContainer(
 		ctx,
 		name,
@@ -113,7 +127,8 @@ func deploy(ctx context.Context, req types.FunctionDeployment, client *container
 		containerd.WithNewSpec(oci.WithImageConfig(image),
 			oci.WithCapabilities([]string{"CAP_NET_RAW"}),
 			oci.WithMounts(mounts),
-			oci.WithEnv(envs)),
+			oci.WithEnv(envs),
+			withMemory(memory)),
 		containerd.WithContainerLabels(labels),
 	)
 
@@ -209,4 +224,22 @@ func validateSecrets(secretMountPath string, secrets []string) error {
 		}
 	}
 	return nil
+}
+
+func withMemory(mem *specs.LinuxMemory) oci.SpecOpts {
+	return func(ctx context.Context, _ oci.Client, c *containers.Container, s *oci.Spec) error {
+		if mem != nil {
+			if s.Linux == nil {
+				s.Linux = &specs.Linux{}
+			}
+			if s.Linux.Resources == nil {
+				s.Linux.Resources = &specs.LinuxResources{}
+			}
+			if s.Linux.Resources.Memory == nil {
+				s.Linux.Resources.Memory = &specs.LinuxMemory{}
+			}
+			s.Linux.Resources.Memory.Limit = mem.Limit
+		}
+		return nil
+	}
 }
