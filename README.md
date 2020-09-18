@@ -87,6 +87,22 @@ journalctl -t openfaas-fn:figlet -f &
 echo logs | faas-cli invoke figlet
 ```
 
+### Logs for the core services
+
+Core services as defined in the docker-compose.yaml file are deployed as containers by faasd.
+
+View the logs for a component by giving its NAME:
+
+```bash
+journalctl -t default:NAME
+
+journalctl -t default:gateway
+
+journalctl -t default:queue-worker
+```
+
+You can also use `-f` to follow the logs, or `--lines` to tail a number of lines, or `--since` to give a timeframe.
+
 ### Exposing core services
 
 The OpenFaaS stack is made up of several core services including NATS and Prometheus. You can expose these through the `docker-compose.yaml` file located at `/var/lib/faasd`.
