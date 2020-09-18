@@ -658,12 +658,12 @@
   version = "v2.3.0"
 
 [[projects]]
-  digest = "1:565af689f3e3d45e9cf8be8ff888b46ac96abc031c77361ce7c5c1228b2df006"
+  digest = "1:5df5c5608aa145271c7aa8649e5dda659b20df698c15f9a46b2989b06981da53"
   name = "k8s.io/apimachinery"
   packages = ["pkg/api/resource"]
   pruneopts = "UT"
-  revision = "b63a0c883fbfc313249150449400788e5589ef23"
-  version = "v0.19.2"
+  revision = "1a4218b8b919be7cbfedbc03e376dcba6deb9802"
+  version = "v0.18.9"
 
 [solve-meta]
   analyzer-name = "dep"

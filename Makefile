@@ -5,21 +5,23 @@ CONTAINERD_VER := 1.3.4
 CNI_VERSION := v0.8.6
 ARCH := amd64
 
+export GO111MODULE=on
+
 .PHONY: all
 all: local
 
 local:
-	CGO_ENABLED=0 GOOS=linux go build -o bin/faasd
+	CGO_ENABLED=0 GOOS=linux go build -mod=vendor -o bin/faasd
 
 .PHONY: test
 test:
-	CGO_ENABLED=0 GOOS=linux go test -ldflags $(LDFLAGS) ./...
+	CGO_ENABLED=0 GOOS=linux go test -mod=vendor -ldflags $(LDFLAGS) ./...
 
 .PHONY: dist
 dist:
-	CGO_ENABLED=0 GOOS=linux go build -ldflags $(LDFLAGS) -a -installsuffix cgo -o bin/faasd
-	CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7 go build -ldflags $(LDFLAGS) -a -installsuffix cgo -o bin/faasd-armhf
-	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags $(LDFLAGS) -a -installsuffix cgo -o bin/faasd-arm64
+	CGO_ENABLED=0 GOOS=linux go build -mod=vendor -ldflags $(LDFLAGS) -a -installsuffix cgo -o bin/faasd
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7 go build -mod=vendor -ldflags $(LDFLAGS) -a -installsuffix cgo -o bin/faasd-armhf
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -mod=vendor -ldflags $(LDFLAGS) -a -installsuffix cgo -o bin/faasd-arm64
 
 .PHONY: prepare-test
 prepare-test:
