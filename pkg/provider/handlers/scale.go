@@ -101,12 +101,14 @@ func MakeReplicaUpdateHandler(client *containerd.Client, cni gocni.CNI) func(w h
 					if resumeErr := task.Resume(ctx); resumeErr != nil {
 						log.Printf("[Scale] error resuming task %s, error: %s\n", name, resumeErr)
 						http.Error(w, resumeErr.Error(), http.StatusBadRequest)
+						return
 					}
 				} else if taskStatus.Status == containerd.Stopped {
 					// Stopped tasks cannot be restarted, must be removed, and created again
 					if _, delErr := task.Delete(ctx); delErr != nil {
 						log.Printf("[Scale] error deleting stopped task %s, error: %s\n", name, delErr)
 						http.Error(w, delErr.Error(), http.StatusBadRequest)
+						return
 					}
 					createNewTask = true
 				}
@@ -121,7 +123,6 @@ func MakeReplicaUpdateHandler(client *containerd.Client, cni gocni.CNI) func(w h
 				log.Printf("[Scale] error deploying %s, error: %s\n", name, deployErr)
 				http.Error(w, deployErr.Error(), http.StatusBadRequest)
 				return
-
 			}
 		}
 	}
