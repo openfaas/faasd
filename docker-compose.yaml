@@ -1,7 +1,7 @@
 version: "3.7"
 services:
   basic-auth-plugin:
-    image: "docker.io/openfaas/basic-auth-plugin:0.18.17${ARCH_SUFFIX}"
+    image: "docker.io/openfaas/basic-auth-plugin:0.18.18${ARCH_SUFFIX}"
     environment:
       - port=8080
       - secret_mount_path=/run/secrets
@@ -41,7 +41,7 @@ services:
        - "127.0.0.1:9090:9090"
 
   gateway:
-    image: "docker.io/openfaas/gateway:0.18.17${ARCH_SUFFIX}"
+    image: "docker.io/openfaas/gateway:0.18.18${ARCH_SUFFIX}"
     environment:
       - basic_auth=true
       - functions_provider_url=http://faasd-provider:8081/
