@@ -56,6 +56,8 @@ Automate everything within < 60 seconds and get a public URL and IP address back
 
 * [Provision faasd on DigitalOcean with built-in TLS support](docs/bootstrap/digitalocean-terraform/README.md)
 
+## Operational concerns
+
 ### A note on private repos / registries
 
 To use private image repos, `~/.docker/config.json` needs to be copied to `/var/lib/faasd/.docker/config.json`.
@@ -123,6 +125,29 @@ Expose Prometheus only to 127.0.0.1:
        - "127.0.0.1:9090:9090"
 ```
 
+### Upgrading faasd
+
+To upgrade `faasd` either re-create your VM using Terraform, or simply replace the faasd binary with a newer one.
+
+```bash
+systemctl stop faasd-provider
+systemctl stop faasd
+
+# Replace /usr/local/bin/faasd with the desired release
+
+# Replace /var/lib/faasd/docker-compose.yaml with the matching version for
+# that release.
+# Remember to keep any custom patches you make such as exposing additional 
+# ports, or updating timeout values
+
+systemctl start faasd
+systemctl start faasd-provider
+```
+
+You could also perform this task over SSH, or use a configuration management tool.
+
+> Note: if you are using Caddy or Let's Encrypt for free SSL certificates, that you may hit rate-limits for generating new certificates if you do this too often within a given week.
+
 ## What does faasd deploy?
 
 * faasd - itself, and its [faas-provider](https://github.com/openfaas/faas-provider) for containerd - CRUD for functions and services, implements the OpenFaaS REST API
@@ -155,7 +180,15 @@ For community functions see `faas-cli store --help`
 
 For templates built by the community see: `faas-cli template store list`, you can also use the `dockerfile` template if you just want to migrate an existing service without the benefits of using a template.
 
-### Workshop
+### Training and courses
+
+#### LinuxFoundation training course
+
+The founder of faasd and OpenFaaS has written a training course for the LinuxFoundation which also covers how to use OpenFaaS on Kubernetes. Much of the same concepts can be applied to faasd, and the course is free:
+
+* [Introduction to Serverless on Kubernetes](https://www.edx.org/course/introduction-to-serverless-on-kubernetes)
+
+#### Community workshop
 
 [The OpenFaaS workshop](https://github.com/openfaas/workshop/) is a set of 12 self-paced labs and provides a great starting point for learning the features of openfaas. Not all features will be available or usable with faasd.
 
@@ -220,4 +253,9 @@ Other operations are pending development in the provider such as:
 * [x] Configure `basic_auth` to protect the OpenFaaS gateway and faasd-provider HTTP API
 * [x] Setup custom working directory for faasd `/var/lib/faasd/`
 * [x] Use CNI to create network namespaces and adapters
+* [x] Optionally expose core services from the docker-compose.yaml file, locally or to all adapters.
 
+WIP:
+
+* [ ] Annotation support (PR ready)
+* [ ] Hard memory limits for functions (PR ready)
