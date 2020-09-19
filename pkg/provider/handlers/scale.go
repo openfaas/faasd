@@ -11,6 +11,7 @@ import (
 	"github.com/containerd/containerd"
 	"github.com/containerd/containerd/namespaces"
 	gocni "github.com/containerd/go-cni"
+
 	"github.com/openfaas/faas-provider/types"
 	faasd "github.com/openfaas/faasd/pkg"
 )
@@ -58,46 +59,70 @@ func MakeReplicaUpdateHandler(client *containerd.Client, cni gocni.CNI) func(w h
 			return
 		}
 
-		taskExists := true
+		var taskExists bool
+		var taskStatus *containerd.Status
+
 		task, taskErr := ctr.Task(ctx, nil)
 		if taskErr != nil {
 			msg := fmt.Sprintf("cannot load task for service %s, error: %s", name, taskErr)
 			log.Printf("[Scale] %s\n", msg)
 			taskExists = false
+		} else {
+			taskExists = true
+			status, statusErr := task.Status(ctx)
+			if statusErr != nil {
+				msg := fmt.Sprintf("cannot load task status for %s, error: %s", name, statusErr)
+				log.Printf("[Scale] %s\n", msg)
+				http.Error(w, msg, http.StatusInternalServerError)
+				return
+			} else {
+				taskStatus = &status
+			}
 		}
 
-		if req.Replicas > 0 {
-			if taskExists {
-				if status, statusErr := task.Status(ctx); statusErr == nil {
-					if status.Status == containerd.Paused {
-						if resumeErr := task.Resume(ctx); resumeErr != nil {
-							log.Printf("[Scale] error resuming task %s, error: %s\n", name, resumeErr)
-							http.Error(w, resumeErr.Error(), http.StatusBadRequest)
-						}
-					}
-				}
-			} else {
-				deployErr := createTask(ctx, client, ctr, cni)
-				if deployErr != nil {
-					log.Printf("[Scale] error deploying %s, error: %s\n", name, deployErr)
-					http.Error(w, deployErr.Error(), http.StatusBadRequest)
+		createNewTask := false
+
+		// Scale to zero
+		if req.Replicas == 0 {
+			// If a task is running, pause it
+			if taskExists && taskStatus.Status == containerd.Running {
+				if pauseErr := task.Pause(ctx); pauseErr != nil {
+					wrappedPauseErr := fmt.Errorf("error pausing task %s, error: %s", name, pauseErr)
+					log.Printf("[Scale] %s\n", wrappedPauseErr.Error())
+					http.Error(w, wrappedPauseErr.Error(), http.StatusNotFound)
 					return
 				}
-				return
-			}
-		} else {
-			if taskExists {
-				if status, statusErr := task.Status(ctx); statusErr == nil {
-					if status.Status == containerd.Running {
-						if pauseErr := task.Pause(ctx); pauseErr != nil {
-							log.Printf("[Scale] error pausing task %s, error: %s\n", name, pauseErr)
-							http.Error(w, pauseErr.Error(), http.StatusBadRequest)
-						}
-					}
-				}
 			}
 		}
 
-	}
+		if taskExists {
+			if taskStatus != nil {
+				if taskStatus.Status == containerd.Paused {
+					if resumeErr := task.Resume(ctx); resumeErr != nil {
+						log.Printf("[Scale] error resuming task %s, error: %s\n", name, resumeErr)
+						http.Error(w, resumeErr.Error(), http.StatusBadRequest)
+					}
+				} else if taskStatus.Status == containerd.Stopped {
+					// Stopped tasks cannot be restarted, must be removed, and created again
+					if _, delErr := task.Delete(ctx); delErr != nil {
+						log.Printf("[Scale] error deleting stopped task %s, error: %s\n", name, delErr)
+						http.Error(w, delErr.Error(), http.StatusBadRequest)
+					}
+					createNewTask = true
+				}
+			}
+		} else {
+			createNewTask = true
+		}
 
+		if createNewTask {
+			deployErr := createTask(ctx, client, ctr, cni)
+			if deployErr != nil {
+				log.Printf("[Scale] error deploying %s, error: %s\n", name, deployErr)
+				http.Error(w, deployErr.Error(), http.StatusBadRequest)
+				return
+
+			}
+		}
+	}
 }

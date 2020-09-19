@@ -161,7 +161,7 @@ func (s *Supervisor) Start(svcs []Service) error {
 			Options:     []string{"rbind", "ro"},
 		})
 
-		newContainer, containerCreateErr := s.client.NewContainer(
+		newContainer, err := s.client.NewContainer(
 			ctx,
 			svc.Name,
 			containerd.WithImage(image),
@@ -173,28 +173,29 @@ func (s *Supervisor) Start(svcs []Service) error {
 				oci.WithEnv(svc.Env)),
 		)
 
-		if containerCreateErr != nil {
-			log.Printf("Error creating container: %s\n", containerCreateErr)
-			return containerCreateErr
+		if err != nil {
+			log.Printf("Error creating container: %s\n", err)
+			return err
 		}
 
 		log.Printf("Created container: %s\n", newContainer.ID())
 
-		task, taskErr := newContainer.NewTask(ctx, cio.BinaryIO("/usr/local/bin/faasd", nil))
-		if taskErr != nil {
+		task, err := newContainer.NewTask(ctx, cio.BinaryIO("/usr/local/bin/faasd", nil))
+		if err != nil {
 			log.Printf("Error creating task: %s\n", err)
-			return taskErr
+			return err
 		}
 
 		labels := map[string]string{}
 		network, err := cninetwork.CreateCNINetwork(ctx, s.cni, task, labels)
-
 		if err != nil {
+			log.Printf("Error creating CNI for %s: %s", svc.Name, err)
 			return err
 		}
 
 		ip, err := cninetwork.GetIPAddress(network, task)
 		if err != nil {
+			log.Printf("Error getting IP for %s: %s", svc.Name, err)
 			return err
 		}
 
