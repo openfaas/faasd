@@ -15,6 +15,9 @@ script:
 - make prepare-test
 - make test-e2e
 
+before_deploy:
+  - ./hack/hashgen.sh
+
 deploy:
   provider: releases
   api_key:
@@ -23,6 +26,9 @@ deploy:
     - ./bin/faasd
     - ./bin/faasd-armhf
     - ./bin/faasd-arm64
+    - ./bin/faasd.sha256
+    - ./bin/faasd-armhf.sha256
+    - ./bin/faasd-arm64.sha256
   skip_cleanup: true
   on:
     tags: true
