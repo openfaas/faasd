@@ -11,37 +11,52 @@ import (
 func Test_BuildLabels_WithAnnotations(t *testing.T) {
 	// Test each combination of nil/non-nil annotation + label
 	tables := []struct {
+		name       string
 		label      map[string]string
 		annotation map[string]string
 		result     map[string]string
 	}{
-		{nil, nil, map[string]string{}},
-		{map[string]string{"L1": "V1"}, nil, map[string]string{"L1": "V1"}},
-		{nil, map[string]string{"A1": "V2"}, map[string]string{fmt.Sprintf("%sA1", annotationLabelPrefix): "V2"}},
+		{"Empty label and annotations returns empty table map", nil, nil, map[string]string{}},
 		{
-			map[string]string{"L1": "V1"}, map[string]string{"A1": "V2"},
-			map[string]string{"L1": "V1", fmt.Sprintf("%sA1", annotationLabelPrefix): "V2"},
+			"Label with empty annotation returns valid map",
+			map[string]string{"L1": "V1"},
+			nil,
+			map[string]string{"L1": "V1"}},
+		{
+			"Annotation with empty label returns valid map",
+			nil,
+			map[string]string{"A1": "V2"},
+			map[string]string{fmt.Sprintf("%sA1", annotationLabelPrefix): "V2"}},
+		{
+			"Label and annotation provided returns valid combined map",
+			map[string]string{"L1": "V1"},
+			map[string]string{"A1": "V2"},
+			map[string]string{
+				"L1": "V1",
+				fmt.Sprintf("%sA1", annotationLabelPrefix): "V2",
+			},
 		},
 	}
 
-	for _, pair := range tables {
+	for _, tc := range tables {
 
-		request := &types.FunctionDeployment{
-			Labels:      &pair.label,
-			Annotations: &pair.annotation,
-		}
+		t.Run(tc.name, func(t *testing.T) {
+			request := &types.FunctionDeployment{
+				Labels:      &tc.label,
+				Annotations: &tc.annotation,
+			}
 
-		val, err := buildLabels(request)
+			val, err := buildLabels(request)
 
-		if err != nil {
-			t.Fatalf("want: no error got: %v", err)
-		}
+			if err != nil {
+				t.Fatalf("want: no error got: %v", err)
+			}
 
-		if !reflect.DeepEqual(val, pair.result) {
-			t.Errorf("Got: %s, expected %s", val, pair.result)
-		}
+			if !reflect.DeepEqual(val, tc.result) {
+				t.Errorf("Got: %s, expected %s", val, tc.result)
+			}
+		})
 	}
-
 }
 
 func Test_BuildLabels_WithAnnotationCollision(t *testing.T) {
@@ -55,7 +70,6 @@ func Test_BuildLabels_WithAnnotationCollision(t *testing.T) {
 
 	val, err := buildLabels(request)
 
-	fmt.Printf("%s, %s\n", val, err)
 	if err == nil {
 		t.Errorf("Expected an error, got %d values", len(val))
 	}
