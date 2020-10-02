@@ -83,7 +83,7 @@ Log out once you know it works.
 * Let's capture the authentication password into a file for use with `faas-cli`
 
 ```
-ssh ubuntu@192.168.64.14 "sudo cat /var/lib/faasd/secrets/basic-auth-password" > basic-auth-password
+ssh ubuntu@$IP "sudo cat /var/lib/faasd/secrets/basic-auth-password" > basic-auth-password
 ```
 
 ## Try faasd (OpenFaaS)
