@@ -41,7 +41,7 @@ services:
        - "127.0.0.1:9090:9090"
 
   gateway:
-    image: "docker.io/openfaas/gateway:0.18.18${ARCH_SUFFIX}"
+    image: "docker.io/openfaas/gateway:0.19.1${ARCH_SUFFIX}"
     environment:
       - basic_auth=true
       - functions_provider_url=http://faasd-provider:8081/
