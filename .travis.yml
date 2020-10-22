@@ -16,7 +16,7 @@ script:
 - make test-e2e
 
 before_deploy:
-  - ./hack/hashgen.sh
+  - make hashgen
 
 deploy:
   provider: releases

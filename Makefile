@@ -23,6 +23,10 @@ dist:
 	CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7 go build -mod=vendor -ldflags $(LDFLAGS) -a -installsuffix cgo -o bin/faasd-armhf
 	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -mod=vendor -ldflags $(LDFLAGS) -a -installsuffix cgo -o bin/faasd-arm64
 
+.PHONY: hashgen
+hashgen:
+	for f in bin/faasd*; do shasum -a 256 $$f > $$f.sha256; done
+
 .PHONY: prepare-test
 prepare-test:
 	curl -sLSf https://github.com/containerd/containerd/releases/download/v$(CONTAINERD_VER)/containerd-$(CONTAINERD_VER).linux-amd64.tar.gz > /tmp/containerd.tar.gz && sudo tar -xvf /tmp/containerd.tar.gz -C /usr/local/bin/ --strip-components=1
