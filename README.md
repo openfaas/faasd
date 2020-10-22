@@ -76,6 +76,8 @@ ofc-bootstrap registry-login --username <your-registry-username> --password-stdi
 ```
 The file will be created in `./credentials/`
 
+> Note for the GitHub container registry, you should use `ghcr.io` Container Registry and not the previous generation of "Docker Package Registry". [See notes on migrating](https://docs.github.com/en/free-pro-team@latest/packages/getting-started-with-github-container-registry/migrating-to-github-container-registry-for-docker-images)
+
 ### Logs for functions
 
 You can view the logs of functions using `journalctl`:
