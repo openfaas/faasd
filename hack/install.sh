@@ -78,8 +78,11 @@ install_containerd() {
   x86_64 | amd64)
     curl -sLSf https://github.com/containerd/containerd/releases/download/v1.3.7/containerd-1.3.7-linux-amd64.tar.gz | $SUDO tar -xvz --strip-components=1 -C /usr/local/bin/
     ;;
-  arm*)
-    curl -sSL https://github.com/alexellis/containerd-armhf/releases/download/v1.3.5/containerd-1.3.5-linux-armhf.tar.gz | $SUDO tar -xvz --strip-components=1 -C /usr/local/bin/
+  armv7l)
+    curl -sSL https://github.com/alexellis/containerd-arm/releases/download/v1.3.5/containerd-1.3.5-linux-armhf.tar.gz | $SUDO tar -xvz --strip-components=1 -C /usr/local/bin/
+    ;;
+  aarch64)
+    curl -sSL https://github.com/alexellis/containerd-arm/releases/download/v1.3.5/containerd-1.3.5-linux-arm64.tar.gz | $SUDO tar -xvz --strip-components=1 -C /usr/local/bin/
     ;;
   *)
     fatal "Unsupported architecture $arch"
@@ -100,7 +103,10 @@ install_faasd() {
   x86_64 | amd64)
     suffix=""
     ;;
-  arm*)
+  aarch64)
+    suffix=-arm64
+    ;;
+  armv7l)
     suffix=-armhf
     ;;
   *)
