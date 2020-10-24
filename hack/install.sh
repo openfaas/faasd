@@ -60,6 +60,9 @@ install_cni_plugins() {
   x86_64 | amd64)
     suffix=amd64
     ;;
+  aarch64)
+    suffix=arm64
+    ;;
   arm*)
     suffix=arm
     ;;
