@@ -246,11 +246,9 @@ Other operations are pending development in the provider such as:
 * [ ] An installer for faasd and dependencies - runc, containerd
 * [ ] Monitor and restart any of the core components at runtime if the container stops
 * [ ] Provide ufw rules / example for blocking access to everything but a reverse proxy to the gateway container
-* [ ] Provide [simple Caddyfile example](https://blog.alexellis.io/https-inlets-local-endpoints/) in the README showing how to expose the faasd proxy on port 80/443 with TLS
+* [ ] Multiple replicas per function
 
 ### Known-issues
-
-* [ ] [containerd can't pull image from Github Docker Package Registry](https://github.com/containerd/containerd/issues/3291)
 
 ### Completed
 
@@ -271,8 +269,12 @@ Other operations are pending development in the provider such as:
 * [x] Setup custom working directory for faasd `/var/lib/faasd/`
 * [x] Use CNI to create network namespaces and adapters
 * [x] Optionally expose core services from the docker-compose.yaml file, locally or to all adapters.
+* [x] ~~[containerd can't pull image from Github Docker Package Registry](https://github.com/containerd/containerd/issues/3291)~~ ghcr.io support
+* [x] Provide [simple Caddyfile example](https://blog.alexellis.io/https-inlets-local-endpoints/) in the README showing how to expose the faasd proxy on port 80/443 with TLS
+* [x] Annotation support
+* [x] Hard memory limits for functions
+* [ ] Terraform for DigitalOcean
 
 WIP:
 
-* [ ] Annotation support (PR ready)
-* [ ] Hard memory limits for functions (PR ready)
+* [ ] Terraform for AWS
