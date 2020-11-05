@@ -1,6 +1,4 @@
-# faasd - Serverless for everyone else
-
-faasd is built for everyone else, for those who have no desire to manage expensive infrastructure.
+# faasd - a lightweight & portable faas engine
 
 [![Build Status](https://travis-ci.com/openfaas/faasd.svg?branch=master)](https://travis-ci.com/openfaas/faasd)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
