@@ -26,6 +26,8 @@ jobs:
         run: make test
       - name: dist
         run: make dist
+      - name: hashgen
+        run: make hashgen
 
       - name: Create Release
         id: create_release
@@ -46,6 +48,7 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./bin/faasd
           asset_name: faasd
+          asset_content_type: application/binary
       - name: Upload Release faasd-armhf
         uses: actions/upload-release-asset@v1
         env:
@@ -54,6 +57,7 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./bin/faasd-armhf
           asset_name: faasd-armhf
+          asset_content_type: application/binary
       - name: Upload Release faasd-arm64
         uses: actions/upload-release-asset@v1
         env:
@@ -62,6 +66,7 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./bin/faasd-arm64
           asset_name: faasd-arm64
+          asset_content_type: application/binary
       - name: Upload Release faasd.sha256
         uses: actions/upload-release-asset@v1
         env:
@@ -70,6 +75,7 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./bin/faasd.sha256
           asset_name: faasd.sha256
+          asset_content_type: text/plain
       - name: Upload Release faasd-armhf.sha256
         uses: actions/upload-release-asset@v1
         env:
@@ -78,6 +84,7 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./bin/faasd-armhf.sha256
           asset_name: faasd-armhf.sha256
+          asset_content_type: text/plain
       - name: Upload Release faasd-arm64.sha256
         uses: actions/upload-release-asset@v1
         env:
@@ -86,3 +93,4 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./bin/faasd-arm64.sha256
           asset_name: faasd-arm64.sha256
+          asset_content_type: text/plain
