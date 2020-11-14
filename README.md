@@ -235,15 +235,20 @@ Scale from and to zero is also supported. On a Dell XPS with a small, pre-pulled
 
 Other operations are pending development in the provider such as:
 
-* `faas auth` - supported for Basic Authentication, but OAuth2 & OIDC require a patch
+* `faas auth` - supported for Basic Authentication, but SSO, OAuth2 & OIDC may require a patch
 
 ### Backlog
 
-* [ ] [Store and retrieve annotations in function spec](https://github.com/openfaas/faasd/pull/86) - in progress
-* [ ] Offer live rolling-updates, with zero downtime - requires moving to IDs vs. names for function containers
-* [ ] An installer for faasd and dependencies - runc, containerd
+Should have:
+
+* [ ] Resolve core services from functions by populating/sharing `/etc/hosts` between `faasd` and `faasd-provider`
+* [ ] Docs or examples on how to use the various connectors and connector-sdk
 * [ ] Monitor and restart any of the core components at runtime if the container stops
-* [ ] Provide ufw rules / example for blocking access to everything but a reverse proxy to the gateway container
+* [ ] Asynchronous deletion instead of synchronous
+
+Nice to Have:
+* [ ] Total memory limits - if a node has 1GB of RAM, don't allow more than 1000MB of RAM to be reserved via limits
+* [ ] Offer live rolling-updates, with zero downtime - requires moving to IDs vs. names for function containers
 * [ ] Multiple replicas per function
 
 ### Known-issues
@@ -271,7 +276,9 @@ Other operations are pending development in the provider such as:
 * [x] Provide [simple Caddyfile example](https://blog.alexellis.io/https-inlets-local-endpoints/) in the README showing how to expose the faasd proxy on port 80/443 with TLS
 * [x] Annotation support
 * [x] Hard memory limits for functions
-* [ ] Terraform for DigitalOcean
+* [x] Terraform for DigitalOcean
+* [x] [Store and retrieve annotations in function spec](https://github.com/openfaas/faasd/pull/86) - in progress
+* [x] An installer for faasd and dependencies - runc, containerd
 
 WIP:
 
