@@ -8,7 +8,10 @@ ARCH := amd64
 export GO111MODULE=on
 
 .PHONY: all
-all: local
+all: test dist hashgen
+
+.PHONY: publish
+all: dist hashgen
 
 local:
 	CGO_ENABLED=0 GOOS=linux go build -mod=vendor -o bin/faasd
