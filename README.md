@@ -30,15 +30,17 @@ faasd does not create the same maintenance burden you'll find with maintaining, 
 
 ## Tutorials
 
-### Get started on DigitalOcean, or any other IaaS
-
-If your IaaS supports `user_data` aka "cloud-init", then this guide is for you. If not, then checkout the approach and feel free to run each step manually.
-
-* [Build a Serverless appliance with faasd](https://blog.alexellis.io/deploy-serverless-faasd-with-cloud-init/)
-
 ### Run locally on MacOS, Linux, or Windows with multipass
 
 * [Get up and running with your own faasd installation on your Mac/Ubuntu or Windows with cloud-config](/docs/MULTIPASS.md)
+
+### DigitalOcean tutorial with Terraform and TLS
+
+The terraform can be adapted for any IaaS provider:
+
+* [Bring a lightweight Serverless experience to DigitalOcean with Terraform and faasd](https://www.openfaas.com/blog/faasd-tls-terraform/)
+
+See also: [Build a Serverless appliance with faasd and cloud-init](https://blog.alexellis.io/deploy-serverless-faasd-with-cloud-init/)
 
 ### Get started on armhf / Raspberry Pi
 
