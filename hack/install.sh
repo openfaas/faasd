@@ -92,8 +92,8 @@ install_containerd() {
     ;;
   esac
 
+  $SUDO systemctl unmask containerd || :
   $SUDO curl -SLfs https://raw.githubusercontent.com/containerd/containerd/v1.3.5/containerd.service --output /etc/systemd/system/containerd.service
-
   $SUDO systemctl enable containerd
   $SUDO systemctl start containerd
 
@@ -129,8 +129,10 @@ install_faasd() {
   $SUDO curl -fSLs "https://raw.githubusercontent.com/openfaas/faasd/${version}/hack/faasd-provider.service" --output "hack/faasd-provider.service"
   $SUDO curl -fSLs "https://raw.githubusercontent.com/openfaas/faasd/${version}/hack/faasd.service" --output "hack/faasd.service"
   $SUDO /usr/local/bin/faasd install
+}
 
-  sleep 5
+install_faas_cli() {
+  curl -sLS https://cli.openfaas.com | $SUDO sh
 }
 
 verify_system
@@ -141,4 +143,6 @@ echo "net.ipv4.conf.all.forwarding=1" | $SUDO tee -a /etc/sysctl.conf
 
 install_cni_plugins
 install_containerd
+install_faas_cli
 install_faasd
+
