@@ -7,6 +7,7 @@ require (
 	github.com/alexellis/go-execute v0.0.0-20200124154445-8697e4e28c5e
 	github.com/alexellis/k3sup v0.0.0-20200607084134-629c0bc6b50f
 	github.com/compose-spec/compose-go v0.0.0-20200528042322-36d8ce368e05
+	github.com/containerd/cgroups v0.0.0-20201119153540-4cbc285b3327 // indirect
 	github.com/containerd/containerd v1.3.2
 	github.com/containerd/continuity v0.0.0-20190815185530-f2a389ac0a02 // indirect
 	github.com/containerd/fifo v0.0.0-20190816180239-bda0ff6ed73c // indirect
@@ -27,7 +28,7 @@ require (
 	github.com/opencontainers/go-digest v1.0.0-rc1.0.20180430190053-c9281466c8b2 // indirect
 	github.com/opencontainers/image-spec v1.0.1 // indirect
 	github.com/opencontainers/runc v1.0.0-rc9 // indirect
-	github.com/opencontainers/runtime-spec v1.0.2-0.20190207185410-29686dbc5559
+	github.com/opencontainers/runtime-spec v1.0.2
 	github.com/openfaas/faas v0.0.0-20191227175319-80b6976c1063
 	github.com/openfaas/faas-provider v0.15.1
 	github.com/pkg/errors v0.9.1
@@ -40,8 +41,9 @@ require (
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
 	go.opencensus.io v0.22.2 // indirect
 	golang.org/x/net v0.0.0-20191209160850-c0dbc17a3553 // indirect
-	golang.org/x/sys v0.0.0-20191219235734-af0d71d358ab
+	golang.org/x/sys v0.0.0-20200124204421-9fbb57f87de9
 	google.golang.org/genproto v0.0.0-20191216205247-b31c10ee225f // indirect
 	google.golang.org/grpc v1.23.0 // indirect
 	k8s.io/apimachinery v0.18.9
+	k8s.io/client-go v11.0.0+incompatible // indirect
 )
