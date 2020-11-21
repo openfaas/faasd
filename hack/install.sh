@@ -132,7 +132,7 @@ install_faasd() {
 }
 
 install_caddy() {
-  if [ ! -z "${FAASD_DOMAIN}" ] && [ ! -z "${LETSENCRYPT_EMAIL}" ]; then
+  if [ ! -z "${FAASD_DOMAIN}" ]; then
     arch=$(uname -m)
     case $arch in
     x86_64 | amd64)
@@ -164,7 +164,7 @@ install_caddy() {
 
     $SUDO tee /etc/caddy/Caddyfile >/dev/null <<EOF
 {
-  email ${LETSENCRYPT_EMAIL}
+  email "${LETSENCRYPT_EMAIL}"
 }
 
 ${FAASD_DOMAIN} {
@@ -178,7 +178,7 @@ EOF
     $SUDO systemctl enable caddy
     $SUDO systemctl start caddy
   else
-    echo "Skipping caddy installation as FAASD_DOMAIN or LETSENCRYPT_EMAIL is missing."
+    echo "Skipping caddy installation as FAASD_DOMAIN."
   fi
 }
 
