@@ -131,6 +131,57 @@ install_faasd() {
   $SUDO /usr/local/bin/faasd install
 }
 
+install_caddy() {
+  if [ ! -z "${FAASD_DOMAIN}" ] && [ ! -z "${LETSENCRYPT_EMAIL}" ]; then
+    arch=$(uname -m)
+    case $arch in
+    x86_64 | amd64)
+      suffix="amd64"
+      ;;
+    aarch64)
+      suffix=-arm64
+      ;;
+    armv7l)
+      suffix=-armv7
+      ;;
+    *)
+      echo "Unsupported architecture $arch"
+      exit 1
+      ;;
+    esac
+
+    curl -sSL "https://github.com/caddyserver/caddy/releases/download/v2.2.1/caddy_2.2.1_linux_${suffix}.tar.gz" | $SUDO tar -xvz -C /usr/bin/ caddy
+    $SUDO curl -fSLs https://raw.githubusercontent.com/caddyserver/dist/master/init/caddy.service --output /etc/systemd/system/caddy.service
+
+    $SUDO mkdir -p /etc/caddy
+    $SUDO mkdir -p /var/lib/caddy
+    
+    if $(id caddy >/dev/null 2>&1); then
+      echo "User caddy already exists."
+    else
+      $SUDO useradd --system --home /var/lib/caddy --shell /bin/false caddy
+    fi
+
+    $SUDO tee /etc/caddy/Caddyfile >/dev/null <<EOF
+{
+  email ${LETSENCRYPT_EMAIL}
+}
+
+${FAASD_DOMAIN} {
+  reverse_proxy 127.0.0.1:8080
+}
+EOF
+
+    $SUDO chown --recursive caddy:caddy /var/lib/caddy
+    $SUDO chown --recursive caddy:caddy /etc/caddy
+
+    $SUDO systemctl enable caddy
+    $SUDO systemctl start caddy
+  else
+    echo "Skipping caddy installation as FAASD_DOMAIN or LETSENCRYPT_EMAIL is missing."
+  fi
+}
+
 install_faas_cli() {
   curl -sLS https://cli.openfaas.com | $SUDO sh
 }
@@ -145,4 +196,4 @@ install_cni_plugins
 install_containerd
 install_faas_cli
 install_faasd
-
+install_caddy
