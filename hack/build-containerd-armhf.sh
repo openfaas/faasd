@@ -3,7 +3,7 @@
 export ARCH="armv6l"
 echo "Downloading Go"
 
-curl -SLsf https://dl.google.com/go/go1.12.14.linux-$ARCH.tar.gz --output /tmp/go.tgz
+curl -SLsf https://dl.google.com/go/go1.13.15.linux-$ARCH.tar.gz --output /tmp/go.tgz
 sudo rm -rf /usr/local/go/
 sudo mkdir -p /usr/local/go/
 sudo tar -xvf /tmp/go.tgz -C /usr/local/go/ --strip-components=1
