@@ -11,7 +11,7 @@ export GO111MODULE=on
 all: test dist hashgen
 
 .PHONY: publish
-all: dist hashgen
+publish: dist hashgen
 
 local:
 	CGO_ENABLED=0 GOOS=linux go build -mod=vendor -o bin/faasd
