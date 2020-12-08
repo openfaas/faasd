@@ -231,7 +231,7 @@ export SUFFIX="-armhf"
 export SUFFIX="-arm64"
 
 # Then download
-curl -fSLs "https://github.com/openfaas/faasd/releases/download/0.9.9/faasd$SUFFIX" \
+curl -fSLs "https://github.com/openfaas/faasd/releases/download/0.9.10/faasd$SUFFIX" \
     -o "/tmp/faasd" \
     && chmod +x "/tmp/faasd" 
 sudo mv /tmp/faasd /usr/local/bin/
