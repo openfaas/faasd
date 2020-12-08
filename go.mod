@@ -29,9 +29,10 @@ require (
 	github.com/opencontainers/image-spec v1.0.1 // indirect
 	github.com/opencontainers/runc v1.0.0-rc9 // indirect
 	github.com/opencontainers/runtime-spec v1.0.2
-	github.com/openfaas/faas v0.0.0-20191227175319-80b6976c1063
-	github.com/openfaas/faas-provider v0.15.1
+	github.com/openfaas/faas v0.0.0-20201205125747-9bbb25e3c7c4
+	github.com/openfaas/faas-provider v0.15.2
 	github.com/pkg/errors v0.9.1
+	github.com/prometheus/procfs v0.2.0 // indirect
 	github.com/sethvargo/go-password v0.1.3
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.5
@@ -39,11 +40,11 @@ require (
 	github.com/vishvananda/netlink v1.1.0
 	github.com/vishvananda/netns v0.0.0-20191106174202-0a2b9b5464df
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
+	go.etcd.io/bbolt v1.3.5 // indirect
 	go.opencensus.io v0.22.2 // indirect
 	golang.org/x/net v0.0.0-20191209160850-c0dbc17a3553 // indirect
-	golang.org/x/sys v0.0.0-20200124204421-9fbb57f87de9
+	golang.org/x/sys v0.0.0-20200202164722-d101bd2416d5
 	google.golang.org/genproto v0.0.0-20191216205247-b31c10ee225f // indirect
 	google.golang.org/grpc v1.23.0 // indirect
 	k8s.io/apimachinery v0.18.9
-	k8s.io/client-go v11.0.0+incompatible // indirect
 )
