@@ -3,6 +3,7 @@
 
 package types
 
+// ScaleServiceRequest scales the service to the requested replcia count.
 type ScaleServiceRequest struct {
 	ServiceName string `json:"serviceName"`
 	Replicas    uint64 `json:"replicas"`
@@ -19,4 +20,9 @@ type InfoResponse struct {
 type ProviderVersion struct {
 	SHA     string `json:"sha"`
 	Release string `json:"release"`
+}
+
+// DeleteFunctionRequest delete a deployed function
+type DeleteFunctionRequest struct {
+	FunctionName string `json:"functionName"`
 }
