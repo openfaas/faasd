@@ -173,7 +173,7 @@ func proxyRequest(w http.ResponseWriter, originalReq *http.Request, proxyClient 
 
 	clientHeader := w.Header()
 	copyHeaders(clientHeader, &response.Header)
-	w.Header().Set("Content-Type", getContentType(response.Header, originalReq.Header))
+	w.Header().Set("Content-Type", getContentType(originalReq.Header, response.Header))
 
 	w.WriteHeader(response.StatusCode)
 	io.Copy(w, response.Body)
