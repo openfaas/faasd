@@ -28,9 +28,18 @@ faasd does not create the same maintenance burden you'll find with maintaining, 
 
 > Demo of faasd running in KVM
 
-## Walk-through of faasd
+## Try faasd for the first time
 
-faasd is OpenFaaS, so most things work the same, but you will need to pick one of the guides in the section below for deployment.
+faasd is OpenFaaS, so many things you read in the docs or in blog posts will work the same way.
+
+Use-cases and tutorials:
+
+* [Deploy via GitHub Actions](https://www.openfaas.com/blog/openfaas-functions-with-github-actions/)
+* [Scrape and automate websites with Puppeteer](https://www.openfaas.com/blog/puppeteer-scraping/)
+* [Serverless Node.js that you can run anywhere](https://www.openfaas.com/blog/serverless-nodejs/)
+* [Build a Flask microservice with OpenFaaS](https://www.openfaas.com/blog/openfaas-flask/)
+
+Additional resources:
 
 * For reference: [OpenFaaS docs](https://docs.openfaas.com)
 * For use-cases and tutorials: [OpenFaaS blog](https://openfaas.com/blog/)
