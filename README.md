@@ -28,7 +28,28 @@ faasd does not create the same maintenance burden you'll find with maintaining, 
 
 > Demo of faasd running in KVM
 
-## Tutorials
+## Walk-through of faasd
+
+faasd is OpenFaaS, so most things work the same, but you will need to pick one of the guides in the section below for deployment.
+
+* For reference: [OpenFaaS docs](https://docs.openfaas.com)
+* For use-cases and tutorials: [OpenFaaS blog](https://openfaas.com/blog/)
+* For self-paced learning: [OpenFaaS workshop](https://github.com/openfaas/workshop/)
+
+## Deploy faasd
+
+The easiest way to deploy faasd is with cloud-init, we give several examples below, and post IaaS platforms will accept "user-data" pasted into their UI, or via their API.
+
+If you don't use cloud-init, or have already created your Linux server you can use the installation script. This approach also works for Raspberry Pi:
+
+```bash
+git clone https://github.com/openfaas/faasd
+cd faasd
+
+./hack/install.sh
+```
+
+For trying out fasad on MacOS or Windows, we recommend using multipass and its cloud-init option.
 
 ### Run locally on MacOS, Linux, or Windows with multipass
 
