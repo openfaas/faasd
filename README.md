@@ -285,6 +285,28 @@ Nice to Have:
 
 ### Known-issues
 
+#### Non 200 HTTP status code upon first use
+
+This issue appears to happen sporadically and only for some users.
+
+If you get a non 200 HTTP code from the gateway, or caddy after installing faasd, check the logs of faasd:
+
+```bash
+sudo journalctl -t faasd
+```
+
+If you see the following error:
+
+```
+unable to dial to 10.62.0.5:8080, error: dial tcp 10.62.0.5:8080: connect: no route to host
+```
+
+Restart the faasd service with:
+
+```bash
+sudo systemctl restart faasd
+```
+
 ### Completed
 
 * [x] Provide a cloud-init configuration for faasd bootstrap
