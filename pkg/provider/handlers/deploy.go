@@ -72,11 +72,11 @@ func MakeDeployHandler(client *containerd.Client, cni gocni.CNI, secretMountPath
 // prepull is an optimization which means an image can be pulled before a deployment
 // request, since a deployment request first deletes the active function before
 // trying to deploy a new one.
-func prepull(ctx context.Context, req types.FunctionDeployment, client *containerd.Client, alwaysPull bool) error {
+func prepull(ctx context.Context, req types.FunctionDeployment, client *containerd.Client, alwaysPull bool) (containerd.Image, error) {
 	start := time.Now()
 	r, err := reference.ParseNormalizedNamed(req.Image)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	imgRef := reference.TagNameOnly(r).String()
@@ -88,37 +88,26 @@ func prepull(ctx context.Context, req types.FunctionDeployment, client *containe
 
 	image, err := service.PrepareImage(ctx, client, imgRef, snapshotter, alwaysPull)
 	if err != nil {
-		return errors.Wrapf(err, "unable to pull image %s", imgRef)
+		return nil, errors.Wrapf(err, "unable to pull image %s", imgRef)
 	}
 
 	size, _ := image.Size(ctx)
-	log.Printf("[Prepull] Deploy %s size: %d, took: %fs\n", image.Name(), size, time.Since(start).Seconds())
+	log.Printf("Image for: %s size: %d, took: %fs\n", image.Name(), size, time.Since(start).Seconds())
 
-	return nil
+	return image, nil
 }
 
 func deploy(ctx context.Context, req types.FunctionDeployment, client *containerd.Client, cni gocni.CNI, secretMountPath string, alwaysPull bool) error {
-	start := time.Now()
-
-	r, err := reference.ParseNormalizedNamed(req.Image)
-	if err != nil {
-		return err
-	}
-
-	imgRef := reference.TagNameOnly(r).String()
 
 	snapshotter := ""
 	if val, ok := os.LookupEnv("snapshotter"); ok {
 		snapshotter = val
 	}
 
-	image, err := service.PrepareImage(ctx, client, imgRef, snapshotter, alwaysPull)
+	image, err := prepull(ctx, req, client, alwaysPull)
 	if err != nil {
-		return errors.Wrapf(err, "unable to pull image %s", imgRef)
+		return err
 	}
-
-	size, _ := image.Size(ctx)
-	log.Printf("[deploy] Deploy %s size: %d, took: %fs\n", image.Name(), size, time.Since(start).Seconds())
 
 	envs := prepareEnv(req.EnvProcess, req.EnvVars)
 	mounts := getMounts()
