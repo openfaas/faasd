@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"time"
 
 	"github.com/containerd/containerd"
 	"github.com/containerd/containerd/cio"
@@ -68,7 +69,11 @@ func MakeDeployHandler(client *containerd.Client, cni gocni.CNI, secretMountPath
 	}
 }
 
-func deploy(ctx context.Context, req types.FunctionDeployment, client *containerd.Client, cni gocni.CNI, secretMountPath string, alwaysPull bool) error {
+// prepull is an optimization which means an image can be pulled before a deployment
+// request, since a deployment request first deletes the active function before
+// trying to deploy a new one.
+func prepull(ctx context.Context, req types.FunctionDeployment, client *containerd.Client, alwaysPull bool) error {
+	start := time.Now()
 	r, err := reference.ParseNormalizedNamed(req.Image)
 	if err != nil {
 		return err
@@ -87,7 +92,33 @@ func deploy(ctx context.Context, req types.FunctionDeployment, client *container
 	}
 
 	size, _ := image.Size(ctx)
-	log.Printf("Deploy %s size: %d\n", image.Name(), size)
+	log.Printf("[Prepull] Deploy %s size: %d, took: %fs\n", image.Name(), size, time.Since(start).Seconds())
+
+	return nil
+}
+
+func deploy(ctx context.Context, req types.FunctionDeployment, client *containerd.Client, cni gocni.CNI, secretMountPath string, alwaysPull bool) error {
+	start := time.Now()
+
+	r, err := reference.ParseNormalizedNamed(req.Image)
+	if err != nil {
+		return err
+	}
+
+	imgRef := reference.TagNameOnly(r).String()
+
+	snapshotter := ""
+	if val, ok := os.LookupEnv("snapshotter"); ok {
+		snapshotter = val
+	}
+
+	image, err := service.PrepareImage(ctx, client, imgRef, snapshotter, alwaysPull)
+	if err != nil {
+		return errors.Wrapf(err, "unable to pull image %s", imgRef)
+	}
+
+	size, _ := image.Size(ctx)
+	log.Printf("[deploy] Deploy %s size: %d, took: %fs\n", image.Name(), size, time.Since(start).Seconds())
 
 	envs := prepareEnv(req.EnvProcess, req.EnvVars)
 	mounts := getMounts()

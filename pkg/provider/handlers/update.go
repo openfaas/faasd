@@ -56,6 +56,12 @@ func MakeUpdateHandler(client *containerd.Client, cni gocni.CNI, secretMountPath
 		}
 
 		ctx := namespaces.WithNamespace(context.Background(), faasd.FunctionNamespace)
+
+		if err := prepull(ctx, req, client, alwaysPull); err != nil {
+			log.Printf("[Update] error with pre-pull: %s, %s\n", name, err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+
 		if function.replicas != 0 {
 			err = cninetwork.DeleteCNINetwork(ctx, cni, client, name)
 			if err != nil {
@@ -63,19 +69,19 @@ func MakeUpdateHandler(client *containerd.Client, cni gocni.CNI, secretMountPath
 			}
 		}
 
-		containerErr := service.Remove(ctx, client, name)
-		if containerErr != nil {
-			log.Printf("[Update] error removing %s, %s\n", name, containerErr)
-			http.Error(w, containerErr.Error(), http.StatusInternalServerError)
+		if err := service.Remove(ctx, client, name); err != nil {
+			log.Printf("[Update] error removing %s, %s\n", name, err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		deployErr := deploy(ctx, req, client, cni, secretMountPath, alwaysPull)
-		if deployErr != nil {
-			log.Printf("[Update] error deploying %s, error: %s\n", name, deployErr)
-			http.Error(w, deployErr.Error(), http.StatusBadRequest)
+		// The pull has already been done in prepull, so we can force this pull to "false"
+		pull := false
+
+		if err := deploy(ctx, req, client, cni, secretMountPath, pull); err != nil {
+			log.Printf("[Update] error deploying %s, error: %s\n", name, err)
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 	}
-
 }
