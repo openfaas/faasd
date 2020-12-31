@@ -57,7 +57,7 @@ func MakeUpdateHandler(client *containerd.Client, cni gocni.CNI, secretMountPath
 
 		ctx := namespaces.WithNamespace(context.Background(), faasd.FunctionNamespace)
 
-		if err := prepull(ctx, req, client, alwaysPull); err != nil {
+		if _, err := prepull(ctx, req, client, alwaysPull); err != nil {
 			log.Printf("[Update] error with pre-pull: %s, %s\n", name, err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
