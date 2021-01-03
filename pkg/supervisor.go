@@ -26,11 +26,7 @@ import (
 )
 
 const (
-	defaultSnapshotter         = "overlayfs"
 	workingDirectoryPermission = 0644
-	// faasdNamespace is the containerd namespace services are created
-	faasdNamespace         = "default"
-	faasServicesPullAlways = false
 )
 
 type Service struct {
