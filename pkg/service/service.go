@@ -38,20 +38,21 @@ func Remove(ctx context.Context, client *containerd.Client, name string) error {
 		}
 
 		if found {
-			status, _ := t.Status(ctx)
-			fmt.Printf("Status of %s is: %s\n", name, status.Status)
+			status, err := t.Status(ctx)
+			if err != nil {
+				fmt.Printf("Status of %s is: %s\n", name, status.Status)
+			}
 
 			log.Printf("Need to kill %s\n", name)
-			err := killTask(ctx, t)
-			if err != nil {
+			if err = killTask(ctx, t); err != nil {
 				return fmt.Errorf("error killing task %s, %s, %s", container.ID(), name, err)
 			}
 		}
 
-		err = container.Delete(ctx, containerd.WithSnapshotCleanup)
-		if err != nil {
+		if err := container.Delete(ctx, containerd.WithSnapshotCleanup); err != nil {
 			return fmt.Errorf("error deleting container %s, %s, %s", container.ID(), name, err)
 		}
+
 	} else {
 		service := client.SnapshotService("")
 		key := name + "snapshot"
@@ -70,6 +71,7 @@ func killTask(ctx context.Context, task containerd.Task) error {
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
 	var err error
+
 	go func() {
 		defer wg.Done()
 		if task != nil {
@@ -114,6 +116,7 @@ func getResolver(ctx context.Context, configFile *configfile.ConfigFile) (remote
 		}
 		return ac.Username, ac.Password, nil
 	}
+
 	authOpts := []docker.AuthorizerOpt{docker.WithAuthCreds(credFunc)}
 	authorizer := docker.NewDockerAuthorizer(authOpts...)
 	opts := docker.ResolverOptions{
@@ -128,7 +131,7 @@ func PrepareImage(ctx context.Context, client *containerd.Client, imageName, sna
 		resolver remotes.Resolver
 	)
 
-	if _, stErr := os.Stat(filepath.Join(dockerConfigDir, config.ConfigFileName)); stErr == nil {
+	if _, statErr := os.Stat(filepath.Join(dockerConfigDir, config.ConfigFileName)); statErr == nil {
 		configFile, err := config.Load(dockerConfigDir)
 		if err != nil {
 			return nil, err
@@ -137,8 +140,8 @@ func PrepareImage(ctx context.Context, client *containerd.Client, imageName, sna
 		if err != nil {
 			return empty, err
 		}
-	} else if !os.IsNotExist(stErr) {
-		return empty, stErr
+	} else if !os.IsNotExist(statErr) {
+		return empty, statErr
 	}
 
 	var image containerd.Image
@@ -150,7 +153,6 @@ func PrepareImage(ctx context.Context, client *containerd.Client, imageName, sna
 
 		image = img
 	} else {
-
 		img, err := client.GetImage(ctx, imageName)
 		if err != nil {
 			if !errdefs.IsNotFound(err) {
@@ -187,9 +189,11 @@ func pullImage(ctx context.Context, client *containerd.Client, resolver remotes.
 	rOpts := []containerd.RemoteOpt{
 		containerd.WithPullUnpack,
 	}
+
 	if resolver != nil {
 		rOpts = append(rOpts, containerd.WithResolver(resolver))
 	}
+
 	img, err := client.Pull(ctx, imageName, rOpts...)
 	if err != nil {
 		return empty, fmt.Errorf("cannot pull: %s", err)

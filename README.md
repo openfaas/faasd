@@ -125,14 +125,16 @@ echo logs | faas-cli invoke figlet
 
 Core services as defined in the docker-compose.yaml file are deployed as containers by faasd.
 
+The namespace is `openfaas` for core services.
+
 View the logs for a component by giving its NAME:
 
 ```bash
-journalctl -t default:NAME
+journalctl -t openfaas:NAME
 
-journalctl -t default:gateway
+journalctl -t openfaas:gateway
 
-journalctl -t default:queue-worker
+journalctl -t openfaas:queue-worker
 ```
 
 You can also use `-f` to follow the logs, or `--lines` to tail a number of lines, or `--since` to give a timeframe.
