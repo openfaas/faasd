@@ -34,6 +34,7 @@ const (
 )
 
 type Service struct {
+	// Image is the container image registry reference, in an OCI format.
 	Image     string
 	Env       []string
 	Name      string
@@ -42,6 +43,10 @@ type Service struct {
 	Args      []string
 	DependsOn []string
 	Ports     []ServicePort
+
+	// User in the docker-compose.yaml spec can set as follows:
+	// a user-id, username, userid:groupid or user:group
+	User string
 }
 
 type ServicePort struct {
@@ -161,12 +166,17 @@ func (s *Supervisor) Start(svcs []Service) error {
 			Options:     []string{"rbind", "ro"},
 		})
 
+		if len(svc.User) > 0 {
+			log.Printf("Running %s with user: %q", svc.Name, svc.User)
+		}
+
 		newContainer, err := s.client.NewContainer(
 			ctx,
 			svc.Name,
 			containerd.WithImage(image),
 			containerd.WithNewSnapshot(svc.Name+"-snapshot", image),
 			containerd.WithNewSpec(oci.WithImageConfig(image),
+				withUserOrDefault(svc.User),
 				oci.WithCapabilities(svc.Caps),
 				oci.WithMounts(mounts),
 				withOCIArgs(svc.Args),
@@ -201,21 +211,21 @@ func (s *Supervisor) Start(svcs []Service) error {
 
 		log.Printf("%s has IP: %s\n", newContainer.ID(), ip.String())
 
-		hosts, _ := ioutil.ReadFile("hosts")
+		hosts, err := ioutil.ReadFile("hosts")
+		if err != nil {
+			log.Printf("Unable to read hosts file: %s\n", err.Error())
+		}
 
 		hosts = []byte(string(hosts) + fmt.Sprintf(`
 %s	%s
 `, ip, svc.Name))
-		writeErr := ioutil.WriteFile("hosts", hosts, workingDirectoryPermission)
 
-		if writeErr != nil {
-			log.Printf("Error writing file %s %s\n", "hosts", writeErr)
+		if err := ioutil.WriteFile("hosts", hosts, workingDirectoryPermission); err != nil {
+			log.Printf("Error writing file: %s %s\n", "hosts", err)
 		}
-		// os.Chown("hosts", 101, 101)
 
-		_, err = task.Wait(ctx)
-		if err != nil {
-			log.Printf("Wait err: %s\n", err)
+		if _, err := task.Wait(ctx); err != nil {
+			log.Printf("Task wait error: %s\n", err)
 			return err
 		}
 
@@ -223,7 +233,7 @@ func (s *Supervisor) Start(svcs []Service) error {
 		// log.Println("Exited: ", exitStatusC)
 
 		if err = task.Start(ctx); err != nil {
-			log.Printf("Task err: %s\n", err)
+			log.Printf("Task start error: %s\n", err)
 			return err
 		}
 	}
@@ -251,6 +261,16 @@ func (s *Supervisor) Remove(svcs []Service) error {
 		}
 	}
 	return nil
+}
+
+func withUserOrDefault(userstr string) oci.SpecOpts {
+	if len(userstr) > 0 {
+		return oci.WithUser(userstr)
+	}
+
+	return func(_ context.Context, _ oci.Client, _ *containers.Container, s *oci.Spec) error {
+		return nil
+	}
 }
 
 func withOCIArgs(args []string) oci.SpecOpts {
@@ -305,6 +325,7 @@ func ParseCompose(config *compose.Config) ([]Service, error) {
 			Env:       env,
 			Mounts:    mounts,
 			DependsOn: s.DependsOn,
+			User:      s.User,
 			Ports:     convertPorts(s.Ports),
 		}
 	}
