@@ -27,23 +27,25 @@ func Remove(ctx context.Context, client *containerd.Client, name string) error {
 	container, containerErr := client.LoadContainer(ctx, name)
 
 	if containerErr == nil {
-		found := true
+		taskFound := true
 		t, err := container.Task(ctx, nil)
 		if err != nil {
 			if errdefs.IsNotFound(err) {
-				found = false
+				taskFound = false
 			} else {
 				return fmt.Errorf("unable to get task %s: ", err)
 			}
 		}
 
-		if found {
+		if taskFound {
 			status, err := t.Status(ctx)
 			if err != nil {
-				fmt.Printf("Status of %s is: %s\n", name, status.Status)
+				log.Printf("Unable to get status for: %s, error: %s", name, err.Error())
+			} else {
+				log.Printf("Status of %s is: %s\n", name, status.Status)
 			}
 
-			log.Printf("Need to kill %s\n", name)
+			log.Printf("Need to kill task: %s\n", name)
 			if err = killTask(ctx, t); err != nil {
 				return fmt.Errorf("error killing task %s, %s, %s", container.ID(), name, err)
 			}
