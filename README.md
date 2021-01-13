@@ -150,9 +150,13 @@ See [here for manual / developer instructions](docs/DEV.md)
 
 ## Getting help
 
-### Docs
+### faasd handbook
 
-The [OpenFaaS docs](https://docs.openfaas.com/) provide a wealth of information and are kept up to date with new features.
+Get early access to the faasd handbook through an [OpenFaaS GitHub Sponsorship](https://github.com/sponsors/openfaas/)
+
+### Reference docs for Kubernetes
+
+The [OpenFaaS docs](https://docs.openfaas.com/) provide a wealth of information for OpenFaaS on Kubernetes, and are likely to be useful for you, even using faasd.
 
 ### Function and template store
 
@@ -181,56 +185,7 @@ If you are learning faasd, or want to share your use-case, you can join the Open
 * [Become an OpenFaaS GitHub Sponsor](https://github.com/sponsors/openfaas/)
 * [Join Slack](https://slack.openfaas.io/)
 
-
-## Roadmap
-
-### Supported operations
-
-* `faas login`
-* `faas up`
-* `faas list`
-* `faas describe`
-* `faas deploy --update=true --replace=false`
-* `faas invoke --async`
-* `faas invoke`
-* `faas rm`
-* `faas store list/deploy/inspect`
-* `faas version`
-* `faas namespace`
-* `faas secret`
-* `faas logs`
-
-Scale from and to zero is also supported. On a Dell XPS with a small, pre-pulled image unpausing an existing task took 0.19s and starting a task for a killed function took 0.39s. There may be further optimizations to be gained.
-
-Other operations are pending development in the provider such as:
-
-* `faas auth` - supported for Basic Authentication, but SSO, OAuth2 & OIDC may require a patch
-
-### Known-issues
-
-#### Non 200 HTTP status code upon first use
-
-This issue appears to happen sporadically and only for some users.
-
-If you get a non 200 HTTP code from the gateway, or caddy after installing faasd, check the logs of faasd:
-
-```bash
-sudo journalctl -t faasd
-```
-
-If you see the following error:
-
-```
-unable to dial to 10.62.0.5:8080, error: dial tcp 10.62.0.5:8080: connect: no route to host
-```
-
-Restart the faasd service with:
-
-```bash
-sudo systemctl restart faasd
-```
-
-### Backlog and features
+### Backlog, features and known issues
 
 For completed features, WIP and upcoming roadmap see:
 

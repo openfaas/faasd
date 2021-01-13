@@ -1,5 +1,76 @@
 # faasd backlog and features
 
+## Supported operations
+
+* `faas login`
+* `faas up`
+* `faas list`
+* `faas describe`
+* `faas deploy --update=true --replace=false`
+* `faas invoke --async`
+* `faas invoke`
+* `faas rm`
+* `faas store list/deploy/inspect`
+* `faas version`
+* `faas namespace`
+* `faas secret`
+* `faas logs`
+* `faas auth` - supported for Basic Authentication and OpenFaaS PRO with OIDC and Single-sign On.
+
+Scale from and to zero is also supported. On a Dell XPS with a small, pre-pulled image unpausing an existing task took 0.19s and starting a task for a killed function took 0.39s. There may be further optimizations to be gained.
+
+## Constraints vs OpenFaaS on Kubernetes
+
+faasd suits certain use-cases as mentioned in the README file, for those who want a solution which can scale out horizontally with minimum effort, Kubernetes or K3s is a valid option.
+
+### One replica per function
+
+Functions only support one replica, so cannot scale horizontally, but can scale vertically.
+
+Workaround: deploy one uniquely named function per replica.
+
+### Scale from zero may give a non-200
+
+When scaling from zero there is no health check implemented, so the request may arrive before your HTTP server is ready to serve a request, and therefore give a non-200 code.
+
+Workaround: Do not scale to zero, or have your client retry HTTP calls.
+
+### No clustering is available
+
+No clustering is available in faasd, however you can still apply fault-tolerance and high availability techniques.
+
+Workaround: deploy multiple faasd instances and use a hardware or software load-balancer. Take regular VM/host snapshots or backups.
+
+### No rolling updates
+
+When running `faas-cli deploy`, your old function is removed before the new one is started. This may cause a small amount of downtime, depending on the timeouts and grace periods you set.
+
+Workaround: deploy uniquely named functions per version, and switch an Ingress or Reverse Proxy record to point at a new version once it is ready.
+
+## Known issues
+
+### Non 200 HTTP status from the gateway upon first use
+
+This issue appears to happen sporadically and only for some users.
+
+If you get a non 200 HTTP code from the gateway, or caddy after installing faasd, check the logs of faasd:
+
+```bash
+sudo journalctl -t faasd
+```
+
+If you see the following error:
+
+```
+unable to dial to 10.62.0.5:8080, error: dial tcp 10.62.0.5:8080: connect: no route to host
+```
+
+Restart the faasd service with:
+
+```bash
+sudo systemctl restart faasd
+```
+
 ## Backlog
 
 Should have:
@@ -42,3 +113,4 @@ Nice to Have:
 * [x] Terraform for DigitalOcean
 * [x] [Store and retrieve annotations in function spec](https://github.com/openfaas/faasd/pull/86) - in progress
 * [x] An installer for faasd and dependencies - runc, containerd
+
