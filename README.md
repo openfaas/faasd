@@ -86,27 +86,34 @@ Automate everything within < 60 seconds and get a public URL and IP address back
 
 * [Provision faasd on DigitalOcean with built-in TLS support](docs/bootstrap/digitalocean-terraform/README.md)
 
-## Operational concerns
+## faasd handbook - everything you need to know to run functions without Kubernetes (early access)
 
-### A note on private repos / registries
+faasd is a portable, and open source serverless engine. It runs a number of core services for its REST API, for background processing, and for metrics. The project schedules functions with containerd directly, and supports scale to and from zero, but without the need for clustering or Kubernetes.
 
-To use private image repos, `~/.docker/config.json` needs to be copied to `/var/lib/faasd/.docker/config.json`.
+It makes for a quick and easy way to start hosting APIs and websites, benefiting from containers and cloud native technology without having to manage Kubernetes, or pay significant hosting costs.
 
-If you'd like to set up your own private registry, [see this tutorial](https://blog.alexellis.io/get-a-tls-enabled-docker-registry-in-5-minutes/).
+This handbook is written for those deploying faasd to self-hosted or cloud infrastructure. Whilst OpenFaaS has reference documentation, here we focus on everything you need to know about faasd itself.
 
-Beware that running `docker login` on MacOS and Windows may create an empty file with your credentials stored in the system helper.
+Topics include:
 
-Alternatively, use you can use the `registry-login` command from the OpenFaaS Cloud bootstrap tool (ofc-bootstrap):
+* Should you deploy to a VPS or Raspberry Pi?
+* Deploying your server with bash, cloud-init or terraform
+* Using a private container registry
+* Building your first function, and customising templates
+* Monitoring your functions with Grafana and Prometheus
+* Scheduling invocations and background jobs
+* Tuning timeouts, parallelism, running tasks in the background
+* Upgrading faasd
+* Setting memory limits for functions
+* Exposing the core services like Prometheus and NATS
 
-```bash
-curl -sLSf https://raw.githubusercontent.com/openfaas-incubator/ofc-bootstrap/master/get.sh | sudo sh
+> faasd users can upgrade to Kubernetes when the need presents itself and can bring their functions with them.
 
-ofc-bootstrap registry-login --username <your-registry-username> --password-stdin
-# (the enter your password and hit return)
-```
-The file will be created in `./credentials/`
+Get early access in The OpenFaaS GitHub Sponsors Portal: [The Treasure Trove](https://faasd.exit.openfaas.pro/function/trove/)
 
-> Note for the GitHub container registry, you should use `ghcr.io` Container Registry and not the previous generation of "Docker Package Registry". [See notes on migrating](https://docs.github.com/en/free-pro-team@latest/packages/getting-started-with-github-container-registry/migrating-to-github-container-registry-for-docker-images)
+* [Become an OpenFaaS Sponsor to gain access](https://github.com/sponsors/openfaas/)
+
+## Finding logs
 
 ### Logs for functions
 
@@ -119,82 +126,6 @@ journalctl -t openfaas-fn:FUNCTION_NAME
 faas-cli store deploy figlet
 journalctl -t openfaas-fn:figlet -f &
 echo logs | faas-cli invoke figlet
-```
-
-### Logs for the core services
-
-Core services as defined in the docker-compose.yaml file are deployed as containers by faasd.
-
-The namespace is `openfaas` for core services.
-
-View the logs for a component by giving its NAME:
-
-```bash
-journalctl -t openfaas:NAME
-
-journalctl -t openfaas:gateway
-
-journalctl -t openfaas:queue-worker
-```
-
-You can also use `-f` to follow the logs, or `--lines` to tail a number of lines, or `--since` to give a timeframe.
-
-### Exposing core services
-
-The OpenFaaS stack is made up of several core services including NATS and Prometheus. You can expose these through the `docker-compose.yaml` file located at `/var/lib/faasd`.
-
-Expose the gateway to all adapters:
-
-```yaml
-  gateway:
-    ports:
-       - "8080:8080"
-```
-
-Expose Prometheus only to 127.0.0.1:
-
-```yaml
-  prometheus:
-    ports:
-       - "127.0.0.1:9090:9090"
-```
-
-### Upgrading faasd
-
-To upgrade `faasd` either re-create your VM using Terraform, or simply replace the faasd binary with a newer one.
-
-```bash
-systemctl stop faasd-provider
-systemctl stop faasd
-
-# Replace /usr/local/bin/faasd with the desired release
-
-# Replace /var/lib/faasd/docker-compose.yaml with the matching version for
-# that release.
-# Remember to keep any custom patches you make such as exposing additional 
-# ports, or updating timeout values
-
-systemctl start faasd
-systemctl start faasd-provider
-```
-
-You could also perform this task over SSH, or use a configuration management tool.
-
-> Note: if you are using Caddy or Let's Encrypt for free SSL certificates, that you may hit rate-limits for generating new certificates if you do this too often within a given week.
-
-### Memory limits for functions
-
-Memory limits for functions are supported. When the limit is exceeded the function will be killed.
-
-Example:
-
-```yaml
-functions:
-  figlet:
-    skip_build: true
-    image: functions/figlet:latest
-    limits:
-      memory: 20Mi
 ```
 
 ## What does faasd deploy?
@@ -243,9 +174,13 @@ The founder of faasd and OpenFaaS has written a training course for the LinuxFou
 
 ### Community support
 
-An active community of almost 3000 users awaits you on Slack. Over 250 of those users are also contributors and help maintain the code.
+Commercial users and solo business owners should become OpenFaaS GitHub Sponsors to receive regular email updates on changes, tutorials and new features.
 
+If you are learning faasd, or want to share your use-case, you can join the OpenFaaS Slack community.
+
+* [Become an OpenFaaS GitHub Sponsor](https://github.com/sponsors/openfaas/)
 * [Join Slack](https://slack.openfaas.io/)
+
 
 ## Roadmap
 
@@ -271,20 +206,6 @@ Other operations are pending development in the provider such as:
 
 * `faas auth` - supported for Basic Authentication, but SSO, OAuth2 & OIDC may require a patch
 
-### Backlog
-
-Should have:
-
-* [ ] Resolve core services from functions by populating/sharing `/etc/hosts` between `faasd` and `faasd-provider`
-* [ ] Docs or examples on how to use the various connectors and connector-sdk
-* [ ] Monitor and restart any of the core components at runtime if the container stops
-* [ ] Asynchronous deletion instead of synchronous
-
-Nice to Have:
-* [ ] Total memory limits - if a node has 1GB of RAM, don't allow more than 1000MB of RAM to be reserved via limits
-* [ ] Offer live rolling-updates, with zero downtime - requires moving to IDs vs. names for function containers
-* [ ] Multiple replicas per function
-
 ### Known-issues
 
 #### Non 200 HTTP status code upon first use
@@ -309,33 +230,8 @@ Restart the faasd service with:
 sudo systemctl restart faasd
 ```
 
-### Completed
+### Backlog and features
 
-* [x] Provide a cloud-init configuration for faasd bootstrap
-* [x] Configure core services from a docker-compose.yaml file
-* [x] Store and fetch logs from the journal
-* [x] Add support for using container images in third-party public registries
-* [x] Add support for using container images in private third-party registries
-* [x] Provide a cloud-config.txt file for automated deployments of `faasd`
-* [x] Inject / manage IPs between core components for service to service communication - i.e. so Prometheus can scrape the OpenFaaS gateway - done via `/etc/hosts` mount
-* [x] Add queue-worker and NATS
-* [x] Create faasd.service and faasd-provider.service
-* [x] Self-install / create systemd service via `faasd install`
-* [x] Restart containers upon restart of faasd
-* [x] Clear / remove containers and tasks with SIGTERM / SIGINT
-* [x] Determine armhf/arm64 containers to run for gateway
-* [x] Configure `basic_auth` to protect the OpenFaaS gateway and faasd-provider HTTP API
-* [x] Setup custom working directory for faasd `/var/lib/faasd/`
-* [x] Use CNI to create network namespaces and adapters
-* [x] Optionally expose core services from the docker-compose.yaml file, locally or to all adapters.
-* [x] ~~[containerd can't pull image from Github Docker Package Registry](https://github.com/containerd/containerd/issues/3291)~~ ghcr.io support
-* [x] Provide [simple Caddyfile example](https://blog.alexellis.io/https-inlets-local-endpoints/) in the README showing how to expose the faasd proxy on port 80/443 with TLS
-* [x] Annotation support
-* [x] Hard memory limits for functions
-* [x] Terraform for DigitalOcean
-* [x] [Store and retrieve annotations in function spec](https://github.com/openfaas/faasd/pull/86) - in progress
-* [x] An installer for faasd and dependencies - runc, containerd
+For completed features, WIP and upcoming roadmap see:
 
-WIP:
-
-* [ ] Terraform for AWS
+See [ROADMAP.md](docs/ROADMAP.md)
