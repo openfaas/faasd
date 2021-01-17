@@ -49,7 +49,9 @@ Additional resources:
 
 The easiest way to deploy faasd is with cloud-init, we give several examples below, and post IaaS platforms will accept "user-data" pasted into their UI, or via their API.
 
-If you don't use cloud-init, or have already created your Linux server you can use the installation script. This approach also works for Raspberry Pi:
+For trying out fasad on MacOS or Windows, we recommend using multipass.
+
+If you don't use cloud-init, or have already created your Linux server you can use the installation script as per below:
 
 ```bash
 git clone https://github.com/openfaas/faasd
@@ -58,7 +60,9 @@ cd faasd
 ./hack/install.sh
 ```
 
-For trying out fasad on MacOS or Windows, we recommend using multipass and its cloud-init option.
+> This approach also works for Raspberry Pi
+
+It's recommended that you do not install Docker on the same host as faasd, since 1) they may both use different versions of containerd and 2) docker's networking rules can disrupt faasd's networking. When using faasd - make your faasd server a faasd server, and build container image on your laptop or in a CI pipeline.
 
 ### Run locally on MacOS, Linux, or Windows with multipass
 
@@ -109,9 +113,7 @@ Topics include:
 
 > faasd users can upgrade to Kubernetes when the need presents itself and can bring their functions with them.
 
-Get early access in The OpenFaaS GitHub Sponsors Portal: [The Treasure Trove](https://faasd.exit.openfaas.pro/function/trove/)
-
-* [Become an OpenFaaS Sponsor to gain access](https://github.com/sponsors/openfaas/)
+* [Find out more on Gumroad](https://gumroad.com/l/serverless-for-everyone-else)
 
 ## Finding logs
 
@@ -144,7 +146,7 @@ You'll also need:
 
 You can use the standard [faas-cli](https://github.com/openfaas/faas-cli) along with pre-packaged functions from *the Function Store*, or build your own using any OpenFaaS template.
 
-### Manual / developer instructions
+### Instructions for hacking on faasd itself
 
 See [here for manual / developer instructions](docs/DEV.md)
 
@@ -152,7 +154,9 @@ See [here for manual / developer instructions](docs/DEV.md)
 
 ### faasd handbook
 
-Get early access to the faasd handbook through an [OpenFaaS GitHub Sponsorship](https://github.com/sponsors/openfaas/)
+"Serverless For Everyone Else" is the complete guide and documentation for faasd. If you're looking for how to do something, it's likely that the book covers it.
+
+* [Find out more on Gumroad](https://gumroad.com/l/serverless-for-everyone-else)
 
 ### Reference docs for Kubernetes
 
