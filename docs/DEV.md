@@ -1,8 +1,10 @@
-## Manual installation of faasd for development
+## Instructions for hacking on faasd itself
 
 > Note: if you're just wanting to try out faasd, then it's likely that you're on the wrong page. This is a detailed set of instructions for those wanting to contribute or customise faasd. Feel free to go back to the homepage and pick a tutorial instead.
 
 ### Pre-reqs
+
+> It's recommended that you do not install Docker on the same host as faasd, since 1) they may both use different versions of containerd and 2) docker's networking rules can disrupt faasd's networking. When using faasd - make your faasd server a faasd server, and build container image on your laptop or in a CI pipeline.
 
 * Linux
 
