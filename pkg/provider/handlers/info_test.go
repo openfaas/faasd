@@ -15,14 +15,14 @@ func Test_InfoHandler(t *testing.T) {
 	r := httptest.NewRequest("GET", "/", nil)
 	handler(w, r)
 
-	resp := types.InfoResponse{}
+	resp := types.ProviderInfo{}
 	err := json.Unmarshal(w.Body.Bytes(), &resp)
 	if err != nil {
 		t.Fatalf("unexpected error unmarshalling the response")
 	}
 
-	if resp.Provider != ProviderName {
-		t.Fatalf("expected provider %q, got %q", ProviderName, resp.Provider)
+	if resp.Name != ProviderName {
+		t.Fatalf("expected provider %q, got %q", ProviderName, resp.Name)
 	}
 
 	if resp.Orchestration != OrchestrationIdentifier {

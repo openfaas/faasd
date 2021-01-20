@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"github.com/opencontainers/runtime-spec/specs-go"
 	"log"
 	"strings"
 
@@ -22,6 +23,7 @@ type Function struct {
 	IP          string
 	labels      map[string]string
 	annotations map[string]string
+	secrets     []string
 }
 
 // ListFunctions returns a map of all functions with running tasks on namespace
@@ -71,12 +73,19 @@ func GetFunction(client *containerd.Client, name string) (Function, error) {
 
 	labels, annotations := buildLabelsAndAnnotations(allLabels)
 
+	spec, err := c.Spec(ctx)
+	if err != nil {
+		return Function{}, fmt.Errorf("unable to load function spec for reading secrets: %s, error %s", name, err)
+	}
+
+	secrets := readSecretsFromMounts(spec.Mounts)
+
 	fn.name = containerName
 	fn.namespace = faasd.FunctionNamespace
 	fn.image = image.Name()
 	fn.labels = labels
 	fn.annotations = annotations
-
+	fn.secrets = secrets
 	replicas := 0
 	task, err := c.Task(ctx, nil)
 	if err == nil {
@@ -103,6 +112,18 @@ func GetFunction(client *containerd.Client, name string) (Function, error) {
 
 	fn.replicas = replicas
 	return fn, nil
+}
+
+func readSecretsFromMounts(mounts []specs.Mount) []string {
+	secrets := []string{}
+	for _, mnt := range mounts {
+		x := strings.Split(mnt.Destination, "/var/openfaas/secrets/")
+		if len(x) > 1 {
+			secrets = append(secrets, x[1])
+		}
+
+	}
+	return secrets
 }
 
 // buildLabelsAndAnnotations returns a separated list with labels first,

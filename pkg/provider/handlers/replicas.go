@@ -23,6 +23,7 @@ func MakeReplicaReaderHandler(client *containerd.Client) func(w http.ResponseWri
 				Namespace:         f.namespace,
 				Labels:            &f.labels,
 				Annotations:       &f.annotations,
+				Secrets:           f.secrets,
 			}
 
 			functionBytes, _ := json.Marshal(found)

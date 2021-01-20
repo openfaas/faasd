@@ -22,10 +22,10 @@ func MakeInfoHandler(version, sha string) http.HandlerFunc {
 			defer r.Body.Close()
 		}
 
-		infoResponse := types.InfoResponse{
+		infoResponse := types.ProviderInfo{
 			Orchestration: OrchestrationIdentifier,
-			Provider:      ProviderName,
-			Version: types.ProviderVersion{
+			Name:          ProviderName,
+			Version: &types.VersionInfo{
 				Release: version,
 				SHA:     sha,
 			},
