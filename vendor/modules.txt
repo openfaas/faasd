@@ -167,7 +167,7 @@ github.com/opencontainers/runc/libcontainer/user
 github.com/opencontainers/runtime-spec/specs-go
 # github.com/openfaas/faas v0.0.0-20201205125747-9bbb25e3c7c4
 github.com/openfaas/faas/gateway/requests
-# github.com/openfaas/faas-provider v0.15.3
+# github.com/openfaas/faas-provider v0.16.2
 github.com/openfaas/faas-provider
 github.com/openfaas/faas-provider/auth
 github.com/openfaas/faas-provider/httputil

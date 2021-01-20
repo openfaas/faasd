@@ -31,6 +31,7 @@ func MakeReadHandler(client *containerd.Client) func(w http.ResponseWriter, r *h
 				Namespace:   fn.namespace,
 				Labels:      labels,
 				Annotations: annotations,
+				Secrets:     fn.secrets,
 			})
 		}
 

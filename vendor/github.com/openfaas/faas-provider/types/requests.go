@@ -9,20 +9,21 @@ type ScaleServiceRequest struct {
 	Replicas    uint64 `json:"replicas"`
 }
 
-// InfoResponse provides information about the underlying provider
-type InfoResponse struct {
-	Provider      string          `json:"provider"`
-	Version       ProviderVersion `json:"version"`
-	Orchestration string          `json:"orchestration"`
-}
-
-// ProviderVersion provides the commit sha and release version number of the underlying provider
-type ProviderVersion struct {
-	SHA     string `json:"sha"`
-	Release string `json:"release"`
-}
-
 // DeleteFunctionRequest delete a deployed function
 type DeleteFunctionRequest struct {
 	FunctionName string `json:"functionName"`
+}
+
+// ProviderInfo provides information about the configured provider
+type ProviderInfo struct {
+	Name          string       `json:"provider"`
+	Version       *VersionInfo `json:"version"`
+	Orchestration string       `json:"orchestration"`
+}
+
+// VersionInfo provides the commit message, sha and release version number
+type VersionInfo struct {
+	CommitMessage string `json:"commit_message,omitempty"`
+	SHA           string `json:"sha"`
+	Release       string `json:"release"`
 }

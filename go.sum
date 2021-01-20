@@ -181,8 +181,8 @@ github.com/opencontainers/runtime-spec v1.0.2/go.mod h1:jwyrGlmzljRJv/Fgzds9SsS/
 github.com/opencontainers/runtime-tools v0.0.0-20181011054405-1d69bd0f9c39/go.mod h1:r3f7wjNzSs2extwzU3Y+6pKfobzPh+kKFJ3ofN+3nfs=
 github.com/openfaas/faas v0.0.0-20201205125747-9bbb25e3c7c4 h1:JJjthDw7WziZQ7sC5C+M2872mIdud5R+s6Cb0cXyPuA=
 github.com/openfaas/faas v0.0.0-20201205125747-9bbb25e3c7c4/go.mod h1:E0m2rLup0Vvxg53BKxGgaYAGcZa3Xl+vvL7vSi5yQ14=
-github.com/openfaas/faas-provider v0.15.3 h1:tfjuL5F/tdoUr1J65XrUADyoe59x38VzN1w0DvBaTRk=
-github.com/openfaas/faas-provider v0.15.3/go.mod h1:fq1JL0mX4rNvVVvRLaLRJ3H6o667sHuyP5p/7SZEe98=
+github.com/openfaas/faas-provider v0.16.2 h1:ChpiZh1RM8zFIzvp31OPlKpTbh5Lcm7f91WCFcpW4gA=
+github.com/openfaas/faas-provider v0.16.2/go.mod h1:fq1JL0mX4rNvVVvRLaLRJ3H6o667sHuyP5p/7SZEe98=
 github.com/pelletier/go-toml v1.2.0/go.mod h1:5z9KED0ma1S8pY6P1sdut58dfprrGBbd/94hg7ilaic=
 github.com/pkg/errors v0.8.0/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
