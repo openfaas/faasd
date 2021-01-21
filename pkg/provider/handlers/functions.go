@@ -24,6 +24,7 @@ type Function struct {
 	labels      map[string]string
 	annotations map[string]string
 	secrets     []string
+	envVars     map[string]string
 }
 
 // ListFunctions returns a map of all functions with running tasks on namespace
@@ -78,6 +79,7 @@ func GetFunction(client *containerd.Client, name string) (Function, error) {
 		return Function{}, fmt.Errorf("unable to load function spec for reading secrets: %s, error %s", name, err)
 	}
 
+	envVars := readEnvVarsFromProcessEnv(spec.Process.Env)
 	secrets := readSecretsFromMounts(spec.Mounts)
 
 	fn.name = containerName
@@ -86,6 +88,8 @@ func GetFunction(client *containerd.Client, name string) (Function, error) {
 	fn.labels = labels
 	fn.annotations = annotations
 	fn.secrets = secrets
+	fn.envVars = envVars
+
 	replicas := 0
 	task, err := c.Task(ctx, nil)
 	if err == nil {
@@ -112,6 +116,24 @@ func GetFunction(client *containerd.Client, name string) (Function, error) {
 
 	fn.replicas = replicas
 	return fn, nil
+}
+
+func readEnvVarsFromProcessEnv(env []string) map[string]string {
+	foundEnv := make(map[string]string)
+	for _, e := range env {
+		kv := strings.Split(e, "=")
+		if len(kv) == 1 {
+			continue
+		}
+
+		if kv[0] == "fprocess" || kv[0] == "PATH" {
+			continue
+		}
+
+		foundEnv[kv[0]] = kv[1]
+	}
+
+	return foundEnv
 }
 
 func readSecretsFromMounts(mounts []specs.Mount) []string {
