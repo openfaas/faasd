@@ -60,20 +60,26 @@ func Test_ProcessEnvToEnvVars(t *testing.T) {
 		Name     string
 		Input    []string
 		Expected map[string]string
+		fprocess string
 	}
 	tests := []test{
-		{Name: "No matching EnvVars", Input: []string{"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", "fprocess=python", "index.py"}, Expected: make(map[string]string)},
-		{Name: "No EnvVars", Input: []string{}, Expected: make(map[string]string)},
-		{Name: "One EnvVar", Input: []string{"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", "fprocess=python", "env=this", "index.py"}, Expected: map[string]string{"env": "this"}},
-		{Name: "Multiple EnvVars", Input: []string{"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", "this=that", "env=var", "fprocess=python", "index.py"}, Expected: map[string]string{"this": "that", "env": "var"}},
+		{Name: "No matching EnvVars", Input: []string{"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", "fprocess=python index.py"}, Expected: make(map[string]string), fprocess: "python index.py"},
+		{Name: "No EnvVars", Input: []string{}, Expected: make(map[string]string), fprocess: ""},
+		{Name: "One EnvVar", Input: []string{"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", "fprocess=python index.py", "env=this"}, Expected: map[string]string{"env": "this"}, fprocess: "python index.py"},
+		{Name: "Multiple EnvVars", Input: []string{"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", "this=that", "env=var", "fprocess=python index.py"}, Expected: map[string]string{"this": "that", "env": "var"}, fprocess: "python index.py"},
 		{Name: "Nil EnvVars", Input: nil, Expected: make(map[string]string)},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.Name, func(t *testing.T) {
-			got := readEnvVarsFromProcessEnv(tc.Input)
+			got, fprocess := readEnvFromProcessEnv(tc.Input)
 			if !reflect.DeepEqual(got, tc.Expected) {
-				t.Fatalf("expected %s, got %s", tc.Expected, got)
+				t.Fatalf("expected: %s, got: %s", tc.Expected, got)
+			}
+
+			if fprocess != tc.fprocess {
+				t.Fatalf("expected fprocess: %s, got: %s", tc.fprocess, got)
+
 			}
 		})
 	}

@@ -33,6 +33,7 @@ func MakeReadHandler(client *containerd.Client) func(w http.ResponseWriter, r *h
 				Annotations: annotations,
 				Secrets:     fn.secrets,
 				EnvVars:     fn.envVars,
+				EnvProcess:  fn.envProcess,
 			})
 		}
 
