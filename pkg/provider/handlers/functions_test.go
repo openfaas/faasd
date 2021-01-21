@@ -38,6 +38,7 @@ func Test_SplitMountToSecrets(t *testing.T) {
 	}
 	tests := []test{
 		{Name: "No matching openfaas secrets", Input: []specs.Mount{{Destination: "/foo/"}}, Expected: []string{}},
+		{Name: "Nil mounts", Input: nil, Expected: []string{}},
 		{Name: "No Mounts", Input: []specs.Mount{{Destination: "/foo/"}}, Expected: []string{}},
 		{Name: "One Mounts IS secret", Input: []specs.Mount{{Destination: "/var/openfaas/secrets/secret1"}}, Expected: []string{"secret1"}},
 		{Name: "Multiple Mounts 1 secret", Input: []specs.Mount{{Destination: "/var/openfaas/secrets/secret1"}, {Destination: "/some/other/path"}}, Expected: []string{"secret1"}},
@@ -47,6 +48,30 @@ func Test_SplitMountToSecrets(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.Name, func(t *testing.T) {
 			got := readSecretsFromMounts(tc.Input)
+			if !reflect.DeepEqual(got, tc.Expected) {
+				t.Fatalf("expected %s, got %s", tc.Expected, got)
+			}
+		})
+	}
+}
+
+func Test_ProcessEnvToEnvVars(t *testing.T) {
+	type test struct {
+		Name     string
+		Input    []string
+		Expected map[string]string
+	}
+	tests := []test{
+		{Name: "No matching EnvVars", Input: []string{"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", "fprocess=python", "index.py"}, Expected: make(map[string]string)},
+		{Name: "No EnvVars", Input: []string{}, Expected: make(map[string]string)},
+		{Name: "One EnvVar", Input: []string{"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", "fprocess=python", "env=this", "index.py"}, Expected: map[string]string{"env": "this"}},
+		{Name: "Multiple EnvVars", Input: []string{"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", "this=that", "env=var", "fprocess=python", "index.py"}, Expected: map[string]string{"this": "that", "env": "var"}},
+		{Name: "Nil EnvVars", Input: nil, Expected: make(map[string]string)},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.Name, func(t *testing.T) {
+			got := readEnvVarsFromProcessEnv(tc.Input)
 			if !reflect.DeepEqual(got, tc.Expected) {
 				t.Fatalf("expected %s, got %s", tc.Expected, got)
 			}
