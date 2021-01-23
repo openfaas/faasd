@@ -56,7 +56,7 @@ This issue appears to happen sporadically and only for some users.
 If you get a non 200 HTTP code from the gateway, or caddy after installing faasd, check the logs of faasd:
 
 ```bash
-sudo journalctl -t faasd
+sudo journalctl -u faasd
 ```
 
 If you see the following error:

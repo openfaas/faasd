@@ -22,7 +22,7 @@
 
 If you're using multipass, then allocate sufficient resources:
 
-```sh
+```bash
 multipass launch \
   --mem 4G \
   -c 2 \
@@ -34,7 +34,7 @@ multipass shell faasd
 
 ### Get runc
 
-```sh
+```bash
 sudo apt update \
   && sudo apt install -qy \
     runc \
@@ -58,7 +58,7 @@ curl -sLS https://cli.openfaas.com | sudo sh
 
 Then run:
 
-```sh
+```bash
 export ARCH=amd64
 export CNI_VERSION=v0.8.5
 
@@ -83,7 +83,7 @@ You have three options - binaries for PC, binaries for armhf, or build from sour
 
 * Install containerd `x86_64` only
 
-```sh
+```bash
 export VER=1.3.5
 curl -sSL https://github.com/containerd/containerd/releases/download/v$VER/containerd-$VER-linux-amd64.tar.gz > /tmp/containerd.tar.gz \
   && sudo tar -xvf /tmp/containerd.tar.gz -C /usr/local/bin/ --strip-components=1
@@ -95,13 +95,13 @@ containerd -version
 
     Building `containerd` on armhf is extremely slow, so I've provided binaries for you.
 
-    ```sh
+    ```bash
     curl -sSL https://github.com/alexellis/containerd-armhf/releases/download/v1.3.5/containerd.tgz | sudo tar -xvz --strip-components=2 -C /usr/local/bin/
     ```
 
 * Or clone / build / install [containerd](https://github.com/containerd/containerd) from source:
 
-    ```sh
+    ```bash
     export GOPATH=$HOME/go/
     mkdir -p $GOPATH/src/github.com/containerd
     cd $GOPATH/src/github.com/containerd
@@ -118,7 +118,7 @@ containerd -version
 
 #### Ensure containerd is running
 
-```sh
+```bash
 curl -sLS https://raw.githubusercontent.com/containerd/containerd/v1.3.5/containerd.service > /tmp/containerd.service
 
 # Extend the timeouts for low-performance VMs
@@ -134,7 +134,7 @@ sudo systemctl restart containerd
 
 Or run ad-hoc. This step can be useful for exploring why containerd might fail to start.
 
-```sh
+```bash
 sudo containerd &
 ```
 
@@ -142,13 +142,13 @@ sudo containerd &
 
 > This is required to allow containers in containerd to access the Internet via your computer's primary network interface.
 
-```sh
+```bash
 sudo /sbin/sysctl -w net.ipv4.conf.all.forwarding=1
 ```
 
 Make the setting permanent:
 
-```sh
+```bash
 echo "net.ipv4.conf.all.forwarding=1" | sudo tee -a /etc/sysctl.conf
 ```
 
@@ -156,7 +156,7 @@ echo "net.ipv4.conf.all.forwarding=1" | sudo tee -a /etc/sysctl.conf
 
 #### Get build packages
 
-```sh
+```bash
 sudo apt update \
   && sudo apt install -qy \
     runc \
@@ -168,7 +168,7 @@ You may find alternative package names for CentOS and other Linux distributions.
 
 #### Install Go 1.13 (x86_64)
 
-```sh
+```bash
 curl -sSLf https://dl.google.com/go/go1.13.6.linux-amd64.tar.gz > /tmp/go.tgz
 sudo rm -rf /usr/local/go/
 sudo mkdir -p /usr/local/go/
@@ -182,14 +182,14 @@ go version
 
 You should also add the following to `~/.bash_profile`:
 
-```sh
+```bash
 echo "export GOPATH=\$HOME/go/" | tee -a $HOME/.bash_profile
 echo "export PATH=\$PATH:/usr/local/go/bin/" | tee -a $HOME/.bash_profile
 ```
 
 #### Or on Raspberry Pi (armhf)
 
-```sh
+```bash
 curl -SLsf https://dl.google.com/go/go1.13.6.linux-armv6l.tar.gz > go.tgz
 sudo rm -rf /usr/local/go/
 sudo mkdir -p /usr/local/go/
@@ -203,7 +203,7 @@ go version
 
 #### Clone faasd and its systemd unit files
 
-```sh
+```bash
 mkdir -p $GOPATH/src/github.com/openfaas/
 cd $GOPATH/src/github.com/openfaas/
 git clone https://github.com/openfaas/faasd
@@ -211,7 +211,7 @@ git clone https://github.com/openfaas/faasd
 
 #### Build `faasd` from source (optional)
 
-```sh
+```bash
 cd $GOPATH/src/github.com/openfaas/faasd
 cd faasd
 make local
@@ -222,7 +222,7 @@ sudo cp bin/faasd /usr/local/bin
 
 #### Or, download and run `faasd` (binaries)
 
-```sh
+```bash
 # For x86_64
 export SUFFIX=""
 
@@ -243,7 +243,7 @@ sudo mv /tmp/faasd /usr/local/bin/
 
 This step installs faasd as a systemd unit file, creates files in `/var/lib/faasd`, and writes out networking configuration for the CNI bridge networking plugin.
 
-```sh
+```bash
 sudo faasd install
 
 2020/02/17 17:38:06 Writing to: "/var/lib/faasd/secrets/basic-auth-password"
@@ -256,13 +256,13 @@ You can now log in either from this machine or a remote machine using the OpenFa
 
 Check that faasd is ready:
 
-```
+```bash
 sudo journalctl -u faasd
 ```
 
 You should see output like:
 
-```
+```bash
 Feb 17 17:46:35 gold-survive faasd[4140]: 2020/02/17 17:46:35 Starting faasd proxy on 8080
 Feb 17 17:46:35 gold-survive faasd[4140]: Gateway: 10.62.0.5:8080
 Feb 17 17:46:35 gold-survive faasd[4140]: 2020/02/17 17:46:35 [proxy] Wait for done
@@ -271,7 +271,7 @@ Feb 17 17:46:35 gold-survive faasd[4140]: 2020/02/17 17:46:35 [proxy] Begin list
 
 To get the CLI for the command above run:
 
-```sh
+```bash
 curl -sSLf https://cli.openfaas.com | sudo sh
 ```
 
@@ -327,7 +327,7 @@ faasd provider
 
 Look in `hosts` in the current working folder or in `/var/lib/faasd/` to get the IP for the gateway or Prometheus
 
-```sh
+```bash
 127.0.0.1      localhost
 10.62.0.1      faasd-provider
 
