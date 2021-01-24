@@ -55,6 +55,7 @@ services:
       - auth_proxy_pass_body=false
       - secret_mount_path=/run/secrets
       - scale_from_zero=true
+      - function_namespace=openfaas-fn
     volumes:
       # we assume cwd == /var/lib/faasd
       - type: bind
