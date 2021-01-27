@@ -28,6 +28,38 @@ faasd does not create the same maintenance burden you'll find with maintaining, 
 
 > Demo of faasd running in KVM
 
+
+## "Serverless For Everyone Else" is the official handbook for faasd
+
+<a href="https://gumroad.com/l/serverless-for-everyone-else">
+<img src="https://static-2.gumroad.com/res/gumroad/2028406193591/asset_previews/714aad765f8246463fafb64fcd3be4ea/retina/104810333-b628f280-57eb-11eb-8be9-a2f6c773346b.png" width="40%"></a>
+
+You'll learn how to deploy code in any language, lift and shift Dockerfiles, run requests in queues, write background jobs and to integrate with databases. faasd packages the same code as OpenFaaS, so you get built-in metrics for your HTTP endpoints, a user-friendly CLI, pre-packaged functions and templates from the store and a UI.
+
+Topics include:
+
+* Should you deploy to a VPS or Raspberry Pi?
+* Deploying your server with bash, cloud-init or terraform
+* Using a private container registry
+* Finding functions in the store
+* Building your first function with Node.js
+* Using environment variables for configuration
+* Using secrets from functions, and enabling authentication tokens
+* Customising templates
+* Monitoring your functions with Grafana and Prometheus
+* Scheduling invocations and background jobs
+* Tuning timeouts, parallelism, running tasks in the background
+* Adding TLS to faasd and custom domains for functions
+* Adding a database for storage with InfluxDB
+* Troubleshooting and logs
+* CI/CD with GitHub Actions and multi-arch
+* Taking things further, community and case-studies
+
+View sample pages, reviews and testimonials on Gumroad:
+
+["Serverless For Everyone Else"](https://gumroad.com/l/serverless-for-everyone-else)
+
+
 ## Try faasd for the first time
 
 faasd is OpenFaaS, so many things you read in the docs or in blog posts will work the same way.
@@ -89,31 +121,6 @@ Automate everything within < 60 seconds and get a public URL and IP address back
 * [Provision faasd 0.10.0 on DigitalOcean with Terraform 0.12.0](docs/bootstrap/README.md)
 
 * [Provision faasd on DigitalOcean with built-in TLS support](docs/bootstrap/digitalocean-terraform/README.md)
-
-## faasd handbook - everything you need to know to run functions without Kubernetes (early access)
-
-faasd is a portable, and open source serverless engine. It runs a number of core services for its REST API, for background processing, and for metrics. The project schedules functions with containerd directly, and supports scale to and from zero, but without the need for clustering or Kubernetes.
-
-It makes for a quick and easy way to start hosting APIs and websites, benefiting from containers and cloud native technology without having to manage Kubernetes, or pay significant hosting costs.
-
-This handbook is written for those deploying faasd to self-hosted or cloud infrastructure. Whilst OpenFaaS has reference documentation, here we focus on everything you need to know about faasd itself.
-
-Topics include:
-
-* Should you deploy to a VPS or Raspberry Pi?
-* Deploying your server with bash, cloud-init or terraform
-* Using a private container registry
-* Building your first function, and customising templates
-* Monitoring your functions with Grafana and Prometheus
-* Scheduling invocations and background jobs
-* Tuning timeouts, parallelism, running tasks in the background
-* Upgrading faasd
-* Setting memory limits for functions
-* Exposing the core services like Prometheus and NATS
-
-> faasd users can upgrade to Kubernetes when the need presents itself and can bring their functions with them.
-
-* [Find out more on Gumroad](https://gumroad.com/l/serverless-for-everyone-else)
 
 ## Finding logs
 
