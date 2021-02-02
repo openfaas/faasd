@@ -86,7 +86,7 @@ For trying out fasad on MacOS or Windows, we recommend using multipass.
 If you don't use cloud-init, or have already created your Linux server you can use the installation script as per below:
 
 ```bash
-git clone https://github.com/openfaas/faasd
+git clone https://github.com/openfaas/faasd --depth=1
 cd faasd
 
 ./hack/install.sh
