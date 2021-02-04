@@ -21,18 +21,20 @@ faasd does not create the same maintenance burden you'll find with maintaining, 
 
 * is a single Golang binary
 * uses the same core components and ecosystem of OpenFaaS
+* uses containerd for a runtime and CNI for networking
 * is multi-arch, so works on Intel `x86_64` and ARM out the box
-* can be set-up and left alone to run your applications
+* can run almost any other stateful container through its `docker-compose.yaml` file
+
+Most importantly, it's easy to manage so you can set it up and leave it alone to run your functions.
 
 ![demo](https://pbs.twimg.com/media/EPNQz00W4AEwDxM?format=jpg&name=small)
 
 > Demo of faasd running in KVM
 
-
 ## "Serverless For Everyone Else" is the official handbook for faasd
 
 <a href="https://gumroad.com/l/serverless-for-everyone-else">
-<img src="https://static-2.gumroad.com/res/gumroad/2028406193591/asset_previews/714aad765f8246463fafb64fcd3be4ea/retina/104810333-b628f280-57eb-11eb-8be9-a2f6c773346b.png" width="40%"></a>
+<img src="https://static-2.gumroad.com/res/gumroad/2028406193591/asset_previews/741f2ad46ff0a08e16aaf48d21810ba7/retina/social4.png" width="40%"></a>
 
 You'll learn how to deploy code in any language, lift and shift Dockerfiles, run requests in queues, write background jobs and to integrate with databases. faasd packages the same code as OpenFaaS, so you get built-in metrics for your HTTP endpoints, a user-friendly CLI, pre-packaged functions and templates from the store and a UI.
 
@@ -50,7 +52,8 @@ Topics include:
 * Scheduling invocations and background jobs
 * Tuning timeouts, parallelism, running tasks in the background
 * Adding TLS to faasd and custom domains for functions
-* Adding a database for storage with InfluxDB
+* Self-hosting on your Raspberry Pi
+* Adding a database for storage with InfluxDB and Postgresql
 * Troubleshooting and logs
 * CI/CD with GitHub Actions and multi-arch
 * Taking things further, community and case-studies
@@ -58,7 +61,6 @@ Topics include:
 View sample pages, reviews and testimonials on Gumroad:
 
 ["Serverless For Everyone Else"](https://gumroad.com/l/serverless-for-everyone-else)
-
 
 ## Try faasd for the first time
 
