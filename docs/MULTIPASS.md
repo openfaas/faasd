@@ -69,7 +69,7 @@ export IP="192.168.64.14"
 You can also try to use `jq` to get the IP into a variable:
 
 ```sh
-export IP=$(multipass info faasd --format json| jq '.info.faasd.ipv4[0]' | tr -d '\"')
+export IP=$(multipass info faasd --format json| jq -r '.info.faasd.ipv4[0]')
 ```
 
 Connect to the IP listed:
