@@ -115,7 +115,7 @@ You can also checkout the other store functions: `faas-cli store list`
 
 * Try the UI
 
-Head over to the UI from your laptop and remember that your password is in the `basic-auth-password` file. The username is `admin.:
+Head over to the UI from your laptop and remember that your password is in the `basic-auth-password` file. The username is `admin`:
 
 ```
 echo http://$IP:8080
