@@ -7,6 +7,8 @@
 
 faasd is [OpenFaaS](https://github.com/openfaas/) reimagined, but without the cost and complexity of Kubernetes. It runs on a single host with very modest requirements, making it fast and easy to manage. Under the hood it uses [containerd](https://containerd.io/) and [Container Networking Interface (CNI)](https://github.com/containernetworking/cni) along with the same core OpenFaaS components from the main project.
 
+![faasd logo](docs/media/social.png)
+
 ## When should you use faasd over OpenFaaS on Kubernetes?
 
 * You have a cost sensitive project - run faasd on a 5-10 USD VPS or on your Raspberry Pi
