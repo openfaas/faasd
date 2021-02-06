@@ -9,16 +9,6 @@ faasd is [OpenFaaS](https://github.com/openfaas/) reimagined, but without the co
 
 ![faasd logo](docs/media/social.png)
 
-## When should you use faasd over OpenFaaS on Kubernetes?
-
-* You have a cost sensitive project - run faasd on a 5-10 USD VPS or on your Raspberry Pi
-* When you just need a few functions or microservices, without the cost of a cluster
-* When you don't have the bandwidth to learn or manage Kubernetes
-* To deploy embedded apps in IoT and edge use-cases
-* To shrink-wrap applications for use with a customer or client
-
-faasd does not create the same maintenance burden you'll find with maintaining, upgrading, and securing a Kubernetes cluster. You can deploy it and walk away, in the worst case, just deploy a new VM and deploy your functions again.
-
 ## About faasd
 
 * is a single Golang binary
@@ -33,7 +23,40 @@ Most importantly, it's easy to manage so you can set it up and leave it alone to
 
 > Demo of faasd running in KVM
 
-## "Serverless For Everyone Else" is the official handbook for faasd
+## What does faasd deploy?
+
+* faasd - itself, and its [faas-provider](https://github.com/openfaas/faas-provider) for containerd - CRUD for functions and services, implements the OpenFaaS REST API
+* [Prometheus](https://github.com/prometheus/prometheus) - for monitoring of services, metrics, scaling and dashboards
+* [OpenFaaS Gateway](https://github.com/openfaas/faas/tree/master/gateway) - the UI portal, CLI, and other OpenFaaS tooling can talk to this.
+* [OpenFaaS queue-worker for NATS](https://github.com/openfaas/nats-queue-worker) - run your invocations in the background without adding any code. See also: [asynchronous invocations](https://docs.openfaas.com/reference/triggers/#async-nats-streaming)
+* [NATS](https://nats.io) for asynchronous processing and queues
+
+faasd relies on industry-standard tools for running containers:
+
+* [CNI](https://github.com/containernetworking/plugins)
+* [containerd](https://github.com/containerd/containerd)
+* [runc](https://github.com/opencontainers/runc)
+
+You can use the standard [faas-cli](https://github.com/openfaas/faas-cli) along with pre-packaged functions from *the Function Store*, or build your own using any OpenFaaS template.
+
+## When should you use faasd over OpenFaaS on Kubernetes?
+
+* To deploy microservices and functions that you can update and monitor remotely
+* When you don't have the bandwidth to learn or manage Kubernetes
+* To deploy embedded apps in IoT and edge use-cases
+* To distribute applications to a customer or client
+* You have a cost sensitive project - run faasd on a 5-10 USD VPS or on your Raspberry Pi
+* When you just need a few functions or microservices, without the cost of a cluster
+
+faasd does not create the same maintenance burden you'll find with maintaining, upgrading, and securing a Kubernetes cluster. You can deploy it and walk away, in the worst case, just deploy a new VM and deploy your functions again.
+
+## Getting started with faasd
+
+The faasd project is MIT licensed and open source, and you will find some documentation, blog posts and videos for free.
+
+However, "Serverless For Everyone Else" is the official handbook and was written to contribute funds towards the upkeep and maintenance of the project.
+
+### The official handbook and docs for faasd
 
 <a href="https://gumroad.com/l/serverless-for-everyone-else">
 <img src="https://static-2.gumroad.com/res/gumroad/2028406193591/asset_previews/741f2ad46ff0a08e16aaf48d21810ba7/retina/social4.png" width="40%"></a>
@@ -64,7 +87,7 @@ View sample pages, reviews and testimonials on Gumroad:
 
 ["Serverless For Everyone Else"](https://gumroad.com/l/serverless-for-everyone-else)
 
-## Try faasd for the first time
+### Try faasd for the first time
 
 faasd is OpenFaaS, so many things you read in the docs or in blog posts will work the same way.
 
@@ -81,7 +104,7 @@ Additional resources:
 * For use-cases and tutorials: [OpenFaaS blog](https://openfaas.com/blog/)
 * For self-paced learning: [OpenFaaS workshop](https://github.com/openfaas/workshop/)
 
-## Deploy faasd
+### Deploy faasd
 
 The easiest way to deploy faasd is with cloud-init, we give several examples below, and post IaaS platforms will accept "user-data" pasted into their UI, or via their API.
 
@@ -100,11 +123,11 @@ cd faasd
 
 It's recommended that you do not install Docker on the same host as faasd, since 1) they may both use different versions of containerd and 2) docker's networking rules can disrupt faasd's networking. When using faasd - make your faasd server a faasd server, and build container image on your laptop or in a CI pipeline.
 
-### Run locally on MacOS, Linux, or Windows with multipass
+#### Run locally on MacOS, Linux, or Windows with multipass
 
 * [Get up and running with your own faasd installation on your Mac/Ubuntu or Windows with cloud-config](/docs/MULTIPASS.md)
 
-### DigitalOcean tutorial with Terraform and TLS
+#### DigitalOcean tutorial with Terraform and TLS
 
 The terraform can be adapted for any IaaS provider:
 
@@ -112,50 +135,19 @@ The terraform can be adapted for any IaaS provider:
 
 See also: [Build a Serverless appliance with faasd and cloud-init](https://blog.alexellis.io/deploy-serverless-faasd-with-cloud-init/)
 
-### Get started on armhf / Raspberry Pi
+#### Get started on armhf / Raspberry Pi
 
 You can run this tutorial on your Raspberry Pi, or adapt the steps for a regular Linux VM/VPS host.
 
 * [faasd - lightweight Serverless for your Raspberry Pi](https://blog.alexellis.io/faasd-for-lightweight-serverless/)
 
-### Terraform for DigitalOcean
+#### Terraform for DigitalOcean
 
 Automate everything within < 60 seconds and get a public URL and IP address back. Customise as required, or adapt to your preferred cloud such as AWS EC2.
 
 * [Provision faasd 0.10.2 on DigitalOcean with Terraform 0.12.0](docs/bootstrap/README.md)
 
 * [Provision faasd on DigitalOcean with built-in TLS support](docs/bootstrap/digitalocean-terraform/README.md)
-
-## Finding logs
-
-### Logs for functions
-
-You can view the logs of functions using `journalctl`:
-
-```bash
-journalctl -t openfaas-fn:FUNCTION_NAME
-
-
-faas-cli store deploy figlet
-journalctl -t openfaas-fn:figlet -f &
-echo logs | faas-cli invoke figlet
-```
-
-## What does faasd deploy?
-
-* faasd - itself, and its [faas-provider](https://github.com/openfaas/faas-provider) for containerd - CRUD for functions and services, implements the OpenFaaS REST API
-* [Prometheus](https://github.com/prometheus/prometheus) - for monitoring of services, metrics, scaling and dashboards
-* [OpenFaaS Gateway](https://github.com/openfaas/faas/tree/master/gateway) - the UI portal, CLI, and other OpenFaaS tooling can talk to this.
-* [OpenFaaS queue-worker for NATS](https://github.com/openfaas/nats-queue-worker) - run your invocations in the background without adding any code. See also: [asynchronous invocations](https://docs.openfaas.com/reference/triggers/#async-nats-streaming)
-* [NATS](https://nats.io) for asynchronous processing and queues
-
-You'll also need:
-
-* [CNI](https://github.com/containernetworking/plugins)
-* [containerd](https://github.com/containerd/containerd)
-* [runc](https://github.com/opencontainers/runc)
-
-You can use the standard [faas-cli](https://github.com/openfaas/faas-cli) along with pre-packaged functions from *the Function Store*, or build your own using any OpenFaaS template.
 
 ### Instructions for hacking on faasd itself
 
