@@ -119,7 +119,7 @@ View sample pages, reviews and testimonials on Gumroad:
 
 The easiest way to deploy faasd is with cloud-init, we give several examples below, and post IaaS platforms will accept "user-data" pasted into their UI, or via their API.
 
-For trying out fasad on MacOS or Windows, we recommend using multipass.
+For trying it out on MacOS or Windows, we recommend using [multipass](https://multipass.run) to run faasd in a VM.
 
 If you don't use cloud-init, or have already created your Linux server you can use the installation script as per below:
 
