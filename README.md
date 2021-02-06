@@ -13,15 +13,22 @@ faasd is [OpenFaaS](https://github.com/openfaas/) reimagined, but without the co
 
 faasd is just another way to runOpenFaaS, so many things you read in the docs or in blog posts will work the same way.
 
+
+Videos and overviews:
+
+* [Exploring of serverless use-cases from commercial and personal users (YouTube)](https://www.youtube.com/watch?v=mzuXVuccaqI)
+* [Meet faasd. Look Ma’ No Kubernetes! (YouTube)](https://www.youtube.com/watch?v=ZnZJXI377ak)
+
 Use-cases and tutorials:
 
-* [Deploy via GitHub Actions](https://www.openfaas.com/blog/openfaas-functions-with-github-actions/)
-* [Scrape and automate websites with Puppeteer](https://www.openfaas.com/blog/puppeteer-scraping/)
 * [Serverless Node.js that you can run anywhere](https://www.openfaas.com/blog/serverless-nodejs/)
 * [Build a Flask microservice with OpenFaaS](https://www.openfaas.com/blog/openfaas-flask/)
+* [Deploy to faasd via GitHub Actions](https://www.openfaas.com/blog/openfaas-functions-with-github-actions/)
+* [Scrape and automate websites with Puppeteer](https://www.openfaas.com/blog/puppeteer-scraping/)
 
 Additional resources:
 
+* The official handbook - [Serverless For Everyone Else](https://gumroad.com/l/serverless-for-everyone-else)
 * For reference: [OpenFaaS docs](https://docs.openfaas.com)
 * For use-cases and tutorials: [OpenFaaS blog](https://openfaas.com/blog/)
 * For self-paced learning: [OpenFaaS workshop](https://github.com/openfaas/workshop/)
@@ -125,65 +132,23 @@ cd faasd
 
 It's recommended that you do not install Docker on the same host as faasd, since 1) they may both use different versions of containerd and 2) docker's networking rules can disrupt faasd's networking. When using faasd - make your faasd server a faasd server, and build container image on your laptop or in a CI pipeline.
 
-#### Run locally on MacOS, Linux, or Windows with multipass
+#### Deployment tutorials
 
-* [Get up and running with your own faasd installation on your Mac/Ubuntu or Windows with cloud-config](/docs/MULTIPASS.md)
+* [Use multipass on Windows, MacOS or Linux](/docs/MULTIPASS.md)
+* [Deploy to DigitalOcean with Terraform and TLS](https://www.openfaas.com/blog/faasd-tls-terraform/)
+* [Deploy to any IaaS with cloud-init](https://blog.alexellis.io/deploy-serverless-faasd-with-cloud-init/)
+* [Deploy faasd to your Raspberry Pi](https://blog.alexellis.io/faasd-for-lightweight-serverless/)
 
-#### DigitalOcean tutorial with Terraform and TLS
+Terraform scripts:
 
-The terraform can be adapted for any IaaS provider:
-
-* [Bring a lightweight Serverless experience to DigitalOcean with Terraform and faasd](https://www.openfaas.com/blog/faasd-tls-terraform/)
-
-See also: [Build a Serverless appliance with faasd and cloud-init](https://blog.alexellis.io/deploy-serverless-faasd-with-cloud-init/)
-
-#### Get started on armhf / Raspberry Pi
-
-You can run this tutorial on your Raspberry Pi, or adapt the steps for a regular Linux VM/VPS host.
-
-* [faasd - lightweight Serverless for your Raspberry Pi](https://blog.alexellis.io/faasd-for-lightweight-serverless/)
-
-#### Terraform for DigitalOcean
-
-Automate everything within < 60 seconds and get a public URL and IP address back. Customise as required, or adapt to your preferred cloud such as AWS EC2.
-
-* [Provision faasd 0.10.2 on DigitalOcean with Terraform 0.12.0](docs/bootstrap/README.md)
-
-* [Provision faasd on DigitalOcean with built-in TLS support](docs/bootstrap/digitalocean-terraform/README.md)
-
-### Instructions for hacking on faasd itself
-
-See [here for manual / developer instructions](docs/DEV.md)
-
-## Getting help
-
-### faasd handbook
-
-"Serverless For Everyone Else" is the complete guide and documentation for faasd. If you're looking for how to do something, it's likely that the book covers it.
-
-* [Find out more on Gumroad](https://gumroad.com/l/serverless-for-everyone-else)
-
-### Reference docs for Kubernetes
-
-The [OpenFaaS docs](https://docs.openfaas.com/) provide a wealth of information for OpenFaaS on Kubernetes, and are likely to be useful for you, even using faasd.
+* [Provision faasd on DigitalOcean with Terraform](docs/bootstrap/README.md)
+* [Provision faasd with TLS on DigitalOcean with Terraform](docs/bootstrap/digitalocean-terraform/README.md)
 
 ### Function and template store
 
 For community functions see `faas-cli store --help`
 
 For templates built by the community see: `faas-cli template store list`, you can also use the `dockerfile` template if you just want to migrate an existing service without the benefits of using a template.
-
-### Training and courses
-
-#### LinuxFoundation training course
-
-The founder of faasd and OpenFaaS has written a training course for the LinuxFoundation which also covers how to use OpenFaaS on Kubernetes. Much of the same concepts can be applied to faasd, and the course is free:
-
-* [Introduction to Serverless on Kubernetes](https://www.edx.org/course/introduction-to-serverless-on-kubernetes)
-
-#### Community workshop
-
-[The OpenFaaS workshop](https://github.com/openfaas/workshop/) is a set of 12 self-paced labs and provides a great starting point for learning the features of openfaas. Not all features will be available or usable with faasd.
 
 ### Community support
 
@@ -199,3 +164,5 @@ If you are learning faasd, or want to share your use-case, you can join the Open
 For completed features, WIP and upcoming roadmap see:
 
 See [ROADMAP.md](docs/ROADMAP.md)
+
+Are you looking to hack on faasd? Follow the [developer instructions](docs/DEV.md) for a manual installation, or use the `hack/install.sh` script and pick up from there.
