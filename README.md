@@ -11,9 +11,9 @@ faasd is [OpenFaaS](https://github.com/openfaas/) reimagined, but without the co
 
 ## About faasd
 
-* is a single Golang binary
+* faasd is a static Golang binary
 * uses the same core components and ecosystem of OpenFaaS
-* uses containerd for a runtime and CNI for networking
+* uses containerd for its runtime and CNI for networking
 * is multi-arch, so works on Intel `x86_64` and ARM out the box
 * can run almost any other stateful container through its `docker-compose.yaml` file
 
@@ -21,7 +21,9 @@ Most importantly, it's easy to manage so you can set it up and leave it alone to
 
 ![demo](https://pbs.twimg.com/media/EPNQz00W4AEwDxM?format=jpg&name=small)
 
-> Demo of faasd running in KVM
+> Demo of faasd running asynchronous functions
+
+Watch the video: [faasd walk-through with cloud-init and Multipass](https://www.youtube.com/watch?v=WX1tZoSXy8E)
 
 ## What does faasd deploy?
 
@@ -45,7 +47,7 @@ You can use the standard [faas-cli](https://github.com/openfaas/faas-cli) along 
 * When you don't have the bandwidth to learn or manage Kubernetes
 * To deploy embedded apps in IoT and edge use-cases
 * To distribute applications to a customer or client
-* You have a cost sensitive project - run faasd on a 5-10 USD VPS or on your Raspberry Pi
+* You have a cost sensitive project - run faasd on a 1GB VM for 5-10 USD / mo or on your Raspberry Pi
 * When you just need a few functions or microservices, without the cost of a cluster
 
 faasd does not create the same maintenance burden you'll find with maintaining, upgrading, and securing a Kubernetes cluster. You can deploy it and walk away, in the worst case, just deploy a new VM and deploy your functions again.
