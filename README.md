@@ -22,7 +22,9 @@ Videos and overviews:
 Use-cases and tutorials:
 
 * [Serverless Node.js that you can run anywhere](https://www.openfaas.com/blog/serverless-nodejs/)
+* [Simple Serverless with Golang Functions and Microservices](https://www.openfaas.com/blog/golang-serverless/)
 * [Build a Flask microservice with OpenFaaS](https://www.openfaas.com/blog/openfaas-flask/)
+* [Get started with Java 11 and Vert.x on Kubernetes with OpenFaaS](https://www.openfaas.com/blog/get-started-with-java-openjdk11/)
 * [Deploy to faasd via GitHub Actions](https://www.openfaas.com/blog/openfaas-functions-with-github-actions/)
 * [Scrape and automate websites with Puppeteer](https://www.openfaas.com/blog/puppeteer-scraping/)
 
