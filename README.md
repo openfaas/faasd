@@ -9,7 +9,24 @@ faasd is [OpenFaaS](https://github.com/openfaas/) reimagined, but without the co
 
 ![faasd logo](docs/media/social.png)
 
-## About faasd
+## Use-cases and tutorials
+
+faasd is just another way to runOpenFaaS, so many things you read in the docs or in blog posts will work the same way.
+
+Use-cases and tutorials:
+
+* [Deploy via GitHub Actions](https://www.openfaas.com/blog/openfaas-functions-with-github-actions/)
+* [Scrape and automate websites with Puppeteer](https://www.openfaas.com/blog/puppeteer-scraping/)
+* [Serverless Node.js that you can run anywhere](https://www.openfaas.com/blog/serverless-nodejs/)
+* [Build a Flask microservice with OpenFaaS](https://www.openfaas.com/blog/openfaas-flask/)
+
+Additional resources:
+
+* For reference: [OpenFaaS docs](https://docs.openfaas.com)
+* For use-cases and tutorials: [OpenFaaS blog](https://openfaas.com/blog/)
+* For self-paced learning: [OpenFaaS workshop](https://github.com/openfaas/workshop/)
+
+### About faasd
 
 * faasd is a static Golang binary
 * uses the same core components and ecosystem of OpenFaaS
@@ -25,7 +42,7 @@ Most importantly, it's easy to manage so you can set it up and leave it alone to
 
 Watch the video: [faasd walk-through with cloud-init and Multipass](https://www.youtube.com/watch?v=WX1tZoSXy8E)
 
-## What does faasd deploy?
+### What does faasd deploy?
 
 * faasd - itself, and its [faas-provider](https://github.com/openfaas/faas-provider) for containerd - CRUD for functions and services, implements the OpenFaaS REST API
 * [Prometheus](https://github.com/prometheus/prometheus) - for monitoring of services, metrics, scaling and dashboards
@@ -41,7 +58,7 @@ faasd relies on industry-standard tools for running containers:
 
 You can use the standard [faas-cli](https://github.com/openfaas/faas-cli) along with pre-packaged functions from *the Function Store*, or build your own using any OpenFaaS template.
 
-## When should you use faasd over OpenFaaS on Kubernetes?
+### When should you use faasd over OpenFaaS on Kubernetes?
 
 * To deploy microservices and functions that you can update and monitor remotely
 * When you don't have the bandwidth to learn or manage Kubernetes
@@ -52,7 +69,7 @@ You can use the standard [faas-cli](https://github.com/openfaas/faas-cli) along 
 
 faasd does not create the same maintenance burden you'll find with maintaining, upgrading, and securing a Kubernetes cluster. You can deploy it and walk away, in the worst case, just deploy a new VM and deploy your functions again.
 
-## Getting started with faasd
+## Learning faasd
 
 The faasd project is MIT licensed and open source, and you will find some documentation, blog posts and videos for free.
 
@@ -88,23 +105,6 @@ Topics include:
 View sample pages, reviews and testimonials on Gumroad:
 
 ["Serverless For Everyone Else"](https://gumroad.com/l/serverless-for-everyone-else)
-
-### Try faasd for the first time
-
-faasd is OpenFaaS, so many things you read in the docs or in blog posts will work the same way.
-
-Use-cases and tutorials:
-
-* [Deploy via GitHub Actions](https://www.openfaas.com/blog/openfaas-functions-with-github-actions/)
-* [Scrape and automate websites with Puppeteer](https://www.openfaas.com/blog/puppeteer-scraping/)
-* [Serverless Node.js that you can run anywhere](https://www.openfaas.com/blog/serverless-nodejs/)
-* [Build a Flask microservice with OpenFaaS](https://www.openfaas.com/blog/openfaas-flask/)
-
-Additional resources:
-
-* For reference: [OpenFaaS docs](https://docs.openfaas.com)
-* For use-cases and tutorials: [OpenFaaS blog](https://openfaas.com/blog/)
-* For self-paced learning: [OpenFaaS workshop](https://github.com/openfaas/workshop/)
 
 ### Deploy faasd
 
