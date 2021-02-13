@@ -7,6 +7,7 @@ package_update: true
 
 packages:
  - runc
+ - git
 
 runcmd:
 - curl -sLSf https://github.com/containerd/containerd/releases/download/v1.3.5/containerd-1.3.5-linux-amd64.tar.gz > /tmp/containerd.tar.gz && tar -xvf /tmp/containerd.tar.gz -C /usr/local/bin/ --strip-components=1
