@@ -189,7 +189,7 @@ install_faas_cli() {
 verify_system
 install_required_packages
 
-/sbin/sysctl -w net.ipv4.conf.all.forwarding=1
+$SUDO /sbin/sysctl -w net.ipv4.conf.all.forwarding=1
 echo "net.ipv4.conf.all.forwarding=1" | $SUDO tee -a /etc/sysctl.conf
 
 install_cni_plugins
