@@ -194,19 +194,19 @@ func (s *Supervisor) Start(svcs []Service) error {
 		}
 
 		labels := map[string]string{}
-		network, err := cninetwork.CreateCNINetwork(ctx, s.cni, task, labels)
+		_, err = cninetwork.CreateCNINetwork(ctx, s.cni, task, labels)
 		if err != nil {
 			log.Printf("Error creating CNI for %s: %s", svc.Name, err)
 			return err
 		}
 
-		ip, err := cninetwork.GetIPAddress(network, task)
+		ip, err := cninetwork.GetIPAddress(svc.Name, task.Pid())
 		if err != nil {
 			log.Printf("Error getting IP for %s: %s", svc.Name, err)
 			return err
 		}
 
-		log.Printf("%s has IP: %s\n", newContainer.ID(), ip.String())
+		log.Printf("%s has IP: %s\n", newContainer.ID(), ip)
 
 		hosts, err := ioutil.ReadFile("hosts")
 		if err != nil {

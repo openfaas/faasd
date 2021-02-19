@@ -3,9 +3,10 @@ package handlers
 import (
 	"context"
 	"fmt"
-	"github.com/opencontainers/runtime-spec/specs-go"
 	"log"
 	"strings"
+
+	"github.com/opencontainers/runtime-spec/specs-go"
 
 	"github.com/containerd/containerd"
 	"github.com/containerd/containerd/namespaces"
@@ -106,11 +107,11 @@ func GetFunction(client *containerd.Client, name string) (Function, error) {
 			fn.pid = task.Pid()
 
 			// Get container IP address
-			ip, err := cninetwork.GetIPfromPID(int(task.Pid()))
+			ip, err := cninetwork.GetIPAddress(name, task.Pid())
 			if err != nil {
 				return Function{}, err
 			}
-			fn.IP = ip.String()
+			fn.IP = ip
 		}
 	} else {
 		replicas = 0
