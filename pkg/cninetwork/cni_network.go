@@ -147,33 +147,61 @@ func DeleteCNINetwork(ctx context.Context, cni gocni.CNI, client *containerd.Cli
 	return errors.Wrapf(containerErr, "Unable to find container: %s, error: %s", name, containerErr)
 }
 
-// GetIPAddress returns the IP address from container based on name and PID
-func GetIPAddress(name string, PID uint32) (string, error) {
-	processName := fmt.Sprintf("%s-%d", name, PID)
+// GetIPAddress returns the IP address from container based on container name and PID
+func GetIPAddress(container string, PID uint32) (string, error) {
 	CNIDir := path.Join(CNIDataDir, defaultNetworkName)
 
 	files, err := ioutil.ReadDir(CNIDir)
 	if err != nil {
-		return "", fmt.Errorf("failed to read CNI dir for container %s: %v", name, err)
+		return "", fmt.Errorf("failed to read CNI dir for container %s: %v", container, err)
 	}
 
 	for _, file := range files {
-		f, err := os.Open(filepath.Join(CNIDir, file.Name()))
+		// each fileName is an IP address
+		fileName := file.Name()
+
+		resultsFile := filepath.Join(CNIDir, fileName)
+		found, err := isCNIResultForPID(resultsFile, container, PID)
 		if err != nil {
-			return "", fmt.Errorf("failed to open CNI IP file for %s/%s: %v", CNIDir, file.Name(), err)
+			return "", err
 		}
-		reader := bufio.NewReader(f)
-		text, _ := reader.ReadString('\n')
-		if strings.Contains(text, processName) {
-			i, _ := reader.ReadString('\n')
-			if strings.Contains(i, defaultIfPrefix) {
-				f.Close()
-				return file.Name(), nil
-			}
+
+		if found {
+			return fileName, nil
 		}
-		f.Close()
 	}
-	return "", fmt.Errorf("unable to get IP address for container %s", name)
+
+	return "", fmt.Errorf("unable to get IP address for container: %s", container)
+}
+
+// isCNIResultForPID confirms if the CNI result file contains the
+// process name, PID and interface name
+//
+// Example:
+//
+// /var/run/cni/openfaas-cni-bridge/10.62.0.2
+//
+// nats-621
+// eth1
+func isCNIResultForPID(fileName, container string, PID uint32) (bool, error) {
+	found := false
+
+	f, err := os.Open(fileName)
+	if err != nil {
+		return false, fmt.Errorf("failed to open CNI IP file for %s: %v", fileName, err)
+	}
+	defer f.Close()
+
+	reader := bufio.NewReader(f)
+	processLine, _ := reader.ReadString('\n')
+	if strings.Contains(processLine, fmt.Sprintf("%s-%d", container, PID)) {
+		ethNameLine, _ := reader.ReadString('\n')
+		if strings.Contains(ethNameLine, defaultIfPrefix) {
+			found = true
+		}
+	}
+
+	return found, nil
 }
 
 // CNIGateway returns the gateway for default subnet
