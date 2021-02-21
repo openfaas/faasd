@@ -172,6 +172,7 @@ func (s *Supervisor) Start(svcs []Service) error {
 			containerd.WithImage(image),
 			containerd.WithNewSnapshot(svc.Name+"-snapshot", image),
 			containerd.WithNewSpec(oci.WithImageConfig(image),
+				oci.WithHostname(svc.Name),
 				withUserOrDefault(svc.User),
 				oci.WithCapabilities(svc.Caps),
 				oci.WithMounts(mounts),
