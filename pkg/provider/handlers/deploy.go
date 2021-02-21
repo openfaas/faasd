@@ -147,6 +147,7 @@ func deploy(ctx context.Context, req types.FunctionDeployment, client *container
 		containerd.WithSnapshotter(snapshotter),
 		containerd.WithNewSnapshot(name+"-snapshot", image),
 		containerd.WithNewSpec(oci.WithImageConfig(image),
+			oci.WithHostname(name),
 			oci.WithCapabilities([]string{"CAP_NET_RAW"}),
 			oci.WithMounts(mounts),
 			oci.WithEnv(envs),
