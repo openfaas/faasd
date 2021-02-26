@@ -34,9 +34,8 @@ import (
 )
 
 const (
-	watchdogPort           = "8080"
-	defaultContentType     = "text/plain"
-	errMissingFunctionName = "Please provide a valid route /function/function_name."
+	watchdogPort       = "8080"
+	defaultContentType = "text/plain"
 )
 
 // BaseURLResolver URL resolver for proxy requests
@@ -136,15 +135,15 @@ func proxyRequest(w http.ResponseWriter, originalReq *http.Request, proxyClient 
 	pathVars := mux.Vars(originalReq)
 	functionName := pathVars["name"]
 	if functionName == "" {
-		httputil.Errorf(w, http.StatusBadRequest, errMissingFunctionName)
+		httputil.Errorf(w, http.StatusBadRequest, "Provide function name in the request path")
 		return
 	}
 
 	functionAddr, resolveErr := resolver.Resolve(functionName)
 	if resolveErr != nil {
 		// TODO: Should record the 404/not found error in Prometheus.
-		log.Printf("resolver error: cannot find %s: %s\n", functionName, resolveErr.Error())
-		httputil.Errorf(w, http.StatusNotFound, "Cannot find service: %s.", functionName)
+		log.Printf("resolver error: no endpoints for %s: %s\n", functionName, resolveErr.Error())
+		httputil.Errorf(w, http.StatusServiceUnavailable, "No endpoints available for: %s.", functionName)
 		return
 	}
 
@@ -153,6 +152,7 @@ func proxyRequest(w http.ResponseWriter, originalReq *http.Request, proxyClient 
 		httputil.Errorf(w, http.StatusInternalServerError, "Failed to resolve service: %s.", functionName)
 		return
 	}
+
 	if proxyReq.Body != nil {
 		defer proxyReq.Body.Close()
 	}
@@ -167,7 +167,10 @@ func proxyRequest(w http.ResponseWriter, originalReq *http.Request, proxyClient 
 		httputil.Errorf(w, http.StatusInternalServerError, "Can't reach service for: %s.", functionName)
 		return
 	}
-	defer response.Body.Close()
+
+	if response.Body != nil {
+		defer response.Body.Close()
+	}
 
 	log.Printf("%s took %f seconds\n", functionName, seconds.Seconds())
 
@@ -176,7 +179,9 @@ func proxyRequest(w http.ResponseWriter, originalReq *http.Request, proxyClient 
 	w.Header().Set("Content-Type", getContentType(originalReq.Header, response.Header))
 
 	w.WriteHeader(response.StatusCode)
-	io.Copy(w, response.Body)
+	if response.Body != nil {
+		io.Copy(w, response.Body)
+	}
 }
 
 // buildProxyRequest creates a request object for the proxy request, it will ensure that
