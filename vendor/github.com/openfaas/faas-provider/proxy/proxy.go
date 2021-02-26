@@ -74,8 +74,9 @@ func NewHandlerFunc(config types.FaaSConfig, resolver BaseURLResolver) http.Hand
 			http.MethodPut,
 			http.MethodPatch,
 			http.MethodDelete,
-			http.MethodGet:
-
+			http.MethodGet,
+			http.MethodOptions,
+			http.MethodHead:
 			proxyRequest(w, r, proxyClient, resolver)
 
 		default:
