@@ -46,7 +46,12 @@ var rootCommand = &cobra.Command{
 	Use:   "faasd",
 	Short: "Start faasd",
 	Long: `
-faasd - serverless without Kubernetes
+faasd - Serverless For Everyone Else
+
+Learn how to build, secure, and monitor functions with faasd with 
+the eBook:
+
+https://gumroad.com/l/serverless-for-everyone-else
 `,
 	RunE:         runRootCommand,
 	SilenceUsage: true,
