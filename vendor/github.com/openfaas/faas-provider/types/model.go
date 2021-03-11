@@ -118,5 +118,5 @@ type FunctionStatus struct {
 
 	// CreatedAt is the time read back from the faas backend's
 	// data store for when the function or its container was created.
-	CreatedAt time.Time `json:"created_at,omitempty"`
+	CreatedAt time.Time `json:"createdAt,omitempty"`
 }
