@@ -195,7 +195,7 @@ github.com/opencontainers/runtime-spec/specs-go
 # github.com/openfaas/faas v0.0.0-20201205125747-9bbb25e3c7c4
 ## explicit
 github.com/openfaas/faas/gateway/requests
-# github.com/openfaas/faas-provider v0.17.1
+# github.com/openfaas/faas-provider v0.17.2
 ## explicit
 github.com/openfaas/faas-provider
 github.com/openfaas/faas-provider/auth

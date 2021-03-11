@@ -34,6 +34,7 @@ func MakeReadHandler(client *containerd.Client) func(w http.ResponseWriter, r *h
 				Secrets:     fn.secrets,
 				EnvVars:     fn.envVars,
 				EnvProcess:  fn.envProcess,
+				CreatedAt:   fn.createdAt,
 			})
 		}
 
@@ -41,6 +42,5 @@ func MakeReadHandler(client *containerd.Client) func(w http.ResponseWriter, r *h
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		w.Write(body)
-
 	}
 }

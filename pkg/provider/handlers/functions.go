@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/opencontainers/runtime-spec/specs-go"
 
@@ -27,6 +28,7 @@ type Function struct {
 	secrets     []string
 	envVars     map[string]string
 	envProcess  string
+	createdAt   time.Time
 }
 
 // ListFunctions returns a map of all functions with running tasks on namespace
@@ -81,6 +83,11 @@ func GetFunction(client *containerd.Client, name string) (Function, error) {
 		return Function{}, fmt.Errorf("unable to load function spec for reading secrets: %s, error %s", name, err)
 	}
 
+	info, err := c.Info(ctx)
+	if err != nil {
+		return Function{}, fmt.Errorf("can't load info for: %s, error %s", name, err)
+	}
+
 	envVars, envProcess := readEnvFromProcessEnv(spec.Process.Env)
 	secrets := readSecretsFromMounts(spec.Mounts)
 
@@ -92,6 +99,7 @@ func GetFunction(client *containerd.Client, name string) (Function, error) {
 	fn.secrets = secrets
 	fn.envVars = envVars
 	fn.envProcess = envProcess
+	fn.createdAt = info.CreatedAt
 
 	replicas := 0
 	task, err := c.Task(ctx, nil)
