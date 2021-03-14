@@ -148,6 +148,7 @@ func deploy(ctx context.Context, req types.FunctionDeployment, client *container
 			oci.WithCapabilities([]string{"CAP_NET_RAW"}),
 			oci.WithMounts(mounts),
 			oci.WithEnv(envs),
+			oci.WithLinuxDevice("/dev/kvm", "rmw"),
 			withMemory(memory)),
 		containerd.WithContainerLabels(labels)}
 
