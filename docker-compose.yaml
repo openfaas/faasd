@@ -1,7 +1,7 @@
 version: "3.7"
 services:
   basic-auth-plugin:
-    image: ghcr.io/openfaas/basic-auth:0.20.5
+    image: ghcr.io/openfaas/basic-auth:0.20.12
     environment:
       - port=8080
       - secret_mount_path=/run/secrets
@@ -41,7 +41,7 @@ services:
        - "127.0.0.1:9090:9090"
 
   gateway:
-    image: ghcr.io/openfaas/gateway:0.20.11
+    image: ghcr.io/openfaas/gateway:0.20.12
     environment:
       - basic_auth=true
       - functions_provider_url=http://faasd-provider:8081/
