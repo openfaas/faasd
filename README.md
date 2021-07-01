@@ -11,8 +11,7 @@ faasd is [OpenFaaS](https://github.com/openfaas/) reimagined, but without the co
 
 ## Use-cases and tutorials
 
-faasd is just another way to runOpenFaaS, so many things you read in the docs or in blog posts will work the same way.
-
+faasd is just another way to run OpenFaaS, so many things you read in the docs or in blog posts will work the same way.
 
 Videos and overviews:
 
@@ -87,7 +86,7 @@ However, "Serverless For Everyone Else" is the official handbook and was written
 ### The official handbook and docs for faasd
 
 <a href="https://gumroad.com/l/serverless-for-everyone-else">
-<img src="https://static-2.gumroad.com/res/gumroad/2028406193591/asset_previews/741f2ad46ff0a08e16aaf48d21810ba7/retina/social4.png" width="40%"></a>
+<img src="https://www.alexellis.io/serverless.png" width="40%"></a>
 
 You'll learn how to deploy code in any language, lift and shift Dockerfiles, run requests in queues, write background jobs and to integrate with databases. faasd packages the same code as OpenFaaS, so you get built-in metrics for your HTTP endpoints, a user-friendly CLI, pre-packaged functions and templates from the store and a UI.
 
