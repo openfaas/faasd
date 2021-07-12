@@ -150,7 +150,7 @@ install_caddy() {
       ;;
     esac
 
-    curl -sSL "https://github.com/caddyserver/caddy/releases/download/v2.2.1/caddy_2.2.1_linux_${suffix}.tar.gz" | $SUDO tar -xvz -C /usr/bin/ caddy
+    curl -sSL "https://github.com/caddyserver/caddy/releases/download/v2.4.3/caddy_2.4.3_linux_${suffix}.tar.gz" | $SUDO tar -xvz -C /usr/bin/ caddy
     $SUDO curl -fSLs https://raw.githubusercontent.com/caddyserver/dist/master/init/caddy.service --output /etc/systemd/system/caddy.service
 
     $SUDO mkdir -p /etc/caddy
