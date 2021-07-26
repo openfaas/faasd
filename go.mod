@@ -8,7 +8,7 @@ require (
 	github.com/alexellis/k3sup v0.0.0-20200607084134-629c0bc6b50f
 	github.com/compose-spec/compose-go v0.0.0-20200528042322-36d8ce368e05
 	github.com/containerd/cgroups v0.0.0-20201119153540-4cbc285b3327 // indirect
-	github.com/containerd/containerd v1.3.2
+	github.com/containerd/containerd v1.3.9
 	github.com/containerd/continuity v0.0.0-20190815185530-f2a389ac0a02 // indirect
 	github.com/containerd/fifo v0.0.0-20190816180239-bda0ff6ed73c // indirect
 	github.com/containerd/go-cni v0.0.0-20200107172653-c154a49e2c75
