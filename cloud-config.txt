@@ -18,8 +18,8 @@ runcmd:
 - mkdir -p /opt/cni/bin
 - curl -sSL https://github.com/containernetworking/plugins/releases/download/v0.8.5/cni-plugins-linux-amd64-v0.8.5.tgz | tar -xz -C /opt/cni/bin
 - mkdir -p /go/src/github.com/openfaas/
-- cd /go/src/github.com/openfaas/ && git clone --depth 1 --branch 0.11.0 https://github.com/openfaas/faasd
-- curl -fSLs "https://github.com/openfaas/faasd/releases/download/0.11.0/faasd" --output "/usr/local/bin/faasd" && chmod a+x "/usr/local/bin/faasd"
+- cd /go/src/github.com/openfaas/ && git clone --depth 1 --branch 0.12.5 https://github.com/openfaas/faasd
+- curl -fSLs "https://github.com/openfaas/faasd/releases/download/0.12.5/faasd" --output "/usr/local/bin/faasd" && chmod a+x "/usr/local/bin/faasd"
 - cd /go/src/github.com/openfaas/faasd/ && /usr/local/bin/faasd install
 - systemctl status -l containerd --no-pager
 - journalctl -u faasd-provider --no-pager
