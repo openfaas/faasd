@@ -19,45 +19,40 @@
 package oci
 
 import (
-	"os"
+	"context"
 
-	specs "github.com/opencontainers/runtime-spec/specs-go"
-	"golang.org/x/sys/unix"
+	"github.com/containerd/containerd/containers"
 )
 
-func deviceFromPath(path, permissions string) (*specs.LinuxDevice, error) {
-	var stat unix.Stat_t
-	if err := unix.Lstat(path, &stat); err != nil {
-		return nil, err
-	}
+// WithHostDevices adds all the hosts device nodes to the container's spec
+func WithHostDevices(_ context.Context, _ Client, _ *containers.Container, s *Spec) error {
+	setLinux(s)
 
-	var (
-		devNumber = uint64(stat.Rdev)
-		major     = unix.Major(devNumber)
-		minor     = unix.Minor(devNumber)
-	)
-	if major == 0 {
-		return nil, ErrNotADevice
+	devs, err := HostDevices()
+	if err != nil {
+		return err
 	}
+	s.Linux.Devices = append(s.Linux.Devices, devs...)
+	return nil
+}
 
-	var (
-		devType string
-		mode    = stat.Mode
-	)
-	switch {
-	case mode&unix.S_IFBLK == unix.S_IFBLK:
-		devType = "b"
-	case mode&unix.S_IFCHR == unix.S_IFCHR:
-		devType = "c"
+// WithDevices recursively adds devices from the passed in path and associated cgroup rules for that device.
+// If devicePath is a dir it traverses the dir to add all devices in that dir.
+// If devicePath is not a dir, it attempts to add the single device.
+func WithDevices(devicePath, containerPath, permissions string) SpecOpts {
+	return func(_ context.Context, _ Client, _ *containers.Container, s *Spec) error {
+		devs, err := getDevices(devicePath, containerPath)
+		if err != nil {
+			return err
+		}
+		s.Linux.Devices = append(s.Linux.Devices, devs...)
+		return nil
 	}
-	fm := os.FileMode(mode)
-	return &specs.LinuxDevice{
-		Type:     devType,
-		Path:     path,
-		Major:    int64(major),
-		Minor:    int64(minor),
-		FileMode: &fm,
-		UID:      &stat.Uid,
-		GID:      &stat.Gid,
-	}, nil
+}
+
+// WithCPUCFS sets the container's Completely fair scheduling (CFS) quota and period
+func WithCPUCFS(quota int64, period uint64) SpecOpts {
+	return func(ctx context.Context, _ Client, c *containers.Container, s *Spec) error {
+		return nil
+	}
 }

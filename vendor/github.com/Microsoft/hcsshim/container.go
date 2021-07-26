@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/Microsoft/hcsshim/internal/hcs"
+	"github.com/Microsoft/hcsshim/internal/hcs/schema1"
 	"github.com/Microsoft/hcsshim/internal/mergemaps"
-	"github.com/Microsoft/hcsshim/internal/schema1"
 )
 
 // ContainerProperties holds the properties for a container and the processes running in that container
@@ -196,7 +196,7 @@ func (container *container) MappedVirtualDisks() (map[int]MappedVirtualDiskContr
 
 // CreateProcess launches a new process within the container.
 func (container *container) CreateProcess(c *ProcessConfig) (Process, error) {
-	p, err := container.system.CreateProcessNoStdio(c)
+	p, err := container.system.CreateProcess(context.Background(), c)
 	if err != nil {
 		return nil, convertSystemError(err, container)
 	}

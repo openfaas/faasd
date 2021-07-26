@@ -10,6 +10,7 @@ import (
 	types "github.com/gogo/protobuf/types"
 	io "io"
 	math "math"
+	math_bits "math/bits"
 	reflect "reflect"
 	strings "strings"
 )
@@ -23,69 +24,21 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 // The `Status` type defines a logical error model that is suitable for
 // different programming environments, including REST APIs and RPC APIs. It is
-// used by [gRPC](https://github.com/grpc). The error model is designed to be:
+// used by [gRPC](https://github.com/grpc). Each `Status` message contains
+// three pieces of data: error code, error message, and error details.
 //
-// - Simple to use and understand for most users
-// - Flexible enough to meet unexpected needs
-//
-// # Overview
-//
-// The `Status` message contains three pieces of data: error code, error
-// message, and error details. The error code should be an enum value of
-// [google.rpc.Code][google.rpc.Code], but it may accept additional error codes
-// if needed.  The error message should be a developer-facing English message
-// that helps developers *understand* and *resolve* the error. If a localized
-// user-facing error message is needed, put the localized message in the error
-// details or localize it in the client. The optional error details may contain
-// arbitrary information about the error. There is a predefined set of error
-// detail types in the package `google.rpc` that can be used for common error
-// conditions.
-//
-// # Language mapping
-//
-// The `Status` message is the logical representation of the error model, but it
-// is not necessarily the actual wire format. When the `Status` message is
-// exposed in different client libraries and different wire protocols, it can be
-// mapped differently. For example, it will likely be mapped to some exceptions
-// in Java, but more likely mapped to some error codes in C.
-//
-// # Other uses
-//
-// The error model and the `Status` message can be used in a variety of
-// environments, either with or without APIs, to provide a
-// consistent developer experience across different environments.
-//
-// Example uses of this error model include:
-//
-// - Partial errors. If a service needs to return partial errors to the client,
-//     it may embed the `Status` in the normal response to indicate the partial
-//     errors.
-//
-// - Workflow errors. A typical workflow has multiple steps. Each step may
-//     have a `Status` message for error reporting.
-//
-// - Batch operations. If a client uses batch request and batch response, the
-//     `Status` message should be used directly inside batch response, one for
-//     each error sub-response.
-//
-// - Asynchronous operations. If an API call embeds asynchronous operation
-//     results in its response, the status of those operations should be
-//     represented directly using the `Status` message.
-//
-// - Logging. If some API errors are stored in logs, the message `Status` could
-//     be used directly after any stripping needed for security/privacy reasons.
+// You can find out more about this error model and how to work with it in the
+// [API Design Guide](https://cloud.google.com/apis/design/errors).
 type Status struct {
-	// The status code, which should be an enum value of
-	// [google.rpc.Code][google.rpc.Code].
+	// The status code, which should be an enum value of [google.rpc.Code][google.rpc.Code].
 	Code int32 `protobuf:"varint,1,opt,name=code,proto3" json:"code,omitempty"`
 	// A developer-facing error message, which should be in English. Any
 	// user-facing error message should be localized and sent in the
-	// [google.rpc.Status.details][google.rpc.Status.details] field, or localized
-	// by the client.
+	// [google.rpc.Status.details][google.rpc.Status.details] field, or localized by the client.
 	Message string `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
 	// A list of messages that carry the error details.  There is a common set of
 	// message types for APIs to use.
@@ -108,7 +61,7 @@ func (m *Status) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_Status.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -158,7 +111,7 @@ func init() {
 func init() { proto.RegisterFile("google/rpc/status.proto", fileDescriptor_24d244abaf643bfe) }
 
 var fileDescriptor_24d244abaf643bfe = []byte{
-	// 235 bytes of a gzipped FileDescriptorProto
+	// 238 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x12, 0x4f, 0xcf, 0xcf, 0x4f,
 	0xcf, 0x49, 0xd5, 0x2f, 0x2a, 0x48, 0xd6, 0x2f, 0x2e, 0x49, 0x2c, 0x29, 0x2d, 0xd6, 0x2b, 0x28,
 	0xca, 0x2f, 0xc9, 0x17, 0xe2, 0x82, 0x48, 0xe8, 0x15, 0x15, 0x24, 0x4b, 0x49, 0x42, 0x15, 0x81,
@@ -167,13 +120,13 @@ var fileDescriptor_24d244abaf643bfe = []byte{
 	0xc0, 0x6c, 0x21, 0x09, 0x2e, 0xf6, 0xdc, 0xd4, 0xe2, 0xe2, 0xc4, 0xf4, 0x54, 0x09, 0x26, 0x05,
 	0x46, 0x0d, 0xce, 0x20, 0x18, 0x57, 0x48, 0x8f, 0x8b, 0x3d, 0x25, 0xb5, 0x24, 0x31, 0x33, 0xa7,
 	0x58, 0x82, 0x59, 0x81, 0x59, 0x83, 0xdb, 0x48, 0x44, 0x0f, 0x6a, 0x21, 0xcc, 0x12, 0x3d, 0xc7,
-	0xbc, 0xca, 0x20, 0x98, 0x22, 0xa7, 0xb8, 0x0b, 0x0f, 0xe5, 0x18, 0x6e, 0x3c, 0x94, 0x63, 0xf8,
+	0xbc, 0xca, 0x20, 0x98, 0x22, 0xa7, 0xc4, 0x0b, 0x0f, 0xe5, 0x18, 0x6e, 0x3c, 0x94, 0x63, 0xf8,
 	0xf0, 0x50, 0x8e, 0xf1, 0xc7, 0x43, 0x39, 0xc6, 0x86, 0x47, 0x72, 0x8c, 0x2b, 0x1e, 0xc9, 0x31,
 	0x9e, 0x78, 0x24, 0xc7, 0x78, 0xe1, 0x91, 0x1c, 0xe3, 0x83, 0x47, 0x72, 0x8c, 0x2f, 0x1e, 0xc9,
 	0x31, 0x7c, 0x00, 0x89, 0x3f, 0x96, 0x63, 0x3c, 0xf1, 0x58, 0x8e, 0x91, 0x8b, 0x2f, 0x39, 0x3f,
 	0x57, 0x0f, 0xe1, 0x11, 0x27, 0x6e, 0x88, 0x5b, 0x03, 0x40, 0x56, 0x04, 0x30, 0x46, 0x31, 0x17,
-	0x15, 0x24, 0x2f, 0x62, 0x62, 0x0e, 0x0a, 0x70, 0x4e, 0x62, 0x03, 0x5b, 0x6b, 0x0c, 0x08, 0x00,
-	0x00, 0xff, 0xff, 0xaa, 0x06, 0xa1, 0xaa, 0x10, 0x01, 0x00, 0x00,
+	0x15, 0x24, 0xff, 0x60, 0x64, 0x5c, 0xc4, 0xc4, 0x1c, 0x14, 0xe0, 0x9c, 0xc4, 0x06, 0xb6, 0xd9,
+	0x18, 0x10, 0x00, 0x00, 0xff, 0xff, 0x16, 0xcd, 0x7b, 0x60, 0x13, 0x01, 0x00, 0x00,
 }
 
 func (this *Status) Compare(that interface{}) int {
@@ -295,7 +248,7 @@ func valueToGoStringStatus(v interface{}, typ string) string {
 func (m *Status) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -303,47 +256,58 @@ func (m *Status) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Status) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Status) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Code != 0 {
-		dAtA[i] = 0x8
-		i++
-		i = encodeVarintStatus(dAtA, i, uint64(m.Code))
-	}
-	if len(m.Message) > 0 {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintStatus(dAtA, i, uint64(len(m.Message)))
-		i += copy(dAtA[i:], m.Message)
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
 	}
 	if len(m.Details) > 0 {
-		for _, msg := range m.Details {
-			dAtA[i] = 0x1a
-			i++
-			i = encodeVarintStatus(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
+		for iNdEx := len(m.Details) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Details[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintStatus(dAtA, i, uint64(size))
 			}
-			i += n
+			i--
+			dAtA[i] = 0x1a
 		}
 	}
-	if m.XXX_unrecognized != nil {
-		i += copy(dAtA[i:], m.XXX_unrecognized)
+	if len(m.Message) > 0 {
+		i -= len(m.Message)
+		copy(dAtA[i:], m.Message)
+		i = encodeVarintStatus(dAtA, i, uint64(len(m.Message)))
+		i--
+		dAtA[i] = 0x12
 	}
-	return i, nil
+	if m.Code != 0 {
+		i = encodeVarintStatus(dAtA, i, uint64(m.Code))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
 }
 
 func encodeVarintStatus(dAtA []byte, offset int, v uint64) int {
+	offset -= sovStatus(v)
+	base := offset
 	for v >= 1<<7 {
 		dAtA[offset] = uint8(v&0x7f | 0x80)
 		v >>= 7
 		offset++
 	}
 	dAtA[offset] = uint8(v)
-	return offset + 1
+	return base
 }
 func NewPopulatedStatus(r randyStatus, easy bool) *Status {
 	this := &Status{}
@@ -352,7 +316,7 @@ func NewPopulatedStatus(r randyStatus, easy bool) *Status {
 		this.Code *= -1
 	}
 	this.Message = string(randStringStatus(r))
-	if r.Intn(10) != 0 {
+	if r.Intn(5) != 0 {
 		v1 := r.Intn(5)
 		this.Details = make([]*types.Any, v1)
 		for i := 0; i < v1; i++ {
@@ -463,14 +427,7 @@ func (m *Status) Size() (n int) {
 }
 
 func sovStatus(x uint64) (n int) {
-	for {
-		n++
-		x >>= 7
-		if x == 0 {
-			break
-		}
-	}
-	return n
+	return (math_bits.Len64(x|1) + 6) / 7
 }
 func sozStatus(x uint64) (n int) {
 	return sovStatus(uint64((x << 1) ^ uint64((int64(x) >> 63))))
@@ -479,10 +436,15 @@ func (this *Status) String() string {
 	if this == nil {
 		return "nil"
 	}
+	repeatedStringForDetails := "[]*Any{"
+	for _, f := range this.Details {
+		repeatedStringForDetails += strings.Replace(fmt.Sprintf("%v", f), "Any", "types.Any", 1) + ","
+	}
+	repeatedStringForDetails += "}"
 	s := strings.Join([]string{`&Status{`,
 		`Code:` + fmt.Sprintf("%v", this.Code) + `,`,
 		`Message:` + fmt.Sprintf("%v", this.Message) + `,`,
-		`Details:` + strings.Replace(fmt.Sprintf("%v", this.Details), "Any", "types.Any", 1) + `,`,
+		`Details:` + repeatedStringForDetails + `,`,
 		`XXX_unrecognized:` + fmt.Sprintf("%v", this.XXX_unrecognized) + `,`,
 		`}`,
 	}, "")
@@ -638,6 +600,7 @@ func (m *Status) Unmarshal(dAtA []byte) error {
 func skipStatus(dAtA []byte) (n int, err error) {
 	l := len(dAtA)
 	iNdEx := 0
+	depth := 0
 	for iNdEx < l {
 		var wire uint64
 		for shift := uint(0); ; shift += 7 {
@@ -669,10 +632,8 @@ func skipStatus(dAtA []byte) (n int, err error) {
 					break
 				}
 			}
-			return iNdEx, nil
 		case 1:
 			iNdEx += 8
-			return iNdEx, nil
 		case 2:
 			var length int
 			for shift := uint(0); ; shift += 7 {
@@ -693,55 +654,30 @@ func skipStatus(dAtA []byte) (n int, err error) {
 				return 0, ErrInvalidLengthStatus
 			}
 			iNdEx += length
-			if iNdEx < 0 {
-				return 0, ErrInvalidLengthStatus
-			}
-			return iNdEx, nil
 		case 3:
-			for {
-				var innerWire uint64
-				var start int = iNdEx
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return 0, ErrIntOverflowStatus
-					}
-					if iNdEx >= l {
-						return 0, io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					innerWire |= (uint64(b) & 0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				innerWireType := int(innerWire & 0x7)
-				if innerWireType == 4 {
-					break
-				}
-				next, err := skipStatus(dAtA[start:])
-				if err != nil {
-					return 0, err
-				}
-				iNdEx = start + next
-				if iNdEx < 0 {
-					return 0, ErrInvalidLengthStatus
-				}
-			}
-			return iNdEx, nil
+			depth++
 		case 4:
-			return iNdEx, nil
+			if depth == 0 {
+				return 0, ErrUnexpectedEndOfGroupStatus
+			}
+			depth--
 		case 5:
 			iNdEx += 4
-			return iNdEx, nil
 		default:
 			return 0, fmt.Errorf("proto: illegal wireType %d", wireType)
 		}
+		if iNdEx < 0 {
+			return 0, ErrInvalidLengthStatus
+		}
+		if depth == 0 {
+			return iNdEx, nil
+		}
 	}
-	panic("unreachable")
+	return 0, io.ErrUnexpectedEOF
 }
 
 var (
-	ErrInvalidLengthStatus = fmt.Errorf("proto: negative length found during unmarshaling")
-	ErrIntOverflowStatus   = fmt.Errorf("proto: integer overflow")
+	ErrInvalidLengthStatus        = fmt.Errorf("proto: negative length found during unmarshaling")
+	ErrIntOverflowStatus          = fmt.Errorf("proto: integer overflow")
+	ErrUnexpectedEndOfGroupStatus = fmt.Errorf("proto: unexpected end of group")
 )
