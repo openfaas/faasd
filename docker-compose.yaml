@@ -1,7 +1,7 @@
 version: "3.7"
 services:
   basic-auth-plugin:
-    image: ghcr.io/openfaas/basic-auth:0.20.12
+    image: ghcr.io/openfaas/basic-auth:0.21.0
     environment:
       - port=8080
       - secret_mount_path=/run/secrets
@@ -19,7 +19,7 @@ services:
       - CAP_NET_RAW
 
   nats:
-    image: docker.io/library/nats-streaming:0.11.2
+    image: docker.io/library/nats-streaming:0.22.0
     command:
       - "/nats-streaming-server"
       - "-m"
@@ -41,7 +41,7 @@ services:
        - "127.0.0.1:9090:9090"
 
   gateway:
-    image: ghcr.io/openfaas/gateway:0.20.12
+    image: ghcr.io/openfaas/gateway:0.21.0
     environment:
       - basic_auth=true
       - functions_provider_url=http://faasd-provider:8081/
@@ -74,7 +74,7 @@ services:
        - "8080:8080"
 
   queue-worker:
-    image: docker.io/openfaas/queue-worker:0.11.2
+    image: ghcr.io/openfaas/queue-worker:0.12.2
     environment:
       - faas_nats_address=nats
       - faas_nats_port=4222
