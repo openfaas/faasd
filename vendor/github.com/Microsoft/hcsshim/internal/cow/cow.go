@@ -4,7 +4,8 @@ import (
 	"context"
 	"io"
 
-	"github.com/Microsoft/hcsshim/internal/schema1"
+	"github.com/Microsoft/hcsshim/internal/hcs/schema1"
+	hcsschema "github.com/Microsoft/hcsshim/internal/hcs/schema2"
 )
 
 // Process is the interface for an OS process running in a container or utility VM.
@@ -16,6 +17,12 @@ type Process interface {
 	// CloseStdin causes the process's stdin handle to receive EOF/EPIPE/whatever
 	// is appropriate to indicate that no more data is available.
 	CloseStdin(ctx context.Context) error
+	// CloseStdout closes the stdout connection to the process. It is used to indicate
+	// that we are done receiving output on the shim side.
+	CloseStdout(ctx context.Context) error
+	// CloseStderr closes the stderr connection to the process. It is used to indicate
+	// that we are done receiving output on the shim side.
+	CloseStderr(ctx context.Context) error
 	// Pid returns the process ID.
 	Pid() int
 	// Stdio returns the stdio streams for a process. These may be nil if a stream
@@ -63,8 +70,10 @@ type Container interface {
 	Close() error
 	// ID returns the container ID.
 	ID() string
-	// Properties returns the requested container properties.
+	// Properties returns the requested container properties targeting a V1 schema container.
 	Properties(ctx context.Context, types ...schema1.PropertyType) (*schema1.ContainerProperties, error)
+	// PropertiesV2 returns the requested container properties targeting a V2 schema container.
+	PropertiesV2(ctx context.Context, types ...hcsschema.PropertyType) (*hcsschema.Properties, error)
 	// Start starts a container.
 	Start(ctx context.Context) error
 	// Shutdown sends a shutdown request to the container (but does not wait for
@@ -77,4 +86,6 @@ type Container interface {
 	// container to be terminated by some error condition (including calling
 	// Close).
 	Wait() error
+	// Modify sends a request to modify container resources
+	Modify(ctx context.Context, config interface{}) error
 }
