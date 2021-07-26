@@ -27,6 +27,8 @@ github.com/alexellis/go-execute/pkg/v1
 # github.com/alexellis/k3sup v0.0.0-20200607084134-629c0bc6b50f
 ## explicit
 github.com/alexellis/k3sup/pkg/env
+# github.com/bits-and-blooms/bitset v1.2.0
+github.com/bits-and-blooms/bitset
 # github.com/compose-spec/compose-go v0.0.0-20200528042322-36d8ce368e05
 ## explicit
 github.com/compose-spec/compose-go/envfile
@@ -37,7 +39,7 @@ github.com/compose-spec/compose-go/template
 github.com/compose-spec/compose-go/types
 # github.com/containerd/cgroups v0.0.0-20201119153540-4cbc285b3327
 ## explicit
-# github.com/containerd/containerd v1.3.2
+# github.com/containerd/containerd v1.4.8
 ## explicit
 github.com/containerd/containerd
 github.com/containerd/containerd/api/services/containers/v1
@@ -79,6 +81,7 @@ github.com/containerd/containerd/pkg/dialer
 github.com/containerd/containerd/platforms
 github.com/containerd/containerd/plugin
 github.com/containerd/containerd/reference
+github.com/containerd/containerd/reference/docker
 github.com/containerd/containerd/remotes
 github.com/containerd/containerd/remotes/docker
 github.com/containerd/containerd/remotes/docker/schema1
@@ -86,6 +89,8 @@ github.com/containerd/containerd/rootfs
 github.com/containerd/containerd/runtime/linux/runctypes
 github.com/containerd/containerd/runtime/v2/logging
 github.com/containerd/containerd/runtime/v2/runc/options
+github.com/containerd/containerd/services
+github.com/containerd/containerd/services/introspection
 github.com/containerd/containerd/snapshots
 github.com/containerd/containerd/snapshots/proxy
 github.com/containerd/containerd/sys
@@ -128,7 +133,6 @@ github.com/docker/cli/cli/config/types
 ## explicit
 github.com/docker/distribution/digestset
 github.com/docker/distribution/reference
-github.com/docker/distribution/registry/api/errcode
 # github.com/docker/docker v17.12.0-ce-rc1.0.20191113042239-ea84732a7725+incompatible
 ## explicit
 github.com/docker/docker/pkg/homedir
@@ -156,12 +160,14 @@ github.com/gogo/protobuf/types
 # github.com/golang/groupcache v0.0.0-20191027212112-611e8accdfc9
 ## explicit
 github.com/golang/groupcache/lru
-# github.com/golang/protobuf v1.3.2
+# github.com/golang/protobuf v1.4.3
 github.com/golang/protobuf/proto
 github.com/golang/protobuf/ptypes
 github.com/golang/protobuf/ptypes/any
 github.com/golang/protobuf/ptypes/duration
 github.com/golang/protobuf/ptypes/timestamp
+# github.com/google/uuid v1.1.2
+github.com/google/uuid
 # github.com/gorilla/mux v1.8.0
 ## explicit
 github.com/gorilla/mux
@@ -187,11 +193,15 @@ github.com/opencontainers/image-spec/specs-go
 github.com/opencontainers/image-spec/specs-go/v1
 # github.com/opencontainers/runc v1.0.0-rc9
 ## explicit
-github.com/opencontainers/runc/libcontainer/system
 github.com/opencontainers/runc/libcontainer/user
 # github.com/opencontainers/runtime-spec v1.0.2
 ## explicit
 github.com/opencontainers/runtime-spec/specs-go
+# github.com/opencontainers/selinux v1.8.2
+## explicit
+github.com/opencontainers/selinux/go-selinux
+github.com/opencontainers/selinux/go-selinux/label
+github.com/opencontainers/selinux/pkg/pwalk
 # github.com/openfaas/faas v0.0.0-20201205125747-9bbb25e3c7c4
 ## explicit
 github.com/openfaas/faas/gateway/requests
@@ -245,8 +255,7 @@ go.opencensus.io/internal
 go.opencensus.io/trace
 go.opencensus.io/trace/internal
 go.opencensus.io/trace/tracestate
-# golang.org/x/net v0.0.0-20191209160850-c0dbc17a3553
-## explicit
+# golang.org/x/net v0.0.0-20200822124328-c89045814202
 golang.org/x/net/context
 golang.org/x/net/context/ctxhttp
 golang.org/x/net/http/httpguts
@@ -258,7 +267,7 @@ golang.org/x/net/trace
 # golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
 golang.org/x/sync/errgroup
 golang.org/x/sync/semaphore
-# golang.org/x/sys v0.0.0-20200202164722-d101bd2416d5
+# golang.org/x/sys v0.0.0-20200323222414-85ca7c5b95cd
 ## explicit
 golang.org/x/sys/unix
 golang.org/x/sys/windows
@@ -267,20 +276,21 @@ golang.org/x/text/secure/bidirule
 golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
-# google.golang.org/genproto v0.0.0-20191216205247-b31c10ee225f
-## explicit
+# google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013
 google.golang.org/genproto/googleapis/rpc/status
-# google.golang.org/grpc v1.23.0
+# google.golang.org/grpc v1.39.0
 ## explicit
 google.golang.org/grpc
+google.golang.org/grpc/attributes
+google.golang.org/grpc/backoff
 google.golang.org/grpc/balancer
 google.golang.org/grpc/balancer/base
+google.golang.org/grpc/balancer/grpclb/state
 google.golang.org/grpc/balancer/roundrobin
 google.golang.org/grpc/binarylog/grpc_binarylog_v1
 google.golang.org/grpc/codes
 google.golang.org/grpc/connectivity
 google.golang.org/grpc/credentials
-google.golang.org/grpc/credentials/internal
 google.golang.org/grpc/encoding
 google.golang.org/grpc/encoding/proto
 google.golang.org/grpc/grpclog
@@ -289,23 +299,62 @@ google.golang.org/grpc/internal
 google.golang.org/grpc/internal/backoff
 google.golang.org/grpc/internal/balancerload
 google.golang.org/grpc/internal/binarylog
+google.golang.org/grpc/internal/buffer
 google.golang.org/grpc/internal/channelz
+google.golang.org/grpc/internal/credentials
 google.golang.org/grpc/internal/envconfig
+google.golang.org/grpc/internal/grpclog
 google.golang.org/grpc/internal/grpcrand
 google.golang.org/grpc/internal/grpcsync
+google.golang.org/grpc/internal/grpcutil
+google.golang.org/grpc/internal/metadata
+google.golang.org/grpc/internal/resolver
+google.golang.org/grpc/internal/resolver/dns
+google.golang.org/grpc/internal/resolver/passthrough
+google.golang.org/grpc/internal/resolver/unix
+google.golang.org/grpc/internal/serviceconfig
+google.golang.org/grpc/internal/status
 google.golang.org/grpc/internal/syscall
 google.golang.org/grpc/internal/transport
+google.golang.org/grpc/internal/transport/networktype
 google.golang.org/grpc/keepalive
 google.golang.org/grpc/metadata
-google.golang.org/grpc/naming
 google.golang.org/grpc/peer
 google.golang.org/grpc/resolver
-google.golang.org/grpc/resolver/dns
-google.golang.org/grpc/resolver/passthrough
 google.golang.org/grpc/serviceconfig
 google.golang.org/grpc/stats
 google.golang.org/grpc/status
 google.golang.org/grpc/tap
+# google.golang.org/protobuf v1.25.0
+google.golang.org/protobuf/encoding/prototext
+google.golang.org/protobuf/encoding/protowire
+google.golang.org/protobuf/internal/descfmt
+google.golang.org/protobuf/internal/descopts
+google.golang.org/protobuf/internal/detrand
+google.golang.org/protobuf/internal/encoding/defval
+google.golang.org/protobuf/internal/encoding/messageset
+google.golang.org/protobuf/internal/encoding/tag
+google.golang.org/protobuf/internal/encoding/text
+google.golang.org/protobuf/internal/errors
+google.golang.org/protobuf/internal/fieldsort
+google.golang.org/protobuf/internal/filedesc
+google.golang.org/protobuf/internal/filetype
+google.golang.org/protobuf/internal/flags
+google.golang.org/protobuf/internal/genid
+google.golang.org/protobuf/internal/impl
+google.golang.org/protobuf/internal/mapsort
+google.golang.org/protobuf/internal/pragma
+google.golang.org/protobuf/internal/set
+google.golang.org/protobuf/internal/strs
+google.golang.org/protobuf/internal/version
+google.golang.org/protobuf/proto
+google.golang.org/protobuf/reflect/protoreflect
+google.golang.org/protobuf/reflect/protoregistry
+google.golang.org/protobuf/runtime/protoiface
+google.golang.org/protobuf/runtime/protoimpl
+google.golang.org/protobuf/types/known/anypb
+google.golang.org/protobuf/types/known/durationpb
+google.golang.org/protobuf/types/known/timestamppb
 # gopkg.in/inf.v0 v0.9.1
 gopkg.in/inf.v0
 # gopkg.in/yaml.v2 v2.3.0

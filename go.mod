@@ -8,7 +8,7 @@ require (
 	github.com/alexellis/k3sup v0.0.0-20200607084134-629c0bc6b50f
 	github.com/compose-spec/compose-go v0.0.0-20200528042322-36d8ce368e05
 	github.com/containerd/cgroups v0.0.0-20201119153540-4cbc285b3327 // indirect
-	github.com/containerd/containerd v1.3.2
+	github.com/containerd/containerd v1.4.8
 	github.com/containerd/continuity v0.0.0-20190815185530-f2a389ac0a02 // indirect
 	github.com/containerd/fifo v0.0.0-20190816180239-bda0ff6ed73c // indirect
 	github.com/containerd/go-cni v0.0.0-20200107172653-c154a49e2c75
@@ -29,6 +29,7 @@ require (
 	github.com/opencontainers/image-spec v1.0.1 // indirect
 	github.com/opencontainers/runc v1.0.0-rc9 // indirect
 	github.com/opencontainers/runtime-spec v1.0.2
+	github.com/opencontainers/selinux v1.8.2 // indirect
 	github.com/openfaas/faas v0.0.0-20201205125747-9bbb25e3c7c4
 	github.com/openfaas/faas-provider v0.17.3
 	github.com/pkg/errors v0.9.1
@@ -42,9 +43,7 @@ require (
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
 	go.etcd.io/bbolt v1.3.5 // indirect
 	go.opencensus.io v0.22.2 // indirect
-	golang.org/x/net v0.0.0-20191209160850-c0dbc17a3553 // indirect
-	golang.org/x/sys v0.0.0-20200202164722-d101bd2416d5
-	google.golang.org/genproto v0.0.0-20191216205247-b31c10ee225f // indirect
-	google.golang.org/grpc v1.23.0 // indirect
+	golang.org/x/sys v0.0.0-20200323222414-85ca7c5b95cd
+	google.golang.org/grpc v1.39.0 // indirect
 	k8s.io/apimachinery v0.18.9
 )
