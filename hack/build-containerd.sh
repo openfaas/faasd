@@ -1,12 +1,21 @@
 #!/bin/bash
 
-export ARCH="amd64"
-echo "Downloading Go"
 
-curl -SLsf https://golang.org/dl/go1.16.6.linux-$ARCH.tar.gz --output /tmp/go.tgz
-sudo rm -rf /usr/local/go/
-sudo mkdir -p /usr/local/go/
-sudo tar -xvf /tmp/go.tgz -C /usr/local/go/ --strip-components=1
+# See pre-reqs:
+# https://github.com/alexellis/containerd-arm
+
+export ARCH="arm64"
+
+if [ ! -d "/usr/local/go/bin" ]; then
+    echo "Downloading Go.."
+    
+    curl -SLsf https://golang.org/dl/go1.16.6.linux-$ARCH.tar.gz --output /tmp/go.tgz
+    sudo rm -rf /usr/local/go/
+    sudo mkdir -p /usr/local/go/
+    sudo tar -xvf /tmp/go.tgz -C /usr/local/go/ --strip-components=1
+else
+    echo "Go already present, skipping."
+fi
 
 export GOPATH=$HOME/go/
 export PATH=$PATH:/usr/local/go/bin/
