@@ -21,6 +21,7 @@ func NewProxy(upstream string, listenPort uint32, hostIP string, timeout time.Du
 		HostIP:   hostIP,
 		Timeout:  timeout,
 		Resolver: resolver,
+		Close:    make(chan struct{}),
 	}
 }
 
@@ -38,6 +39,8 @@ type Proxy struct {
 	HostIP string
 
 	Resolver Resolver
+
+	Close chan struct{}
 }
 
 // Start listening and forwarding HTTP to the host
@@ -70,6 +73,15 @@ func (p *Proxy) Start() error {
 		return err
 	}
 
+	go func() {
+		log.Printf("******* proxy IP for: %q closed", upstreamHost)
+		<-p.Close
+		err := l.Close()
+		if err != nil {
+			log.Printf("Error: %s", err.Error())
+		}
+	}()
+
 	defer l.Close()
 	for {
 		// Wait for a connection.
@@ -79,6 +91,7 @@ func (p *Proxy) Start() error {
 				p.Port,
 				err.Error())
 			log.Printf("%s", acceptErr.Error())
+			log.Printf("******* proxy IP for: %q connection closed", upstreamHost)
 			return acceptErr
 		}
 
@@ -92,6 +105,10 @@ func (p *Proxy) Start() error {
 		go pipe(conn, upstream)
 		go pipe(upstream, conn)
 	}
+
+	log.Printf("******* proxy IP for: %q go routine closed", upstreamHost)
+
+	return nil
 }
 
 func pipe(from net.Conn, to net.Conn) {
