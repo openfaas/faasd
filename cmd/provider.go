@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -14,6 +13,7 @@ import (
 	"github.com/openfaas/faas-provider/logs"
 	"github.com/openfaas/faas-provider/proxy"
 	"github.com/openfaas/faas-provider/types"
+	faasd "github.com/openfaas/faasd/pkg"
 	"github.com/openfaas/faasd/pkg/cninetwork"
 	faasdlogs "github.com/openfaas/faasd/pkg/logs"
 	"github.com/openfaas/faasd/pkg/provider/config"
@@ -84,6 +84,11 @@ func makeProviderCmd() *cobra.Command {
 
 		userSecretPath := path.Join(wd, "secrets")
 
+		err = moveSecretsToDefaultNamespaceSecrets(userSecretPath, faasd.FunctionNamespace)
+		if err != nil {
+			return err
+		}
+
 		bootstrapHandlers := types.FaaSHandlers{
 			FunctionProxy:        proxy.NewHandlerFunc(*config, invokeResolver),
 			DeleteHandler:        handlers.MakeDeleteHandler(client, cni),
@@ -94,7 +99,7 @@ func makeProviderCmd() *cobra.Command {
 			UpdateHandler:        handlers.MakeUpdateHandler(client, cni, userSecretPath, alwaysPull),
 			HealthHandler:        func(w http.ResponseWriter, r *http.Request) {},
 			InfoHandler:          handlers.MakeInfoHandler(Version, GitCommit),
-			ListNamespaceHandler: listNamespaces(),
+			ListNamespaceHandler: handlers.MakeNamespacesLister(client),
 			SecretHandler:        handlers.MakeSecretHandler(client, userSecretPath),
 			LogHandler:           logs.NewLogHandlerFunc(faasdlogs.New(), config.ReadTimeout),
 		}
@@ -107,10 +112,33 @@ func makeProviderCmd() *cobra.Command {
 	return command
 }
 
-func listNamespaces() func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		list := []string{""}
-		out, _ := json.Marshal(list)
-		w.Write(out)
+/*
+* Mutiple namespace support was added after release 0.13.0
+* Function will help users to migrate on multiple namespace support of faasd
+ */
+func moveSecretsToDefaultNamespaceSecrets(secretPath string, namespace string) error {
+	newSecretPath := path.Join(secretPath, namespace)
+
+	err := ensureWorkingDir(newSecretPath)
+	if err != nil {
+		return err
 	}
+
+	files, err := ioutil.ReadDir(secretPath)
+	if err != nil {
+		return err
+	}
+
+	for _, f := range files {
+		if !f.IsDir() {
+			oldPath := path.Join(secretPath, f.Name())
+			newPath := path.Join(newSecretPath, f.Name())
+			err = os.Rename(oldPath, newPath)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
