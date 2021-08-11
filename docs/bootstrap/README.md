@@ -5,11 +5,18 @@
 3) Clone this gist using the URL from the address bar
 4) Run `terraform init`
 5) Run `terraform apply -var="do_token=$(cat $HOME/digitalocean-access-token)"`
-6) View the output for the login command and gateway URL i.e.
+6) View the output for the gateway URL
 
 ```
 gateway_url = http://178.128.39.201:8080/
+```
+7) View the output for sensitive data via `terraform output` command
+
+```bash
+terraform output login_cmd
 login_cmd = faas-cli login -g http://178.128.39.201:8080/ -p rvIU49CEcFcHmqxj
+
+terraform output password
 password = rvIU49CEcFcHmqxj
 ```
 

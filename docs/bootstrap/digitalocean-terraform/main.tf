@@ -1,5 +1,11 @@
 terraform {
-  required_version = ">= 0.12"
+  required_version = ">= 1.0.4"
+  required_providers {
+    digitalocean = {
+      source  = "digitalocean/digitalocean"
+      version = "2.11.0"
+    }
+  }
 }
 
 variable "do_token" {
@@ -10,7 +16,7 @@ variable "do_domain" {
 }
 variable "do_subdomain" {
   description = "Your public subdomain"
-  default = "faasd"
+  default     = "faasd"
 }
 variable "letsencrypt_email" {
   description = "Email used to order a certificate from Letsencrypt"
@@ -32,41 +38,44 @@ provider "digitalocean" {
   token = var.do_token
 }
 
-data "local_file" "ssh_key"{
-  filename = pathexpand(var.ssh_key_file)
-}
-
 resource "random_password" "password" {
-  length = 16
-  special = true
+  length           = 16
+  special          = true
   override_special = "_-#"
 }
 
 data "template_file" "cloud_init" {
-  template = "${file("cloud-config.tpl")}"
-    vars = {
-      gw_password=random_password.password.result,
-      ssh_key=data.local_file.ssh_key.content,
-      faasd_domain_name="${var.do_subdomain}.${var.do_domain}"
-      letsencrypt_email=var.letsencrypt_email
-    }
+  template = file("cloud-config.tpl")
+  vars = {
+    gw_password       = random_password.password.result,
+    faasd_domain_name = "${var.do_subdomain}.${var.do_domain}"
+    letsencrypt_email = var.letsencrypt_email
+  }
+}
+
+resource "digitalocean_ssh_key" "faasd_ssh_key" {
+  name       = "ssh-key"
+  public_key = file(var.ssh_key_file)
 }
 
 resource "digitalocean_droplet" "faasd" {
-  region = var.do_region
-  image  = "ubuntu-18-04-x64"
-  name   = "faasd"
-  size = "s-1vcpu-1gb"
+  region    = var.do_region
+  image     = "ubuntu-18-04-x64"
+  name      = "faasd"
+  size      = "s-1vcpu-1gb"
   user_data = data.template_file.cloud_init.rendered
+  ssh_keys = [
+    digitalocean_ssh_key.faasd_ssh_key.id
+  ]
 }
 
 resource "digitalocean_record" "faasd" {
   domain = var.do_domain
   type   = "A"
-  name   = "faasd"
+  name   = var.do_subdomain
   value  = digitalocean_droplet.faasd.ipv4_address
   # Only creates record if do_create_record is true
-  count  = var.do_create_record == true ? 1 : 0
+  count = var.do_create_record == true ? 1 : 0
 }
 
 output "droplet_ip" {
@@ -78,9 +87,11 @@ output "gateway_url" {
 }
 
 output "password" {
-    value = random_password.password.result
+  value     = random_password.password.result
+  sensitive = true
 }
 
 output "login_cmd" {
-  value = "faas-cli login -g https://${var.do_subdomain}.${var.do_domain}/ -p ${random_password.password.result}"
+  value     = "faas-cli login -g https://${var.do_subdomain}.${var.do_domain}/ -p ${random_password.password.result}"
+  sensitive = true
 }

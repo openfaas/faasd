@@ -1,8 +1,4 @@
 #cloud-config
-ssh_authorized_keys:
-## Note: Replace with your own public key
-  - ${ssh_key}
-
 package_update: true
 
 packages:
