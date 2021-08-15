@@ -12,7 +12,6 @@ import (
 	"github.com/containerd/containerd"
 	bootstrap "github.com/openfaas/faas-provider"
 	"github.com/openfaas/faas-provider/logs"
-	"github.com/openfaas/faas-provider/proxy"
 	"github.com/openfaas/faas-provider/types"
 	"github.com/openfaas/faasd/pkg/cninetwork"
 	faasdlogs "github.com/openfaas/faasd/pkg/logs"
@@ -84,8 +83,11 @@ func makeProviderCmd() *cobra.Command {
 
 		userSecretPath := path.Join(wd, "secrets")
 
+		initHandler()
+
 		bootstrapHandlers := types.FaaSHandlers{
-			FunctionProxy:        proxy.NewHandlerFunc(*config, invokeResolver),
+			// FunctionProxy:        proxy.NewHandlerFunc(*config, invokeResolver),
+			FunctionProxy:        NewHandlerFunc(*config, invokeResolver),
 			DeleteHandler:        handlers.MakeDeleteHandler(client, cni),
 			DeployHandler:        handlers.MakeDeployHandler(client, cni, userSecretPath, alwaysPull),
 			FunctionReader:       handlers.MakeReadHandler(client),

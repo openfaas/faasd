@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package agent;
+
+option go_package = "agent";
+
+// The greeting service definition.
+service TasksRequest {
+  // Sends a greeting
+  rpc TaskAssign (TaskRequest) returns (TaskResponse) {}
+}
+
+// The request message containing the user's name.
+message TaskRequest {
+  string functionName = 1;
+}
+
+// The response message containing the greetings
+message TaskResponse {
+  string message = 1;
+  bytes response = 2;
+}
