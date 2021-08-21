@@ -247,7 +247,7 @@ func prepareEnv(envProcess string, reqEnvVars map[string]string) []string {
 }
 
 func getMounts() []specs.Mount {
-	wd, _ := os.Getwd()
+	wd, _ := os.LookupEnv("hosts_dir")
 	mounts := []specs.Mount{}
 	mounts = append(mounts, specs.Mount{
 		Destination: "/etc/resolv.conf",
