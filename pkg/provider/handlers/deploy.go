@@ -249,7 +249,7 @@ func prepareEnv(envProcess string, reqEnvVars map[string]string) []string {
 func getMounts() []specs.Mount {
 	wd, _ := os.LookupEnv("hosts_dir")
 	if len(wd) == 0 {
-		wd = "/var/lib/faasd-provider"
+		wd = "/var/lib/faasd"
 	}
 
 	mounts := []specs.Mount{}
