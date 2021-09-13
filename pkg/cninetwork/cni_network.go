@@ -66,7 +66,8 @@ var defaultCNIConf = fmt.Sprintf(`
             "routes": [
                 { "dst": "0.0.0.0/0" }
             ]
-        }
+        },
+		"resolvConf": "/etc/resolv.conf"
       },
       {
         "type": "firewall"

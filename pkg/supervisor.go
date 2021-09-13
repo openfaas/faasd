@@ -98,6 +98,8 @@ func (s *Supervisor) Start(svcs []Service) error {
 		return fmt.Errorf("cannot write hosts file: %s", writeHostsErr)
 	}
 
+	fmt.Printf("******* write hosts: %s to Dir : %s\n", hosts, wd)
+
 	images := map[string]containerd.Image{}
 
 	for _, svc := range svcs {
@@ -185,7 +187,7 @@ func (s *Supervisor) Start(svcs []Service) error {
 			return err
 		}
 
-		log.Printf("Created container: %s\n", newContainer.ID())
+		log.Printf("Created container: %s, svc-name: %s \n", newContainer.ID(), svc.Name)
 
 		task, err := newContainer.NewTask(ctx, cio.BinaryIO("/usr/local/bin/faasd", nil))
 		if err != nil {

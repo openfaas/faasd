@@ -11,14 +11,12 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
-// Requires gRPC-Go v1.32.0 or later.
 const _ = grpc.SupportPackageIsVersion7
 
 // TasksRequestClient is the client API for TasksRequest service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type TasksRequestClient interface {
-	// Sends a greeting
 	TaskAssign(ctx context.Context, in *TaskRequest, opts ...grpc.CallOption) (*TaskResponse, error)
 }
 
@@ -43,7 +41,6 @@ func (c *tasksRequestClient) TaskAssign(ctx context.Context, in *TaskRequest, op
 // All implementations must embed UnimplementedTasksRequestServer
 // for forward compatibility
 type TasksRequestServer interface {
-	// Sends a greeting
 	TaskAssign(context.Context, *TaskRequest) (*TaskResponse, error)
 	mustEmbedUnimplementedTasksRequestServer()
 }
@@ -65,7 +62,7 @@ type UnsafeTasksRequestServer interface {
 }
 
 func RegisterTasksRequestServer(s grpc.ServiceRegistrar, srv TasksRequestServer) {
-	s.RegisterService(&TasksRequest_ServiceDesc, srv)
+	s.RegisterService(&_TasksRequest_serviceDesc, srv)
 }
 
 func _TasksRequest_TaskAssign_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -86,10 +83,7 @@ func _TasksRequest_TaskAssign_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
-// TasksRequest_ServiceDesc is the grpc.ServiceDesc for TasksRequest service.
-// It's only intended for direct use with grpc.RegisterService,
-// and not to be introspected or modified (even as a copy)
-var TasksRequest_ServiceDesc = grpc.ServiceDesc{
+var _TasksRequest_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "agent.TasksRequest",
 	HandlerType: (*TasksRequestServer)(nil),
 	Methods: []grpc.MethodDesc{

@@ -1,11 +1,9 @@
 package cmd
 
 import (
-	"bufio"
 	"bytes"
 	"context"
-	"crypto/sha1"
-	"encoding/hex"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -20,6 +18,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/openfaas/faas-provider/httputil"
 	"github.com/openfaas/faas-provider/types"
+	"github.com/openfaas/faasd/pkg/tracer"
 	pb "github.com/openfaas/faasd/proto/agent"
 	"google.golang.org/grpc"
 )
@@ -36,8 +35,10 @@ const (
 	MaxAgentFunctionCache = 5
 	MaxClientLoad         = 6
 	UseCache              = false
-	UseLoadBalancerCache  = true
-	batchTime             = 100
+	UseLoadBalancerCache  = false
+	batchTime             = 50
+	FileCaching           = false
+	BatchChecking         = false
 )
 
 type Agent struct {
@@ -46,10 +47,10 @@ type Agent struct {
 	Loads   uint
 }
 
-type CacheChecking struct {
-	sReqHash string
-	message  string
-	response []byte
+type CacheCheckingReq struct {
+	sReqHash   string
+	resultChan chan pb.TaskResponse
+	agentID    uint32
 }
 
 var ageantAddresses []Agent
@@ -61,15 +62,26 @@ var CacheAgent *lru.Cache
 var mutex sync.Mutex
 var mutexAgent sync.Mutex
 var cacheHit uint
+var batchCacheHit uint
 var cacheMiss uint
 var loadMiss uint64
-var hashRequests = make(chan string, 100)
-var hashRequestsResult = make(chan CacheChecking, 100)
+var hashRequests = make(chan CacheCheckingReq, 100)
+
+// var hashRequestsResult = make(chan CacheChecking, 100)
 
 func initHandler() {
+	log.Printf("UseLoadBalancerCache: %v, FileCaching: %v, BatchChecking: %v, batchTime: %v",
+		UseLoadBalancerCache, FileCaching, BatchChecking, batchTime)
+
+	tracer.IniTracer("STREAM_SERVICE")
+	cl := (*tracer.GetTracer().Closer)
+	if cl != nil {
+		defer cl.Close()
+	}
 	cacheHit = 0
 	cacheMiss = 0
 	loadMiss = 0
+	batchCacheHit = 0
 
 	Cache = lru.New(MaxCacheItem)
 	CacheAgent = lru.New(MaxAgentFunctionCache)
@@ -77,6 +89,11 @@ func initHandler() {
 	ageantAddresses = append(ageantAddresses, Agent{Id: 1, Address: "localhost:50062"})
 	ageantAddresses = append(ageantAddresses, Agent{Id: 2, Address: "localhost:50063"})
 	ageantAddresses = append(ageantAddresses, Agent{Id: 3, Address: "localhost:50064"})
+
+	if BatchChecking {
+		go checkAllNodesCache()
+	}
+
 }
 
 func NewHandlerFunc(config types.FaaSConfig, resolver BaseURLResolver) http.HandlerFunc {
@@ -114,31 +131,41 @@ func NewHandlerFunc(config types.FaaSConfig, resolver BaseURLResolver) http.Hand
 			}
 			log.Println("Mohammad RequestURI: ", r.RequestURI, ", inputs:", string(bodyBytes))
 			r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
-			sReqHash := hash(append([]byte(functionName), bodyBytes...))
 
-			//*********** cache  ******************
-			if UseCache {
-				mutex.Lock()
-				response, found := Cache.Get(sReqHash)
-				mutex.Unlock()
-				if found {
-					log.Println("Mohammad founded in cache  functionName: ", functionName)
-					res, err := unserializeReq(response.([]byte), r)
-					if err != nil {
-						log.Println("Mohammad unserialize res: ", err.Error())
-						httputil.Errorf(w, http.StatusInternalServerError, "Can't unserialize res: %s.", functionName)
-						return
-					}
+			//********* check in batch caching
+			var checkInNodes string
 
-					clientHeader := w.Header()
-					copyHeaders(clientHeader, &res.Header)
-					w.Header().Set("Content-Type", getContentType(r.Header, res.Header))
-
-					w.WriteHeader(res.StatusCode)
-					io.Copy(w, res.Body)
-					return
+			if BatchChecking {
+				if FileCaching {
+					checkInNodes = string(bodyBytes)
+				} else {
+					checkInNodes = hash(append([]byte(functionName), bodyBytes...))
 				}
 			}
+
+			//*********** cache  ******************
+			// if UseCache {
+			// 	mutex.Lock()
+			// 	response, found := Cache.Get(sReqHash)
+			// 	mutex.Unlock()
+			// 	if found {
+			// 		log.Println("Mohammad founded in cache  functionName: ", functionName)
+			// 		res, err := unserializeReq(response.([]byte), r)
+			// 		if err != nil {
+			// 			log.Println("Mohammad unserialize res: ", err.Error())
+			// 			httputil.Errorf(w, http.StatusInternalServerError, "Can't unserialize res: %s.", functionName)
+			// 			return
+			// 		}
+
+			// 		clientHeader := w.Header()
+			// 		copyHeaders(clientHeader, &res.Header)
+			// 		w.Header().Set("Content-Type", getContentType(r.Header, res.Header))
+
+			// 		w.WriteHeader(res.StatusCode)
+			// 		io.Copy(w, res.Body)
+			// 		return
+			// 	}
+			// }
 
 			sReq, err := captureRequestData(r)
 			if err != nil {
@@ -147,18 +174,18 @@ func NewHandlerFunc(config types.FaaSConfig, resolver BaseURLResolver) http.Hand
 			}
 
 			//proxy.ProxyRequest(w, r, proxyClient, resolver)
-			agentRes, err := loadBalancer(functionName, exteraPath, sReq, sReqHash)
+			agentRes, err := loadBalancer(functionName, exteraPath, sReq, checkInNodes)
 			if err != nil {
 				httputil.Errorf(w, http.StatusInternalServerError, "Can't reach service for: %s.", functionName)
 				return
 			}
 
 			//log.Println("Mohammad add to cache sReqHash:", sReqHash)
-			if UseCache {
-				mutex.Lock()
-				Cache.Add(sReqHash, agentRes.Response)
-				mutex.Unlock()
-			}
+			// if UseCache {
+			// 	mutex.Lock()
+			// 	Cache.Add(sReqHash, agentRes.Response)
+			// 	mutex.Unlock()
+			// }
 
 			res, err := unserializeReq(agentRes.Response, r)
 			if err != nil {
@@ -186,25 +213,52 @@ func NewHandlerFunc(config types.FaaSConfig, resolver BaseURLResolver) http.Hand
 }
 
 func loadBalancer(RequestURI string, exteraPath string, sReq []byte, sReqHash string) (*pb.TaskResponse, error) {
-	hashRequests <- sReqHash
-	stopWaitting := false
-	for {
-		select {
-		case res := <-hashRequestsResult:
-			if res.sReqHash == sReqHash {
-				if len(res.response) > 0 {
-					return &pb.TaskResponse{Message: "OK", Response: res.response}, nil
-				}
-				stopWaitting = true
-			}
-		default:
-		}
-		if stopWaitting {
-			break
-		}
-		time.Sleep(1 * time.Millisecond)
-	}
 	var agentId uint32
+	if BatchChecking {
+		start := time.Now()
+		resChan := make(chan pb.TaskResponse, 4)
+		hashRequests <- CacheCheckingReq{sReqHash: sReqHash, resultChan: resChan}
+		stopWaitting := false
+		totalCaches := len(ageantAddresses)
+		for {
+			select {
+			case res := <-resChan:
+				totalCaches--
+				if len(res.Response) > 0 {
+					batchCacheHit++
+					if FileCaching {
+						mutexAgent.Lock()
+						agentId = uint32(res.Response[0])
+						if ageantAddresses[agentId].Loads < MaxClientLoad {
+							fmt.Printf("founded data in cache, RequestURI: %v, agentId: %v, batchCacheHit: %v \n",
+								RequestURI, agentId, batchCacheHit)
+							ageantAddresses[agentId].Loads++
+							mutexAgent.Unlock()
+							return sendToAgent(ageantAddresses[agentId].Address, RequestURI, exteraPath, sReq, agentId)
+						}
+						mutexAgent.Unlock()
+						fmt.Printf("founded data in cache, but node is overloaded RequestURI: %v, agentId: %v, batchCacheHit: %v \n",
+							RequestURI, agentId, batchCacheHit)
+					} else {
+						fmt.Printf("founded response in cache, RequestURI: %v, len(res.Response): %v, batchCacheHit: %v \n",
+							RequestURI, len(res.Response), batchCacheHit)
+						return &res, nil
+					}
+				}
+				if totalCaches == 0 {
+					stopWaitting = true
+				}
+			default:
+			}
+			if stopWaitting {
+				break
+			}
+			time.Sleep(1 * time.Millisecond)
+		}
+		seconds := time.Since(start)
+		fmt.Printf("do not find in cache, this takes: %v, batchCacheHit: %v \n", seconds.Seconds(), batchCacheHit)
+	}
+
 	if UseLoadBalancerCache {
 		mutexAgent.Lock()
 		value, found := CacheAgent.Get(RequestURI)
@@ -273,66 +327,4 @@ func sendToAgent(address string, RequestURI string, exteraPath string, sReq []by
 	mutexAgent.Unlock()
 	return r, err
 
-}
-
-func captureRequestData(req *http.Request) ([]byte, error) {
-	var b = &bytes.Buffer{} // holds serialized representation
-	//var tmp *http.Request
-	var err error
-	if err = req.Write(b); err != nil { // serialize request to HTTP/1.1 wire format
-		return nil, err
-	}
-	//var reqSerialize []byte
-
-	return b.Bytes(), nil
-	//r := bufio.NewReader(b)
-	//if tmp, err = http.ReadRequest(r); err != nil { // deserialize request
-	//	return nil,err
-	//}
-	//*req = *tmp // replace original request structure
-	//return nil
-}
-
-func unserializeReq(sReq []byte, req *http.Request) (*http.Response, error) {
-	b := bytes.NewBuffer(sReq)
-	r := bufio.NewReader(b)
-	res, err := http.ReadResponse(r, req)
-	if err != nil {
-		return nil, err
-	}
-	return res, nil
-}
-
-// copyHeaders clones the header values from the source into the destination.
-func copyHeaders(destination http.Header, source *http.Header) {
-	for k, v := range *source {
-		// vClone := make([]string, len(v))
-		// var vClone []string
-		vClone := v
-		// copy(vClone[:], v)
-
-		destination[k] = vClone
-	}
-}
-
-// getContentType resolves the correct Content-Type for a proxied function.
-func getContentType(request http.Header, proxyResponse http.Header) (headerContentType string) {
-	responseHeader := proxyResponse.Get("Content-Type")
-	requestHeader := request.Get("Content-Type")
-
-	if len(responseHeader) > 0 {
-		headerContentType = responseHeader
-	} else if len(requestHeader) > 0 {
-		headerContentType = requestHeader
-	} else {
-		headerContentType = defaultContentType
-	}
-
-	return headerContentType
-}
-
-func hash(data []byte) string {
-	h := sha1.New()
-	h.Write(data)
-	return hex.EncodeToString(h.Sum(nil))
 }
