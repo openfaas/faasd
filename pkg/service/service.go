@@ -33,7 +33,7 @@ func Remove(ctx context.Context, client *containerd.Client, name string) error {
 			if errdefs.IsNotFound(err) {
 				taskFound = false
 			} else {
-				return fmt.Errorf("unable to get task %s: ", err)
+				return fmt.Errorf("unable to get task %w: ", err)
 			}
 		}
 
@@ -47,12 +47,12 @@ func Remove(ctx context.Context, client *containerd.Client, name string) error {
 
 			log.Printf("Need to kill task: %s\n", name)
 			if err = killTask(ctx, t); err != nil {
-				return fmt.Errorf("error killing task %s, %s, %s", container.ID(), name, err)
+				return fmt.Errorf("error killing task %s, %s, %w", container.ID(), name, err)
 			}
 		}
 
 		if err := container.Delete(ctx, containerd.WithSnapshotCleanup); err != nil {
-			return fmt.Errorf("error deleting container %s, %s, %s", container.ID(), name, err)
+			return fmt.Errorf("error deleting container %s, %s, %w", container.ID(), name, err)
 		}
 
 	} else {
@@ -79,9 +79,10 @@ func killTask(ctx context.Context, task containerd.Task) error {
 		if task != nil {
 			wait, err := task.Wait(ctx)
 			if err != nil {
-				err = fmt.Errorf("error waiting on task: %s", err)
+				log.Printf("error waiting on task: %s", err)
 				return
 			}
+
 			if err := task.Kill(ctx, unix.SIGTERM, containerd.WithKillAll); err != nil {
 				log.Printf("error killing container task: %s", err)
 			}

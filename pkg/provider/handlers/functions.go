@@ -60,7 +60,7 @@ func GetFunction(client *containerd.Client, name string, namespace string) (Func
 
 	c, err := client.LoadContainer(ctx, name)
 	if err != nil {
-		return Function{}, fmt.Errorf("unable to find function: %s, error %s", name, err)
+		return Function{}, fmt.Errorf("unable to find function: %s, error %w", name, err)
 	}
 
 	image, err := c.Image(ctx)
@@ -72,19 +72,19 @@ func GetFunction(client *containerd.Client, name string, namespace string) (Func
 	allLabels, labelErr := c.Labels(ctx)
 
 	if labelErr != nil {
-		log.Printf("cannot list container %s labels: %s", containerName, labelErr.Error())
+		log.Printf("cannot list container %s labels: %w", containerName, labelErr)
 	}
 
 	labels, annotations := buildLabelsAndAnnotations(allLabels)
 
 	spec, err := c.Spec(ctx)
 	if err != nil {
-		return Function{}, fmt.Errorf("unable to load function spec for reading secrets: %s, error %s", name, err)
+		return Function{}, fmt.Errorf("unable to load function spec for reading secrets: %s, error %w", name, err)
 	}
 
 	info, err := c.Info(ctx)
 	if err != nil {
-		return Function{}, fmt.Errorf("can't load info for: %s, error %s", name, err)
+		return Function{}, fmt.Errorf("can't load info for: %s, error %w", name, err)
 	}
 
 	envVars, envProcess := readEnvFromProcessEnv(spec.Process.Env)
@@ -106,7 +106,7 @@ func GetFunction(client *containerd.Client, name string, namespace string) (Func
 		// Task for container exists
 		svc, err := task.Status(ctx)
 		if err != nil {
-			return Function{}, fmt.Errorf("unable to get task status for container: %s %s", name, err)
+			return Function{}, fmt.Errorf("unable to get task status for container: %s %w", name, err)
 		}
 
 		if svc.Status == "running" {

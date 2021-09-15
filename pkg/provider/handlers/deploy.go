@@ -126,7 +126,7 @@ func deploy(ctx context.Context, req types.FunctionDeployment, client *container
 
 	labels, err := buildLabels(&req)
 	if err != nil {
-		return fmt.Errorf("unable to apply labels to container: %s, error: %s", name, err)
+		return fmt.Errorf("unable to apply labels to container: %s, error: %w", name, err)
 	}
 
 	var memory *specs.LinuxMemory
@@ -157,7 +157,7 @@ func deploy(ctx context.Context, req types.FunctionDeployment, client *container
 	)
 
 	if err != nil {
-		return fmt.Errorf("unable to create container: %s, error: %s", name, err)
+		return fmt.Errorf("unable to create container: %s, error: %w", name, err)
 	}
 
 	return createTask(ctx, client, container, cni)
@@ -195,7 +195,7 @@ func createTask(ctx context.Context, client *containerd.Client, container contai
 	task, taskErr := container.NewTask(ctx, cio.BinaryIO("/usr/local/bin/faasd", nil))
 
 	if taskErr != nil {
-		return fmt.Errorf("unable to start task: %s, error: %s", name, taskErr)
+		return fmt.Errorf("unable to start task: %s, error: %w", name, taskErr)
 	}
 
 	log.Printf("Container ID: %s\tTask ID %s:\tTask PID: %d\t\n", name, task.ID(), task.Pid())
