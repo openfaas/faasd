@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -20,6 +21,8 @@ import (
 	"github.com/openfaas/faasd/pkg/provider/handlers"
 	"github.com/spf13/cobra"
 )
+
+const secretDirPermission = 0755
 
 func makeProviderCmd() *cobra.Command {
 	var command = &cobra.Command{
@@ -82,25 +85,25 @@ func makeProviderCmd() *cobra.Command {
 
 		invokeResolver := handlers.NewInvokeResolver(client)
 
-		userSecretPath := path.Join(wd, "secrets")
-
-		err = moveSecretsToDefaultNamespaceSecrets(userSecretPath, faasd.FunctionNamespace)
-		if err != nil {
+		baseUserSecretsPath := path.Join(wd, "secrets")
+		if err := moveSecretsToDefaultNamespaceSecrets(
+			baseUserSecretsPath,
+			faasd.FunctionNamespace); err != nil {
 			return err
 		}
 
 		bootstrapHandlers := types.FaaSHandlers{
 			FunctionProxy:        proxy.NewHandlerFunc(*config, invokeResolver),
 			DeleteHandler:        handlers.MakeDeleteHandler(client, cni),
-			DeployHandler:        handlers.MakeDeployHandler(client, cni, userSecretPath, alwaysPull),
+			DeployHandler:        handlers.MakeDeployHandler(client, cni, baseUserSecretsPath, alwaysPull),
 			FunctionReader:       handlers.MakeReadHandler(client),
 			ReplicaReader:        handlers.MakeReplicaReaderHandler(client),
 			ReplicaUpdater:       handlers.MakeReplicaUpdateHandler(client, cni),
-			UpdateHandler:        handlers.MakeUpdateHandler(client, cni, userSecretPath, alwaysPull),
+			UpdateHandler:        handlers.MakeUpdateHandler(client, cni, baseUserSecretsPath, alwaysPull),
 			HealthHandler:        func(w http.ResponseWriter, r *http.Request) {},
 			InfoHandler:          handlers.MakeInfoHandler(Version, GitCommit),
 			ListNamespaceHandler: handlers.MakeNamespacesLister(client),
-			SecretHandler:        handlers.MakeSecretHandler(client, userSecretPath),
+			SecretHandler:        handlers.MakeSecretHandler(client, baseUserSecretsPath),
 			LogHandler:           logs.NewLogHandlerFunc(faasdlogs.New(), config.ReadTimeout),
 		}
 
@@ -116,28 +119,57 @@ func makeProviderCmd() *cobra.Command {
 * Mutiple namespace support was added after release 0.13.0
 * Function will help users to migrate on multiple namespace support of faasd
  */
-func moveSecretsToDefaultNamespaceSecrets(secretPath string, namespace string) error {
-	newSecretPath := path.Join(secretPath, namespace)
+func moveSecretsToDefaultNamespaceSecrets(baseSecretPath string, defaultNamespace string) error {
+	newSecretPath := path.Join(baseSecretPath, defaultNamespace)
 
-	err := ensureWorkingDir(newSecretPath)
+	err := ensureSecretsDir(newSecretPath)
 	if err != nil {
 		return err
 	}
 
-	files, err := ioutil.ReadDir(secretPath)
+	files, err := ioutil.ReadDir(baseSecretPath)
 	if err != nil {
 		return err
 	}
 
 	for _, f := range files {
 		if !f.IsDir() {
-			oldPath := path.Join(secretPath, f.Name())
+
 			newPath := path.Join(newSecretPath, f.Name())
-			err = os.Rename(oldPath, newPath)
-			if err != nil {
-				return err
+
+			// A non-nil error means the file wasn't found in the
+			// destination path
+			if _, err := os.Stat(newPath); err != nil {
+				oldPath := path.Join(baseSecretPath, f.Name())
+
+				if err := copyFile(oldPath, newPath); err != nil {
+					return err
+				}
+
+				log.Printf("[Migration] Copied %s to %s", oldPath, newPath)
 			}
 		}
+	}
+
+	return nil
+}
+
+func copyFile(src, dst string) error {
+	inputFile, err := os.Open(src)
+	if err != nil {
+		return fmt.Errorf("opening %s failed %w", src, err)
+	}
+	defer inputFile.Close()
+
+	outputFile, err := os.OpenFile(dst, os.O_CREATE|os.O_WRONLY|os.O_APPEND, secretDirPermission)
+	if err != nil {
+		return fmt.Errorf("opening %s failed %w", dst, err)
+	}
+	defer outputFile.Close()
+
+	// Changed from os.Rename due to issue in #201
+	if _, err := io.Copy(outputFile, inputFile); err != nil {
+		return fmt.Errorf("writing into %s failed %w", outputFile.Name(), err)
 	}
 
 	return nil
