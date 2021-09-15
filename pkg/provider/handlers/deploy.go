@@ -126,7 +126,7 @@ func deploy(ctx context.Context, req types.FunctionDeployment, client *container
 
 	labels, err := buildLabels(&req)
 	if err != nil {
-		return fmt.Errorf("Unable to apply labels to container: %s, error: %s", name, err)
+		return fmt.Errorf("unable to apply labels to container: %s, error: %s", name, err)
 	}
 
 	var memory *specs.LinuxMemory
