@@ -247,23 +247,25 @@ func prepareEnv(envProcess string, reqEnvVars map[string]string) []string {
 }
 
 func getMounts() []specs.Mount {
-	wd, _ := os.LookupEnv("hosts_dir")
-	if len(wd) == 0 {
-		wd = "/var/lib/faasd"
+	// Prior to hosts_dir env-var, this value was set to
+	// os.Getwd()
+	hostsDir := "/var/lib/faasd"
+	if v, ok := os.LookupEnv("hosts_dir"); ok && len(v) > 0 {
+		hostsDir = v
 	}
 
 	mounts := []specs.Mount{}
 	mounts = append(mounts, specs.Mount{
 		Destination: "/etc/resolv.conf",
 		Type:        "bind",
-		Source:      path.Join(wd, "resolv.conf"),
+		Source:      path.Join(hostsDir, "resolv.conf"),
 		Options:     []string{"rbind", "ro"},
 	})
 
 	mounts = append(mounts, specs.Mount{
 		Destination: "/etc/hosts",
 		Type:        "bind",
-		Source:      path.Join(wd, "hosts"),
+		Source:      path.Join(hostsDir, "hosts"),
 		Options:     []string{"rbind", "ro"},
 	})
 	return mounts
