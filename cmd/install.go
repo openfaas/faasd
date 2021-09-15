@@ -109,7 +109,16 @@ func binExists(folder, name string) error {
 	}
 	return nil
 }
+func ensureSecretsDir(folder string) error {
+	if _, err := os.Stat(folder); err != nil {
+		err = os.MkdirAll(folder, secretDirPermission)
+		if err != nil {
+			return err
+		}
+	}
 
+	return nil
+}
 func ensureWorkingDir(folder string) error {
 	if _, err := os.Stat(folder); err != nil {
 		err = os.MkdirAll(folder, workingDirectoryPermission)
