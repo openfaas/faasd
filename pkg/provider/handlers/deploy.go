@@ -111,7 +111,7 @@ func deploy(ctx context.Context, req types.FunctionDeployment, client *container
 	}
 
 	envs := prepareEnv(req.EnvProcess, req.EnvVars)
-	mounts := getMounts()
+	mounts := getOSMounts()
 
 	for _, secret := range req.Secrets {
 		mounts = append(mounts, specs.Mount{
@@ -126,7 +126,7 @@ func deploy(ctx context.Context, req types.FunctionDeployment, client *container
 
 	labels, err := buildLabels(&req)
 	if err != nil {
-		return fmt.Errorf("Unable to apply labels to conatiner: %s, error: %s", name, err)
+		return fmt.Errorf("Unable to apply labels to container: %s, error: %s", name, err)
 	}
 
 	var memory *specs.LinuxMemory
@@ -247,7 +247,9 @@ func prepareEnv(envProcess string, reqEnvVars map[string]string) []string {
 	return envs
 }
 
-func getMounts() []specs.Mount {
+// getOSMounts provides a mount for os-specific files such
+// as the hosts file and resolv.conf
+func getOSMounts() []specs.Mount {
 	// Prior to hosts_dir env-var, this value was set to
 	// os.Getwd()
 	hostsDir := "/var/lib/faasd"
