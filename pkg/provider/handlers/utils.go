@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"context"
+	"github.com/containerd/containerd"
 	"net/http"
 	"path"
 
@@ -22,4 +24,26 @@ func readNamespaceFromQuery(r *http.Request) string {
 
 func getNamespaceSecretMountPath(userSecretPath string, namespace string) string {
 	return path.Join(userSecretPath, namespace)
+}
+
+func validateNamespace(client *containerd.Client, namespace string) (bool, error) {
+	if namespace == faasd.FunctionNamespace {
+		return true, nil
+	}
+
+	store := client.NamespaceService()
+	labels, err := store.Labels(context.Background(), namespace)
+	if err != nil {
+		return false, err
+	}
+
+	value, found := labels["openfaas"]
+
+	if found {
+		if value == "true" {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
