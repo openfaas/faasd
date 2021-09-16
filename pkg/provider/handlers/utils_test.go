@@ -23,7 +23,7 @@ func Test_getRequestNamespace(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			actualNamespace := getRequestNamespace(tc.requestNamespace)
 			if actualNamespace != tc.expectedNamespace {
-				t.Errorf("Got: %s, expected %s", actualNamespace, tc.expectedNamespace)
+				t.Errorf("Want: %s, got: %s", actualNamespace, tc.expectedNamespace)
 			}
 		})
 	}
@@ -44,7 +44,7 @@ func Test_getNamespaceSecretMountPath(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			actualNamespace := getNamespaceSecretMountPath(userSecretPath, tc.requestNamespace)
 			if actualNamespace != tc.expectedSecretPath {
-				t.Errorf("Got: %s, expected %s", actualNamespace, tc.expectedSecretPath)
+				t.Errorf("Want: %s, got: %s", actualNamespace, tc.expectedSecretPath)
 			}
 		})
 	}
@@ -68,7 +68,7 @@ func Test_readNamespaceFromQuery(t *testing.T) {
 
 			actualNamespace := readNamespaceFromQuery(r)
 			if actualNamespace != tc.expectedNamespace {
-				t.Errorf("Got: %s, expected %s", actualNamespace, tc.expectedNamespace)
+				t.Errorf("Want: %s, got: %s", actualNamespace, tc.expectedNamespace)
 			}
 		})
 	}

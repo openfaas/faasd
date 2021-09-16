@@ -53,7 +53,7 @@ func Test_BuildLabels_WithAnnotations(t *testing.T) {
 			}
 
 			if !reflect.DeepEqual(val, tc.result) {
-				t.Errorf("Got: %s, expected %s", val, tc.result)
+				t.Errorf("Want: %s, got: %s", val, tc.result)
 			}
 		})
 	}
