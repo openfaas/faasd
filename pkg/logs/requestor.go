@@ -71,7 +71,7 @@ func buildCmd(ctx context.Context, req logs.Request) *exec.Cmd {
 
 	namespace := req.Namespace
 	if namespace == "" {
-		namespace = faasd.FunctionNamespace
+		namespace = faasd.DefaultFunctionNamespace
 	}
 
 	// find the description of the fields here

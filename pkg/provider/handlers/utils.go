@@ -2,10 +2,12 @@ package handlers
 
 import (
 	"context"
-	"github.com/containerd/containerd"
 	"net/http"
 	"path"
 
+	"github.com/containerd/containerd"
+
+	"github.com/openfaas/faasd/pkg"
 	faasd "github.com/openfaas/faasd/pkg"
 )
 
@@ -14,7 +16,7 @@ func getRequestNamespace(namespace string) string {
 	if len(namespace) > 0 {
 		return namespace
 	}
-	return faasd.FunctionNamespace
+	return faasd.DefaultFunctionNamespace
 }
 
 func readNamespaceFromQuery(r *http.Request) string {
@@ -26,8 +28,10 @@ func getNamespaceSecretMountPath(userSecretPath string, namespace string) string
 	return path.Join(userSecretPath, namespace)
 }
 
-func validateNamespace(client *containerd.Client, namespace string) (bool, error) {
-	if namespace == faasd.FunctionNamespace {
+// validNamespace indicates whether the namespace is eligable to be
+// used for OpenFaaS functions.
+func validNamespace(client *containerd.Client, namespace string) (bool, error) {
+	if namespace == faasd.DefaultFunctionNamespace {
 		return true, nil
 	}
 
@@ -37,12 +41,8 @@ func validateNamespace(client *containerd.Client, namespace string) (bool, error
 		return false, err
 	}
 
-	value, found := labels["openfaas"]
-
-	if found {
-		if value == "true" {
-			return true, nil
-		}
+	if value, found := labels[pkg.NamespaceLabel]; found && value == "true" {
+		return true, nil
 	}
 
 	return false, nil

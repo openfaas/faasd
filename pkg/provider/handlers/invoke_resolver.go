@@ -24,7 +24,7 @@ func (i *InvokeResolver) Resolve(functionName string) (url.URL, error) {
 	actualFunctionName := functionName
 	log.Printf("Resolve: %q\n", actualFunctionName)
 
-	namespace := getNamespace(functionName, faasd.FunctionNamespace)
+	namespace := getNamespace(functionName, faasd.DefaultFunctionNamespace)
 
 	if strings.Contains(functionName, ".") {
 		actualFunctionName = strings.TrimSuffix(functionName, "."+namespace)

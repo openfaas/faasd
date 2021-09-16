@@ -88,7 +88,7 @@ func makeProviderCmd() *cobra.Command {
 		baseUserSecretsPath := path.Join(wd, "secrets")
 		if err := moveSecretsToDefaultNamespaceSecrets(
 			baseUserSecretsPath,
-			faasd.FunctionNamespace); err != nil {
+			faasd.DefaultFunctionNamespace); err != nil {
 			return err
 		}
 

@@ -12,6 +12,7 @@ import (
 
 	"github.com/containerd/containerd"
 	"github.com/containerd/containerd/namespaces"
+	"github.com/openfaas/faasd/pkg"
 	faasd "github.com/openfaas/faasd/pkg"
 	"github.com/openfaas/faasd/pkg/cninetwork"
 )
@@ -35,12 +36,12 @@ type Function struct {
 func ListFunctions(client *containerd.Client, namespace string) (map[string]*Function, error) {
 
 	// Check if namespace exists, and it has the openfaas label
-	nsValid, err := validateNamespace(client, namespace)
+	valid, err := validNamespace(client, namespace)
 	if err != nil {
 		return nil, err
 	}
 
-	if !nsValid {
+	if !valid {
 		return nil, errors.New("namespace not valid")
 	}
 
@@ -199,7 +200,7 @@ func ListNamespaces(client *containerd.Client) []string {
 	namespaces, err := store.List(context.Background())
 	if err != nil {
 		log.Printf("Error listing namespaces: %s", err.Error())
-		set = append(set, faasd.FunctionNamespace)
+		set = append(set, faasd.DefaultFunctionNamespace)
 		return set
 	}
 
@@ -210,12 +211,12 @@ func ListNamespaces(client *containerd.Client) []string {
 			continue
 		}
 
-		if _, found := labels["openfaas"]; found {
+		if _, found := labels[pkg.NamespaceLabel]; found {
 			set = append(set, namespace)
 		}
 
-		if !findNamespace(faasd.FunctionNamespace, set) {
-			set = append(set, faasd.FunctionNamespace)
+		if !findNamespace(faasd.DefaultFunctionNamespace, set) {
+			set = append(set, faasd.DefaultFunctionNamespace)
 		}
 	}
 
