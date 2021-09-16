@@ -16,6 +16,18 @@ func MakeReplicaReaderHandler(client *containerd.Client) func(w http.ResponseWri
 		functionName := vars["name"]
 		lookupNamespace := getRequestNamespace(readNamespaceFromQuery(r))
 
+		// Check if namespace exists, and it has the openfaas label
+		nsValid, err := validateNamespace(client, lookupNamespace)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		if !nsValid {
+			http.Error(w, "namespace not valid", http.StatusBadRequest)
+			return
+		}
+
 		if f, err := GetFunction(client, functionName, lookupNamespace); err == nil {
 			found := types.FunctionStatus{
 				Name:              functionName,

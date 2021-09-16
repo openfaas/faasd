@@ -49,6 +49,18 @@ func MakeSecretHandler(c *containerd.Client, mountPath string) func(w http.Respo
 func listSecrets(c *containerd.Client, w http.ResponseWriter, r *http.Request, mountPath string) {
 
 	lookupNamespace := getRequestNamespace(readNamespaceFromQuery(r))
+	// Check if namespace exists, and it has the openfaas label
+	nsValid, err := validateNamespace(c, lookupNamespace)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if !nsValid {
+		http.Error(w, "namespace not valid", http.StatusBadRequest)
+		return
+	}
+
 	mountPath = getNamespaceSecretMountPath(mountPath, lookupNamespace)
 
 	files, err := ioutil.ReadDir(mountPath)

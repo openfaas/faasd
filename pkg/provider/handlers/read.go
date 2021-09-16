@@ -14,6 +14,17 @@ func MakeReadHandler(client *containerd.Client) func(w http.ResponseWriter, r *h
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		lookupNamespace := getRequestNamespace(readNamespaceFromQuery(r))
+		// Check if namespace exists, and it has the openfaas label
+		nsValid, err := validateNamespace(client, lookupNamespace)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		if !nsValid {
+			http.Error(w, "namespace not valid", http.StatusBadRequest)
+			return
+		}
 
 		res := []types.FunctionStatus{}
 		fns, err := ListFunctions(client, lookupNamespace)

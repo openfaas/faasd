@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -32,6 +33,17 @@ type Function struct {
 
 // ListFunctions returns a map of all functions with running tasks on namespace
 func ListFunctions(client *containerd.Client, namespace string) (map[string]*Function, error) {
+
+	// Check if namespace exists, and it has the openfaas label
+	nsValid, err := validateNamespace(client, namespace)
+	if err != nil {
+		return nil, err
+	}
+
+	if !nsValid {
+		return nil, errors.New("namespace not valid")
+	}
+
 	ctx := namespaces.WithNamespace(context.Background(), namespace)
 	functions := make(map[string]*Function)
 
