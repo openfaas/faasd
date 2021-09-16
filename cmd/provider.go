@@ -32,6 +32,8 @@ func makeProviderCmd() *cobra.Command {
 
 	command.Flags().String("pull-policy", "Always", `Set to "Always" to force a pull of images upon deployment, or "IfNotPresent" to try to use a cached image.`)
 
+	// command.Flags().Bool("--insecure-registry", false, `Set to true to allow to pull images from a non HTTPS image registry.`)
+
 	command.RunE = func(_ *cobra.Command, _ []string) error {
 
 		pullPolicy, flagErr := command.Flags().GetString("pull-policy")

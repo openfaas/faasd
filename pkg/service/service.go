@@ -2,8 +2,10 @@ package service
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"sync"
@@ -121,9 +123,24 @@ func getResolver(ctx context.Context, configFile *configfile.ConfigFile) (remote
 	}
 
 	authOpts := []docker.AuthorizerOpt{docker.WithAuthCreds(credFunc)}
+
+	// Append insecure client if enabled
+	if true {
+		authOpts = append(authOpts, docker.WithAuthClient(newInsecureClient()))
+	}
+
 	authorizer := docker.NewDockerAuthorizer(authOpts...)
+
+	var h docker.RegistryHosts
+	// Append plainHttp Opt if enabled
+	if true {
+		h = docker.ConfigureDefaultRegistries(docker.WithAuthorizer(authorizer), docker.WithPlainHTTP(docker.MatchAllHosts))
+	} else {
+		h = docker.ConfigureDefaultRegistries(docker.WithAuthorizer(authorizer))
+	}
+
 	opts := docker.ResolverOptions{
-		Hosts: docker.ConfigureDefaultRegistries(docker.WithAuthorizer(authorizer)),
+		Hosts: h,
 	}
 	return docker.NewResolver(opts), nil
 }
@@ -203,4 +220,15 @@ func pullImage(ctx context.Context, client *containerd.Client, resolver remotes.
 	}
 
 	return img, nil
+}
+
+func newInsecureClient() *http.Client {
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+	}
+	return &http.Client{
+		Transport: tr,
+	}
 }
