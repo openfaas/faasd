@@ -29,6 +29,7 @@ type Function struct {
 	secrets     []string
 	envVars     map[string]string
 	envProcess  string
+	memoryLimit int64
 	createdAt   time.Time
 }
 
@@ -112,6 +113,7 @@ func GetFunction(client *containerd.Client, name string, namespace string) (Func
 	fn.envVars = envVars
 	fn.envProcess = envProcess
 	fn.createdAt = info.CreatedAt
+	fn.memoryLimit = *spec.Linux.Resources.Memory.Limit
 
 	replicas := 0
 	task, err := c.Task(ctx, nil)
