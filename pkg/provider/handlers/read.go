@@ -38,7 +38,7 @@ func MakeReadHandler(client *containerd.Client) func(w http.ResponseWriter, r *h
 		for _, fn := range fns {
 			annotations := &fn.annotations
 			labels := &fn.labels
-			memory := resource.NewQuantity(fn.memoryLimit, resource.BinarySI)
+			memory := resource.NewQuantity(fn.memoryLimit, resource.DecimalSI)
 			res = append(res, types.FunctionStatus{
 				Name:        fn.name,
 				Image:       fn.image,
@@ -49,7 +49,7 @@ func MakeReadHandler(client *containerd.Client) func(w http.ResponseWriter, r *h
 				Secrets:     fn.secrets,
 				EnvVars:     fn.envVars,
 				EnvProcess:  fn.envProcess,
-				Limits:      &types.FunctionResources{Memory: memory.String()},
+				Limits:      &types.FunctionResources{Memory: memory.ToDec().String()},
 				CreatedAt:   fn.createdAt,
 			})
 		}
