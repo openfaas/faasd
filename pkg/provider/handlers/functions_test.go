@@ -107,3 +107,27 @@ func Test_findNamespace(t *testing.T) {
 		})
 	}
 }
+
+func Test_readMemoryLimitFromSpec(t *testing.T) {
+	type test struct {
+		Name     string
+		Spec     *specs.Spec
+		Expected int64
+	}
+	testLimit := int64(64)
+	tests := []test{
+		{Name: "specs.Linux not found", Spec: &specs.Spec{Linux: nil}, Expected: int64(0)},
+		{Name: "specs.LinuxResource not found", Spec: &specs.Spec{Linux: &specs.Linux{Resources: nil}}, Expected: int64(0)},
+		{Name: "specs.LinuxMemory not found", Spec: &specs.Spec{Linux: &specs.Linux{Resources: &specs.LinuxResources{Memory: nil}}}, Expected: int64(0)},
+		{Name: "specs.LinuxMemory.Limit not found", Spec: &specs.Spec{Linux: &specs.Linux{Resources: &specs.LinuxResources{Memory: &specs.LinuxMemory{Limit: nil}}}}, Expected: int64(0)},
+		{Name: "Memory limit set as expected", Spec: &specs.Spec{Linux: &specs.Linux{Resources: &specs.LinuxResources{Memory: &specs.LinuxMemory{Limit: &testLimit}}}}, Expected: int64(64)},
+	}
+	for _, tc := range tests {
+		t.Run(tc.Name, func(t *testing.T) {
+			got := readMemoryLimitFromSpec(tc.Spec)
+			if got != tc.Expected {
+				t.Fatalf("expected %d, got %d", tc.Expected, got)
+			}
+		})
+	}
+}
