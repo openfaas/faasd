@@ -93,7 +93,7 @@ func GetFunction(client *containerd.Client, name string, namespace string) (Func
 
 	spec, err := c.Spec(ctx)
 	if err != nil {
-		return Function{}, fmt.Errorf("unable to load function spec for reading secrets and limits: %s, error %w", name, err)
+		return Function{}, fmt.Errorf("unable to load function %s error: %w", name, err)
 	}
 
 	info, err := c.Info(ctx)
@@ -235,16 +235,7 @@ func findNamespace(target string, items []string) bool {
 }
 
 func readMemoryLimitFromSpec(spec *specs.Spec) int64 {
-	if spec.Linux != nil {
-		return 0
-	}
-	if spec.Linux.Resources == nil {
-		return 0
-	}
-	if spec.Linux.Resources.Memory == nil {
-		return 0
-	}
-	if spec.Linux.Resources.Memory.Limit == nil {
+	if spec.Linux == nil || spec.Linux.Resources == nil || spec.Linux.Resources.Memory == nil || spec.Linux.Resources.Memory.Limit == nil {
 		return 0
 	}
 	return *spec.Linux.Resources.Memory.Limit
