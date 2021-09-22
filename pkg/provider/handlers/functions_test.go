@@ -32,54 +32,54 @@ func Test_BuildLabelsAndAnnotationsFromServiceSpec_Annotations(t *testing.T) {
 }
 
 func Test_SplitMountToSecrets(t *testing.T) {
-	type test struct {
-		Name     string
-		Input    []specs.Mount
-		Expected []string
+	type testCase struct {
+		Name  string
+		Input []specs.Mount
+		Want  []string
 	}
-	tests := []test{
-		{Name: "No matching openfaas secrets", Input: []specs.Mount{{Destination: "/foo/"}}, Expected: []string{}},
-		{Name: "Nil mounts", Input: nil, Expected: []string{}},
-		{Name: "No Mounts", Input: []specs.Mount{{Destination: "/foo/"}}, Expected: []string{}},
-		{Name: "One Mounts IS secret", Input: []specs.Mount{{Destination: "/var/openfaas/secrets/secret1"}}, Expected: []string{"secret1"}},
-		{Name: "Multiple Mounts 1 secret", Input: []specs.Mount{{Destination: "/var/openfaas/secrets/secret1"}, {Destination: "/some/other/path"}}, Expected: []string{"secret1"}},
-		{Name: "Multiple Mounts all secrets", Input: []specs.Mount{{Destination: "/var/openfaas/secrets/secret1"}, {Destination: "/var/openfaas/secrets/secret2"}}, Expected: []string{"secret1", "secret2"}},
+	tests := []testCase{
+		{Name: "No matching openfaas secrets", Input: []specs.Mount{{Destination: "/foo/"}}, Want: []string{}},
+		{Name: "Nil mounts", Input: nil, Want: []string{}},
+		{Name: "No Mounts", Input: []specs.Mount{{Destination: "/foo/"}}, Want: []string{}},
+		{Name: "One Mounts IS secret", Input: []specs.Mount{{Destination: "/var/openfaas/secrets/secret1"}}, Want: []string{"secret1"}},
+		{Name: "Multiple Mounts 1 secret", Input: []specs.Mount{{Destination: "/var/openfaas/secrets/secret1"}, {Destination: "/some/other/path"}}, Want: []string{"secret1"}},
+		{Name: "Multiple Mounts all secrets", Input: []specs.Mount{{Destination: "/var/openfaas/secrets/secret1"}, {Destination: "/var/openfaas/secrets/secret2"}}, Want: []string{"secret1", "secret2"}},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.Name, func(t *testing.T) {
 			got := readSecretsFromMounts(tc.Input)
-			if !reflect.DeepEqual(got, tc.Expected) {
-				t.Fatalf("expected %s, got %s", tc.Expected, got)
+			if !reflect.DeepEqual(got, tc.Want) {
+				t.Fatalf("Want %s, got %s", tc.Want, got)
 			}
 		})
 	}
 }
 
 func Test_ProcessEnvToEnvVars(t *testing.T) {
-	type test struct {
+	type testCase struct {
 		Name     string
 		Input    []string
-		Expected map[string]string
+		Want     map[string]string
 		fprocess string
 	}
-	tests := []test{
-		{Name: "No matching EnvVars", Input: []string{"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", "fprocess=python index.py"}, Expected: make(map[string]string), fprocess: "python index.py"},
-		{Name: "No EnvVars", Input: []string{}, Expected: make(map[string]string), fprocess: ""},
-		{Name: "One EnvVar", Input: []string{"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", "fprocess=python index.py", "env=this"}, Expected: map[string]string{"env": "this"}, fprocess: "python index.py"},
-		{Name: "Multiple EnvVars", Input: []string{"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", "this=that", "env=var", "fprocess=python index.py"}, Expected: map[string]string{"this": "that", "env": "var"}, fprocess: "python index.py"},
-		{Name: "Nil EnvVars", Input: nil, Expected: make(map[string]string)},
+	tests := []testCase{
+		{Name: "No matching EnvVars", Input: []string{"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", "fprocess=python index.py"}, Want: make(map[string]string), fprocess: "python index.py"},
+		{Name: "No EnvVars", Input: []string{}, Want: make(map[string]string), fprocess: ""},
+		{Name: "One EnvVar", Input: []string{"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", "fprocess=python index.py", "env=this"}, Want: map[string]string{"env": "this"}, fprocess: "python index.py"},
+		{Name: "Multiple EnvVars", Input: []string{"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", "this=that", "env=var", "fprocess=python index.py"}, Want: map[string]string{"this": "that", "env": "var"}, fprocess: "python index.py"},
+		{Name: "Nil EnvVars", Input: nil, Want: make(map[string]string)},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.Name, func(t *testing.T) {
 			got, fprocess := readEnvFromProcessEnv(tc.Input)
-			if !reflect.DeepEqual(got, tc.Expected) {
-				t.Fatalf("expected: %s, got: %s", tc.Expected, got)
+			if !reflect.DeepEqual(got, tc.Want) {
+				t.Fatalf("Want: %s, got: %s", tc.Want, got)
 			}
 
 			if fprocess != tc.fprocess {
-				t.Fatalf("expected fprocess: %s, got: %s", tc.fprocess, got)
+				t.Fatalf("Want fprocess: %s, got: %s", tc.fprocess, got)
 
 			}
 		})
@@ -87,46 +87,46 @@ func Test_ProcessEnvToEnvVars(t *testing.T) {
 }
 
 func Test_findNamespace(t *testing.T) {
-	type test struct {
+	type testCase struct {
 		Name            string
 		foundNamespaces []string
 		namespace       string
-		Expected        bool
+		Want            bool
 	}
-	tests := []test{
-		{Name: "Namespace Found", namespace: "fn", foundNamespaces: []string{"fn", "openfaas-fn"}, Expected: true},
-		{Name: "namespace Not Found", namespace: "fn", foundNamespaces: []string{"openfaas-fn"}, Expected: false},
+	tests := []testCase{
+		{Name: "Namespace Found", namespace: "fn", foundNamespaces: []string{"fn", "openfaas-fn"}, Want: true},
+		{Name: "namespace Not Found", namespace: "fn", foundNamespaces: []string{"openfaas-fn"}, Want: false},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.Name, func(t *testing.T) {
 			got := findNamespace(tc.namespace, tc.foundNamespaces)
-			if got != tc.Expected {
-				t.Fatalf("expected %t, got %t", tc.Expected, got)
+			if got != tc.Want {
+				t.Fatalf("Want %t, got %t", tc.Want, got)
 			}
 		})
 	}
 }
 
 func Test_readMemoryLimitFromSpec(t *testing.T) {
-	type test struct {
-		Name     string
-		Spec     *specs.Spec
-		Expected int64
+	type testCase struct {
+		Name string
+		Spec *specs.Spec
+		Want int64
 	}
 	testLimit := int64(64)
-	tests := []test{
-		{Name: "specs.Linux not found", Spec: &specs.Spec{Linux: nil}, Expected: int64(0)},
-		{Name: "specs.LinuxResource not found", Spec: &specs.Spec{Linux: &specs.Linux{Resources: nil}}, Expected: int64(0)},
-		{Name: "specs.LinuxMemory not found", Spec: &specs.Spec{Linux: &specs.Linux{Resources: &specs.LinuxResources{Memory: nil}}}, Expected: int64(0)},
-		{Name: "specs.LinuxMemory.Limit not found", Spec: &specs.Spec{Linux: &specs.Linux{Resources: &specs.LinuxResources{Memory: &specs.LinuxMemory{Limit: nil}}}}, Expected: int64(0)},
-		{Name: "Memory limit set as expected", Spec: &specs.Spec{Linux: &specs.Linux{Resources: &specs.LinuxResources{Memory: &specs.LinuxMemory{Limit: &testLimit}}}}, Expected: int64(64)},
+	tests := []testCase{
+		{Name: "specs.Linux not found", Spec: &specs.Spec{Linux: nil}, Want: int64(0)},
+		{Name: "specs.LinuxResource not found", Spec: &specs.Spec{Linux: &specs.Linux{Resources: nil}}, Want: int64(0)},
+		{Name: "specs.LinuxMemory not found", Spec: &specs.Spec{Linux: &specs.Linux{Resources: &specs.LinuxResources{Memory: nil}}}, Want: int64(0)},
+		{Name: "specs.LinuxMemory.Limit not found", Spec: &specs.Spec{Linux: &specs.Linux{Resources: &specs.LinuxResources{Memory: &specs.LinuxMemory{Limit: nil}}}}, Want: int64(0)},
+		{Name: "Memory limit set as Want", Spec: &specs.Spec{Linux: &specs.Linux{Resources: &specs.LinuxResources{Memory: &specs.LinuxMemory{Limit: &testLimit}}}}, Want: int64(64)},
 	}
 	for _, tc := range tests {
 		t.Run(tc.Name, func(t *testing.T) {
 			got := readMemoryLimitFromSpec(tc.Spec)
-			if got != tc.Expected {
-				t.Fatalf("expected %d, got %d", tc.Expected, got)
+			if got != tc.Want {
+				t.Fatalf("Want %d, got %d", tc.Want, got)
 			}
 		})
 	}
