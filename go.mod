@@ -13,18 +13,26 @@ require (
 	github.com/docker/distribution v2.7.1+incompatible
 	github.com/docker/docker v17.12.0-ce-rc1.0.20191113042239-ea84732a7725+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.6.3 // indirect
+	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e
+	github.com/golang/protobuf v1.5.2
 	github.com/gorilla/mux v1.8.0
 	github.com/morikuni/aec v1.0.0
 	github.com/opencontainers/runtime-spec v1.0.3-0.20200929063507-e6143ca7d51d
 	github.com/openfaas/faas-provider v0.18.6
 	github.com/openfaas/faas/gateway v0.0.0-20210726163109-539f0a2c946e
+	github.com/opentracing/opentracing-go v1.1.0
 	github.com/pkg/errors v0.9.1
 	github.com/sethvargo/go-password v0.2.0
 	github.com/spf13/cobra v1.2.1
 	github.com/spf13/pflag v1.0.5
+	github.com/uber/jaeger-client-go v2.29.1+incompatible
+	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
 	github.com/vishvananda/netlink v1.1.1-0.20201029203352-d40f9887b852
 	github.com/vishvananda/netns v0.0.0-20200728191858-db3c7e526aae
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
+	github.com/yurishkuro/opentracing-tutorial v0.0.0-20210818182759-66f6cf96eb47
 	golang.org/x/sys v0.0.0-20210615035016-665e8c7367d1
+	google.golang.org/grpc v1.38.0
+	google.golang.org/protobuf v1.26.0
 	k8s.io/apimachinery v0.21.3
 )

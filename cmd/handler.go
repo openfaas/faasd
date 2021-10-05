@@ -18,7 +18,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/openfaas/faas-provider/httputil"
 	"github.com/openfaas/faas-provider/types"
-	"github.com/openfaas/faasd/pkg/tracer"
 	pb "github.com/openfaas/faasd/proto/agent"
 	"google.golang.org/grpc"
 )
@@ -31,10 +30,10 @@ const (
 	//address     = "localhost:50051"
 	//defaultName = "world"
 	defaultContentType    = "text/plain"
-	MaxCacheItem          = 2
+	MaxCacheItem          = 4
 	MaxAgentFunctionCache = 5
 	MaxClientLoad         = 6
-	UseCache              = false
+	UseCache              = true
 	UseLoadBalancerCache  = false
 	batchTime             = 50
 	FileCaching           = false
@@ -62,6 +61,7 @@ var CacheAgent *lru.Cache
 var mutex sync.Mutex
 var mutexAgent sync.Mutex
 var cacheHit uint
+var resultCacheHit uint
 var batchCacheHit uint
 var cacheMiss uint
 var loadMiss uint64
@@ -73,15 +73,11 @@ func initHandler() {
 	log.Printf("UseLoadBalancerCache: %v, FileCaching: %v, BatchChecking: %v, batchTime: %v",
 		UseLoadBalancerCache, FileCaching, BatchChecking, batchTime)
 
-	tracer.IniTracer("STREAM_SERVICE")
-	cl := (*tracer.GetTracer().Closer)
-	if cl != nil {
-		defer cl.Close()
-	}
 	cacheHit = 0
 	cacheMiss = 0
 	loadMiss = 0
 	batchCacheHit = 0
+	resultCacheHit = 0
 
 	Cache = lru.New(MaxCacheItem)
 	CacheAgent = lru.New(MaxAgentFunctionCache)
@@ -116,6 +112,11 @@ func NewHandlerFunc(config types.FaaSConfig, resolver BaseURLResolver) http.Hand
 			http.MethodDelete,
 			http.MethodGet:
 
+			// span := (*tracer.GetTracer().Tracer).StartSpan("Handle_Function")
+			// span.SetTag("event", "Handle_Function")
+			// defer span.Finish()
+			// span.LogKV("event", "println")
+
 			pathVars := mux.Vars(r)
 			functionName := pathVars["name"]
 			if functionName == "" {
@@ -144,28 +145,31 @@ func NewHandlerFunc(config types.FaaSConfig, resolver BaseURLResolver) http.Hand
 			}
 
 			//*********** cache  ******************
-			// if UseCache {
-			// 	mutex.Lock()
-			// 	response, found := Cache.Get(sReqHash)
-			// 	mutex.Unlock()
-			// 	if found {
-			// 		log.Println("Mohammad founded in cache  functionName: ", functionName)
-			// 		res, err := unserializeReq(response.([]byte), r)
-			// 		if err != nil {
-			// 			log.Println("Mohammad unserialize res: ", err.Error())
-			// 			httputil.Errorf(w, http.StatusInternalServerError, "Can't unserialize res: %s.", functionName)
-			// 			return
-			// 		}
+			if UseCache {
+				checkInNodes = hash(append([]byte(functionName), bodyBytes...))
+				mutex.Lock()
+				response, found := Cache.Get(checkInNodes)
+				mutex.Unlock()
+				if found {
+					resultCacheHit++
+					log.Printf("Mohammad founded in cache  functionName: %v, resultCacheHit: %v \n",
+						functionName, resultCacheHit)
+					res, err := unserializeReq(response.([]byte), r)
+					if err != nil {
+						log.Println("Mohammad unserialize res: ", err.Error())
+						httputil.Errorf(w, http.StatusInternalServerError, "Can't unserialize res: %s.", functionName)
+						return
+					}
 
-			// 		clientHeader := w.Header()
-			// 		copyHeaders(clientHeader, &res.Header)
-			// 		w.Header().Set("Content-Type", getContentType(r.Header, res.Header))
+					clientHeader := w.Header()
+					copyHeaders(clientHeader, &res.Header)
+					w.Header().Set("Content-Type", getContentType(r.Header, res.Header))
 
-			// 		w.WriteHeader(res.StatusCode)
-			// 		io.Copy(w, res.Body)
-			// 		return
-			// 	}
-			// }
+					w.WriteHeader(res.StatusCode)
+					io.Copy(w, res.Body)
+					return
+				}
+			}
 
 			sReq, err := captureRequestData(r)
 			if err != nil {
@@ -174,18 +178,19 @@ func NewHandlerFunc(config types.FaaSConfig, resolver BaseURLResolver) http.Hand
 			}
 
 			//proxy.ProxyRequest(w, r, proxyClient, resolver)
-			agentRes, err := loadBalancer(functionName, exteraPath, sReq, checkInNodes)
+			// mctx := opentracing.ContextWithSpan(context.Background(), span)
+			agentRes, err := loadBalancer(functionName, exteraPath, sReq, checkInNodes, nil)
 			if err != nil {
 				httputil.Errorf(w, http.StatusInternalServerError, "Can't reach service for: %s.", functionName)
 				return
 			}
 
 			//log.Println("Mohammad add to cache sReqHash:", sReqHash)
-			// if UseCache {
-			// 	mutex.Lock()
-			// 	Cache.Add(sReqHash, agentRes.Response)
-			// 	mutex.Unlock()
-			// }
+			if UseCache {
+				mutex.Lock()
+				Cache.Add(checkInNodes, agentRes.Response)
+				mutex.Unlock()
+			}
 
 			res, err := unserializeReq(agentRes.Response, r)
 			if err != nil {
@@ -200,7 +205,7 @@ func NewHandlerFunc(config types.FaaSConfig, resolver BaseURLResolver) http.Hand
 
 			w.WriteHeader(res.StatusCode)
 			io.Copy(w, res.Body)
-
+			// span.LogKV("outputs", "test")
 			//w.WriteHeader(http.StatusOK)
 			//_, _ =w.Write(agentRes.Response)
 			//io.Copy(w, r.Response)
@@ -212,7 +217,7 @@ func NewHandlerFunc(config types.FaaSConfig, resolver BaseURLResolver) http.Hand
 	//return proxy.NewHandlerFunc(config, resolver)
 }
 
-func loadBalancer(RequestURI string, exteraPath string, sReq []byte, sReqHash string) (*pb.TaskResponse, error) {
+func loadBalancer(RequestURI string, exteraPath string, sReq []byte, sReqHash string, mctx context.Context) (*pb.TaskResponse, error) {
 	var agentId uint32
 	if BatchChecking {
 		start := time.Now()
@@ -234,7 +239,7 @@ func loadBalancer(RequestURI string, exteraPath string, sReq []byte, sReqHash st
 								RequestURI, agentId, batchCacheHit)
 							ageantAddresses[agentId].Loads++
 							mutexAgent.Unlock()
-							return sendToAgent(ageantAddresses[agentId].Address, RequestURI, exteraPath, sReq, agentId)
+							return sendToAgent(ageantAddresses[agentId].Address, RequestURI, exteraPath, sReq, agentId, mctx)
 						}
 						mutexAgent.Unlock()
 						fmt.Printf("founded data in cache, but node is overloaded RequestURI: %v, agentId: %v, batchCacheHit: %v \n",
@@ -260,6 +265,8 @@ func loadBalancer(RequestURI string, exteraPath string, sReq []byte, sReqHash st
 	}
 
 	if UseLoadBalancerCache {
+		// _, _ = opentracing.StartSpanFromContext(mctx, "Cache Schedule")
+		t1 := time.Now()
 		mutexAgent.Lock()
 		value, found := CacheAgent.Get(RequestURI)
 		mutexAgent.Unlock()
@@ -270,11 +277,15 @@ func loadBalancer(RequestURI string, exteraPath string, sReq []byte, sReqHash st
 				ageantAddresses[agentId].Loads++
 				cacheHit++
 				mutexAgent.Unlock()
-				log.Printf("sendToAgent due to Cache cacheHit: %v, address: %v,  RequestURI :%s", cacheHit, ageantAddresses[agentId].Address, RequestURI)
-				return sendToAgent(ageantAddresses[agentId].Address, RequestURI, exteraPath, sReq, agentId)
+				duration := time.Since(t1)
+				log.Printf("sendToAgent due to Cache cacheHit: %v, address: %v,  RequestURI :%s, duration: %v  \n",
+					cacheHit, ageantAddresses[agentId].Address, RequestURI, duration.Microseconds())
+				return sendToAgent(ageantAddresses[agentId].Address, RequestURI, exteraPath, sReq, agentId, nil)
 			}
 			atomic.AddUint64(&loadMiss, 1)
 		}
+		duration := time.Since(t1)
+		log.Printf("duration: %v \n", duration.Microseconds())
 	}
 
 	mutexAgent.Lock()
@@ -291,13 +302,13 @@ func loadBalancer(RequestURI string, exteraPath string, sReq []byte, sReqHash st
 	ageantAddresses[agentId].Loads++
 	log.Printf("sendToAgent loadMiss: %v, cacheMiss: %v, address: %v,  RequestURI :%s", loadMiss, cacheMiss, ageantAddresses[agentId].Address, RequestURI)
 	mutexAgent.Unlock()
-	return sendToAgent(ageantAddresses[agentId].Address, RequestURI, exteraPath, sReq, agentId)
+	return sendToAgent(ageantAddresses[agentId].Address, RequestURI, exteraPath, sReq, agentId, nil)
 
 }
 
-func sendToAgent(address string, RequestURI string, exteraPath string, sReq []byte, agentId uint32) (*pb.TaskResponse, error) {
+func sendToAgent(address string, RequestURI string, exteraPath string, sReq []byte, agentId uint32, mctx context.Context) (*pb.TaskResponse, error) {
 	// log.Printf("sendToAgent address: %v,  RequestURI :%s", address, RequestURI)
-
+	// _, _ = opentracing.StartSpanFromContext(mctx, "SendToNode")
 	conn, err := grpc.Dial(address, grpc.WithInsecure())
 	if err != nil {
 		log.Printf("did not connect: %v", err)

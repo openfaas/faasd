@@ -17,6 +17,12 @@ var (
 
 func main() {
 
+	// tracer.IniTracer("Faasd")
+	// cl := (*tracer.GetTracer().Closer)
+	// if cl != nil {
+	// 	defer cl.Close()
+	// }
+
 	if _, ok := os.LookupEnv("CONTAINER_ID"); ok {
 		collect := cmd.RootCommand()
 		collect.SetArgs([]string{"collect"})
@@ -34,5 +40,6 @@ func main() {
 	if err := cmd.Execute(Version, GitCommit); err != nil {
 		os.Exit(1)
 	}
-	return
+
+	fmt.Println("End")
 }

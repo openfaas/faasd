@@ -3,6 +3,7 @@ package tracer
 import (
 	_ "context"
 	"io"
+	"log"
 	_ "os"
 	"sync"
 
@@ -47,7 +48,7 @@ func IniTracer(service string) {
 					Param: 1,
 				},
 				Reporter: &config.ReporterConfig{
-					LogSpans: false,
+					LogSpans: true,
 				},
 			}
 			tracer, closer, err := cfg.NewTracer(config.Logger(jaeger.StdLogger))
@@ -57,6 +58,7 @@ func IniTracer(service string) {
 			tr.Tracer = &tracer
 			tr.Closer = &closer
 			opentracing.SetGlobalTracer(tracer)
+			log.Println("Init Tracer")
 		}
 	}
 }
