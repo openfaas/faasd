@@ -29,7 +29,7 @@ import (
 const annotationLabelPrefix = "com.openfaas.annotations."
 
 // MakeDeployHandler returns a handler to deploy a function
-func MakeDeployHandler(client *containerd.Client, cni gocni.CNI, secretMountPath string, alwaysPull bool) func(w http.ResponseWriter, r *http.Request) {
+func MakeDeployHandler(client *containerd.Client, cni gocni.CNI, secretMountPath string, alwaysPull bool, useInsecureRegistry bool) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		if r.Body == nil {
@@ -76,7 +76,7 @@ func MakeDeployHandler(client *containerd.Client, cni gocni.CNI, secretMountPath
 		name := req.Service
 		ctx := namespaces.WithNamespace(context.Background(), namespace)
 
-		deployErr := deploy(ctx, req, client, cni, namespaceSecretMountPath, alwaysPull)
+		deployErr := deploy(ctx, req, client, cni, namespaceSecretMountPath, alwaysPull, useInsecureRegistry)
 		if deployErr != nil {
 			log.Printf("[Deploy] error deploying %s, error: %s\n", name, deployErr)
 			http.Error(w, deployErr.Error(), http.StatusBadRequest)
@@ -88,7 +88,7 @@ func MakeDeployHandler(client *containerd.Client, cni gocni.CNI, secretMountPath
 // prepull is an optimization which means an image can be pulled before a deployment
 // request, since a deployment request first deletes the active function before
 // trying to deploy a new one.
-func prepull(ctx context.Context, req types.FunctionDeployment, client *containerd.Client, alwaysPull bool) (containerd.Image, error) {
+func prepull(ctx context.Context, req types.FunctionDeployment, client *containerd.Client, alwaysPull bool, useInsecureRegistry bool) (containerd.Image, error) {
 	start := time.Now()
 	r, err := reference.ParseNormalizedNamed(req.Image)
 	if err != nil {
@@ -102,7 +102,7 @@ func prepull(ctx context.Context, req types.FunctionDeployment, client *containe
 		snapshotter = val
 	}
 
-	image, err := service.PrepareImage(ctx, client, imgRef, snapshotter, alwaysPull)
+	image, err := service.PrepareImage(ctx, client, imgRef, snapshotter, alwaysPull, useInsecureRegistry)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to pull image %s", imgRef)
 	}
@@ -113,14 +113,14 @@ func prepull(ctx context.Context, req types.FunctionDeployment, client *containe
 	return image, nil
 }
 
-func deploy(ctx context.Context, req types.FunctionDeployment, client *containerd.Client, cni gocni.CNI, secretMountPath string, alwaysPull bool) error {
+func deploy(ctx context.Context, req types.FunctionDeployment, client *containerd.Client, cni gocni.CNI, secretMountPath string, alwaysPull bool, useInsecureRegistry bool) error {
 
 	snapshotter := ""
 	if val, ok := os.LookupEnv("snapshotter"); ok {
 		snapshotter = val
 	}
 
-	image, err := prepull(ctx, req, client, alwaysPull)
+	image, err := prepull(ctx, req, client, alwaysPull, useInsecureRegistry)
 	if err != nil {
 		return err
 	}

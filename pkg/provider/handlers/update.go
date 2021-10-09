@@ -17,7 +17,7 @@ import (
 	"github.com/openfaas/faasd/pkg/service"
 )
 
-func MakeUpdateHandler(client *containerd.Client, cni gocni.CNI, secretMountPath string, alwaysPull bool) func(w http.ResponseWriter, r *http.Request) {
+func MakeUpdateHandler(client *containerd.Client, cni gocni.CNI, secretMountPath string, alwaysPull bool, useInsecureRegistry bool) func(w http.ResponseWriter, r *http.Request) {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -71,7 +71,7 @@ func MakeUpdateHandler(client *containerd.Client, cni gocni.CNI, secretMountPath
 
 		ctx := namespaces.WithNamespace(context.Background(), namespace)
 
-		if _, err := prepull(ctx, req, client, alwaysPull); err != nil {
+		if _, err := prepull(ctx, req, client, alwaysPull, useInsecureRegistry); err != nil {
 			log.Printf("[Update] error with pre-pull: %s, %s\n", name, err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
@@ -91,8 +91,10 @@ func MakeUpdateHandler(client *containerd.Client, cni gocni.CNI, secretMountPath
 
 		// The pull has already been done in prepull, so we can force this pull to "false"
 		pull := false
+		// Since we don't need to pull we also don't need the insecure registry flag
+		insecure := false
 
-		if err := deploy(ctx, req, client, cni, namespaceSecretMountPath, pull); err != nil {
+		if err := deploy(ctx, req, client, cni, namespaceSecretMountPath, pull, insecure); err != nil {
 			log.Printf("[Update] error deploying %s, error: %s\n", name, err)
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return

@@ -103,7 +103,7 @@ func (s *Supervisor) Start(svcs []Service) error {
 	for _, svc := range svcs {
 		fmt.Printf("Preparing %s with image: %s\n", svc.Name, svc.Image)
 
-		img, err := service.PrepareImage(ctx, s.client, svc.Image, defaultSnapshotter, faasServicesPullAlways)
+		img, err := service.PrepareImage(ctx, s.client, svc.Image, defaultSnapshotter, faasServicesPullAlways, faasUseInsecureRegistry)
 		if err != nil {
 			return err
 		}

@@ -32,7 +32,7 @@ func makeProviderCmd() *cobra.Command {
 
 	command.Flags().String("pull-policy", "Always", `Set to "Always" to force a pull of images upon deployment, or "IfNotPresent" to try to use a cached image.`)
 
-	// command.Flags().Bool("--insecure-registry", false, `Set to true to allow to pull images from a non HTTPS image registry.`)
+	command.Flags().Bool("insecure-registry", false, `Set to true to allow to pull images from a non HTTPS image registry.`)
 
 	command.RunE = func(_ *cobra.Command, _ []string) error {
 
@@ -44,6 +44,11 @@ func makeProviderCmd() *cobra.Command {
 		alwaysPull := false
 		if pullPolicy == "Always" {
 			alwaysPull = true
+		}
+
+		useInsecureRegistry, flagErr := command.Flags().GetBool("insecure-registry")
+		if flagErr != nil {
+			return flagErr
 		}
 
 		config, providerConfig, err := config.ReadFromEnv(types.OsEnv{})
@@ -97,11 +102,11 @@ func makeProviderCmd() *cobra.Command {
 		bootstrapHandlers := types.FaaSHandlers{
 			FunctionProxy:        proxy.NewHandlerFunc(*config, invokeResolver),
 			DeleteHandler:        handlers.MakeDeleteHandler(client, cni),
-			DeployHandler:        handlers.MakeDeployHandler(client, cni, baseUserSecretsPath, alwaysPull),
+			DeployHandler:        handlers.MakeDeployHandler(client, cni, baseUserSecretsPath, alwaysPull, useInsecureRegistry),
 			FunctionReader:       handlers.MakeReadHandler(client),
 			ReplicaReader:        handlers.MakeReplicaReaderHandler(client),
 			ReplicaUpdater:       handlers.MakeReplicaUpdateHandler(client, cni),
-			UpdateHandler:        handlers.MakeUpdateHandler(client, cni, baseUserSecretsPath, alwaysPull),
+			UpdateHandler:        handlers.MakeUpdateHandler(client, cni, baseUserSecretsPath, alwaysPull, useInsecureRegistry),
 			HealthHandler:        func(w http.ResponseWriter, r *http.Request) {},
 			InfoHandler:          handlers.MakeInfoHandler(Version, GitCommit),
 			ListNamespaceHandler: handlers.MakeNamespacesLister(client),

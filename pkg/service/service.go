@@ -106,7 +106,7 @@ func killTask(ctx context.Context, task containerd.Task) error {
 	return err
 }
 
-func getResolver(ctx context.Context, configFile *configfile.ConfigFile) (remotes.Resolver, error) {
+func getResolver(ctx context.Context, configFile *configfile.ConfigFile, useInsecureRegistry bool) (remotes.Resolver, error) {
 	// credsFunc is based on https://github.com/moby/buildkit/blob/0b130cca040246d2ddf55117eeff34f546417e40/session/auth/authprovider/authprovider.go#L35
 	credFunc := func(host string) (string, string, error) {
 		if host == "registry-1.docker.io" {
@@ -125,7 +125,7 @@ func getResolver(ctx context.Context, configFile *configfile.ConfigFile) (remote
 	authOpts := []docker.AuthorizerOpt{docker.WithAuthCreds(credFunc)}
 
 	// Append insecure client if enabled
-	if true {
+	if useInsecureRegistry {
 		authOpts = append(authOpts, docker.WithAuthClient(newInsecureClient()))
 	}
 
@@ -133,11 +133,8 @@ func getResolver(ctx context.Context, configFile *configfile.ConfigFile) (remote
 
 	var h docker.RegistryHosts
 	// Append plainHttp Opt if enabled
-	if true {
-		h = docker.ConfigureDefaultRegistries(docker.WithAuthorizer(authorizer), docker.WithPlainHTTP(docker.MatchAllHosts))
-	} else {
-		h = docker.ConfigureDefaultRegistries(docker.WithAuthorizer(authorizer))
-	}
+	//h = docker.ConfigureDefaultRegistries(docker.WithAuthorizer(authorizer), docker.WithPlainHTTP(docker.MatchAllHosts))
+	h = docker.ConfigureDefaultRegistries(docker.WithAuthorizer(authorizer))
 
 	opts := docker.ResolverOptions{
 		Hosts: h,
@@ -145,7 +142,7 @@ func getResolver(ctx context.Context, configFile *configfile.ConfigFile) (remote
 	return docker.NewResolver(opts), nil
 }
 
-func PrepareImage(ctx context.Context, client *containerd.Client, imageName, snapshotter string, pullAlways bool) (containerd.Image, error) {
+func PrepareImage(ctx context.Context, client *containerd.Client, imageName, snapshotter string, pullAlways bool, useInsecureRegistry bool) (containerd.Image, error) {
 	var (
 		empty    containerd.Image
 		resolver remotes.Resolver
@@ -156,7 +153,7 @@ func PrepareImage(ctx context.Context, client *containerd.Client, imageName, sna
 		if err != nil {
 			return nil, err
 		}
-		resolver, err = getResolver(ctx, configFile)
+		resolver, err = getResolver(ctx, configFile, useInsecureRegistry)
 		if err != nil {
 			return empty, err
 		}
@@ -166,7 +163,7 @@ func PrepareImage(ctx context.Context, client *containerd.Client, imageName, sna
 
 	var image containerd.Image
 	if pullAlways {
-		img, err := pullImage(ctx, client, resolver, imageName)
+		img, err := pullImage(ctx, client, resolver, imageName, useInsecureRegistry)
 		if err != nil {
 			return empty, err
 		}
@@ -178,7 +175,7 @@ func PrepareImage(ctx context.Context, client *containerd.Client, imageName, sna
 			if !errdefs.IsNotFound(err) {
 				return empty, err
 			}
-			img, err := pullImage(ctx, client, resolver, imageName)
+			img, err := pullImage(ctx, client, resolver, imageName, useInsecureRegistry)
 			if err != nil {
 				return empty, err
 			}
@@ -202,7 +199,7 @@ func PrepareImage(ctx context.Context, client *containerd.Client, imageName, sna
 	return image, nil
 }
 
-func pullImage(ctx context.Context, client *containerd.Client, resolver remotes.Resolver, imageName string) (containerd.Image, error) {
+func pullImage(ctx context.Context, client *containerd.Client, resolver remotes.Resolver, imageName string, useInsecureRegistry bool) (containerd.Image, error) {
 
 	var empty containerd.Image
 

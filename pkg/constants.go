@@ -12,5 +12,7 @@ const (
 
 	faasServicesPullAlways = false
 
+	faasUseInsecureRegistry = false
+
 	defaultSnapshotter = "overlayfs"
 )
