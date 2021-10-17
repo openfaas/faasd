@@ -86,6 +86,14 @@ func createSecret(c *containerd.Client, w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
+	err = validateSecret(secret)
+	if err != nil {
+		log.Printf("[secret] error %s", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	log.Printf("[secret] is valid: %q", secret.Name)
 	namespace := getRequestNamespace(secret.Namespace)
 	mountPath = getNamespaceSecretMountPath(mountPath, namespace)
 
@@ -96,7 +104,12 @@ func createSecret(c *containerd.Client, w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	err = ioutil.WriteFile(path.Join(mountPath, secret.Name), []byte(secret.Value), secretFilePermission)
+	data := secret.RawValue
+	if len(data) == 0 {
+		data = []byte(secret.Value)
+	}
+
+	err = ioutil.WriteFile(path.Join(mountPath, secret.Name), data, secretFilePermission)
 
 	if err != nil {
 		log.Printf("[secret] error %s", err.Error())
@@ -137,10 +150,6 @@ func parseSecret(r *http.Request) (types.Secret, error) {
 		return secret, err
 	}
 
-	if isTraversal(secret.Name) {
-		return secret, fmt.Errorf(traverseErrorSt)
-	}
-
 	return secret, err
 }
 
@@ -149,4 +158,14 @@ const traverseErrorSt = "directory traversal found in name"
 func isTraversal(name string) bool {
 	return strings.Contains(name, fmt.Sprintf("%s", string(os.PathSeparator))) ||
 		strings.Contains(name, "..")
+}
+
+func validateSecret(secret types.Secret) error {
+	if strings.TrimSpace(secret.Name) == "" {
+		return fmt.Errorf("non-empty name is required")
+	}
+	if isTraversal(secret.Name) {
+		return fmt.Errorf(traverseErrorSt)
+	}
+	return nil
 }
