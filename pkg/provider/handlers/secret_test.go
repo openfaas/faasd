@@ -1,63 +1,163 @@
 package handlers
 
 import (
-	"bytes"
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/openfaas/faas-provider/types"
 )
 
-func Test_parseSecretValidName(t *testing.T) {
+func Test_parseSecret(t *testing.T) {
+	cases := []struct {
+		name      string
+		payload   string
+		expError  string
+		expSecret types.Secret
+	}{
+		{
+			name:      "no error when name is valid without extention and with no traversal",
+			payload:   `{"name": "authorized_keys", "value": "foo"}`,
+			expSecret: types.Secret{Name: "authorized_keys", Value: "foo"},
+		},
+		{
+			name:      "no error when name is valid and parses RawValue correctly",
+			payload:   `{"name": "authorized_keys", "rawValue": "YmFy"}`,
+			expSecret: types.Secret{Name: "authorized_keys", RawValue: []byte("bar")},
+		},
+		{
+			name:      "no error when name is valid with dot and with no traversal",
+			payload:   `{"name": "authorized.keys", "value": "foo"}`,
+			expSecret: types.Secret{Name: "authorized.keys", Value: "foo"},
+		},
+	}
 
-	s := types.Secret{Name: "authorized_keys"}
-	body, _ := json.Marshal(s)
-	reader := bytes.NewReader(body)
-	r := httptest.NewRequest(http.MethodPost, "/", reader)
-	_, err := parseSecret(r)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			reader := strings.NewReader(tc.payload)
+			r := httptest.NewRequest(http.MethodPost, "/", reader)
+			secret, err := parseSecret(r)
+			if err != nil && tc.expError == "" {
+				t.Fatalf("unexpected error: %s", err)
+				return
+			}
 
+			if tc.expError != "" {
+				if err == nil {
+					t.Fatalf("expected error: %s, got nil", tc.expError)
+				}
+				if err.Error() != tc.expError {
+					t.Fatalf("expected error: %s, got: %s", tc.expError, err)
+				}
+
+				return
+			}
+
+			if !reflect.DeepEqual(secret, tc.expSecret) {
+				t.Fatalf("expected secret: %+v, got: %+v", tc.expSecret, secret)
+			}
+		})
+	}
+}
+
+func TestSecretCreation(t *testing.T) {
+	mountPath, err := os.MkdirTemp("", "test_secret_creation")
 	if err != nil {
-		t.Fatalf("secret name is valid with no traversal characters")
+		t.Fatalf("unexpected error while creating temp directory: %s", err)
 	}
-}
 
-func Test_parseSecretValidNameWithDot(t *testing.T) {
+	defer os.RemoveAll(mountPath)
 
-	s := types.Secret{Name: "authorized.keys"}
-	body, _ := json.Marshal(s)
-	reader := bytes.NewReader(body)
-	r := httptest.NewRequest(http.MethodPost, "/", reader)
-	_, err := parseSecret(r)
+	handler := MakeSecretHandler(nil, mountPath)
 
-	if err != nil {
-		t.Fatalf("secret name is valid with no traversal characters")
+	cases := []struct {
+		name       string
+		verb       string
+		payload    string
+		status     int
+		secretPath string
+		secret     string
+		err        string
+	}{
+		{
+			name:    "returns error when the name contains a traversal",
+			verb:    http.MethodPost,
+			payload: `{"name": "/root/.ssh/authorized_keys", "value": "foo"}`,
+			status:  http.StatusBadRequest,
+			err:     "directory traversal found in name\n",
+		},
+		{
+			name:    "returns error when the name contains a traversal",
+			verb:    http.MethodPost,
+			payload: `{"name": "..", "value": "foo"}`,
+			status:  http.StatusBadRequest,
+			err:     "directory traversal found in name\n",
+		},
+		{
+			name:    "empty request returns a validation error",
+			verb:    http.MethodPost,
+			payload: `{}`,
+			status:  http.StatusBadRequest,
+			err:     "non-empty name is required\n",
+		},
+		{
+			name:       "can create secret from string",
+			verb:       http.MethodPost,
+			payload:    `{"name": "foo", "value": "bar"}`,
+			status:     http.StatusOK,
+			secretPath: "/openfaas-fn/foo",
+			secret:     "bar",
+		},
+		{
+			name:       "can create secret from raw value",
+			verb:       http.MethodPost,
+			payload:    `{"name": "foo", "rawValue": "YmFy"}`,
+			status:     http.StatusOK,
+			secretPath: "/openfaas-fn/foo",
+			secret:     "bar",
+		},
+		{
+			name:       "can create secret in non-default namespace from raw value",
+			verb:       http.MethodPost,
+			payload:    `{"name": "pity", "rawValue": "dGhlIGZvbw==", "namespace": "a-team"}`,
+			status:     http.StatusOK,
+			secretPath: "/a-team/pity",
+			secret:     "the foo",
+		},
 	}
-}
 
-func Test_parseSecretWithTraversalWithSlash(t *testing.T) {
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			req := httptest.NewRequest(tc.verb, "http://example.com/foo", strings.NewReader(tc.payload))
+			w := httptest.NewRecorder()
 
-	s := types.Secret{Name: "/root/.ssh/authorized_keys"}
-	body, _ := json.Marshal(s)
-	reader := bytes.NewReader(body)
-	r := httptest.NewRequest(http.MethodPost, "/", reader)
-	_, err := parseSecret(r)
+			handler(w, req)
 
-	if err == nil {
-		t.Fatalf("secret name should fail due to path traversal")
-	}
-}
+			resp := w.Result()
+			if resp.StatusCode != tc.status {
+				t.Logf("response body: %s", w.Body.String())
+				t.Fatalf("expected status: %d, got: %d", tc.status, resp.StatusCode)
+			}
 
-func Test_parseSecretWithTraversalWithDoubleDot(t *testing.T) {
+			if resp.StatusCode != http.StatusOK && w.Body.String() != tc.err {
+				t.Fatalf("expected error message: %q, got %q", tc.err, w.Body.String())
 
-	s := types.Secret{Name: ".."}
-	body, _ := json.Marshal(s)
-	reader := bytes.NewReader(body)
-	r := httptest.NewRequest(http.MethodPost, "/", reader)
-	_, err := parseSecret(r)
+			}
 
-	if err == nil {
-		t.Fatalf("secret name should fail due to path traversal")
+			if tc.secretPath != "" {
+				data, err := os.ReadFile(filepath.Join(mountPath, tc.secretPath))
+				if err != nil {
+					t.Fatalf("can not read the secret from disk: %s", err)
+				}
+
+				if string(data) != tc.secret {
+					t.Fatalf("expected secret value: %s, got %s", tc.secret, string(data))
+				}
+			}
+		})
 	}
 }
