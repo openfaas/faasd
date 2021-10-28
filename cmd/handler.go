@@ -30,7 +30,7 @@ const (
 	//address     = "localhost:50051"
 	//defaultName = "world"
 	defaultContentType    = "text/plain"
-	MaxCacheItem          = 4
+	MaxCacheItem          = 5
 	MaxAgentFunctionCache = 5
 	MaxClientLoad         = 6
 	UseCache              = true
@@ -38,6 +38,8 @@ const (
 	batchTime             = 50
 	FileCaching           = false
 	BatchChecking         = false
+	UseTAHC               = false
+	TAHCCacheSize         = 5
 )
 
 type Agent struct {
@@ -58,6 +60,8 @@ var ageantLoad []uint
 //var Cache *cache.Cache
 var Cache *lru.Cache
 var CacheAgent *lru.Cache
+var TAHCCache *lru.Cache
+
 var mutex sync.Mutex
 var mutexAgent sync.Mutex
 var cacheHit uint
@@ -65,13 +69,14 @@ var resultCacheHit uint
 var batchCacheHit uint
 var cacheMiss uint
 var loadMiss uint64
+var totalTime int64
 var hashRequests = make(chan CacheCheckingReq, 100)
 
 // var hashRequestsResult = make(chan CacheChecking, 100)
 
 func initHandler() {
-	log.Printf("UseLoadBalancerCache: %v, FileCaching: %v, BatchChecking: %v, batchTime: %v",
-		UseLoadBalancerCache, FileCaching, BatchChecking, batchTime)
+	log.Printf("UseFunctionCaching: %v, FunctionCachingSize: %v, UseLoadBalancerCache: %v, FileCaching: %v, BatchChecking: %v, batchTime: %v, UseTAHC: %v, TAHCCacheSize: %v",
+		UseCache, MaxCacheItem, UseLoadBalancerCache, FileCaching, BatchChecking, batchTime, UseTAHC, TAHCCacheSize)
 
 	cacheHit = 0
 	cacheMiss = 0
@@ -81,6 +86,8 @@ func initHandler() {
 
 	Cache = lru.New(MaxCacheItem)
 	CacheAgent = lru.New(MaxAgentFunctionCache)
+	TAHCCache = lru.New(TAHCCacheSize)
+
 	ageantAddresses = append(ageantAddresses, Agent{Id: 0, Address: "localhost:50061"})
 	ageantAddresses = append(ageantAddresses, Agent{Id: 1, Address: "localhost:50062"})
 	ageantAddresses = append(ageantAddresses, Agent{Id: 2, Address: "localhost:50063"})
@@ -116,6 +123,7 @@ func NewHandlerFunc(config types.FaaSConfig, resolver BaseURLResolver) http.Hand
 			// span.SetTag("event", "Handle_Function")
 			// defer span.Finish()
 			// span.LogKV("event", "println")
+			initialTime := time.Now()
 
 			pathVars := mux.Vars(r)
 			functionName := pathVars["name"]
@@ -135,22 +143,23 @@ func NewHandlerFunc(config types.FaaSConfig, resolver BaseURLResolver) http.Hand
 
 			//********* check in batch caching
 			var checkInNodes string
-
+			checkInNodes = hash(append([]byte(functionName), bodyBytes...))
 			if BatchChecking {
 				if FileCaching {
 					checkInNodes = string(bodyBytes)
-				} else {
-					checkInNodes = hash(append([]byte(functionName), bodyBytes...))
 				}
 			}
 
 			//*********** cache  ******************
 			if UseCache {
-				checkInNodes = hash(append([]byte(functionName), bodyBytes...))
+				// checkInNodes = hash(append([]byte(functionName), bodyBytes...))
 				mutex.Lock()
 				response, found := Cache.Get(checkInNodes)
 				mutex.Unlock()
 				if found {
+					atomic.AddInt64(&totalTime, time.Since(initialTime).Microseconds())
+					fmt.Printf("Function Result acheived, RequestURI: %v, decesionTime: %v us, totalTime: %v \n",
+						functionName, time.Since(initialTime).Microseconds(), totalTime)
 					resultCacheHit++
 					log.Printf("Mohammad founded in cache  functionName: %v, resultCacheHit: %v \n",
 						functionName, resultCacheHit)
@@ -167,6 +176,7 @@ func NewHandlerFunc(config types.FaaSConfig, resolver BaseURLResolver) http.Hand
 
 					w.WriteHeader(res.StatusCode)
 					io.Copy(w, res.Body)
+
 					return
 				}
 			}
@@ -179,12 +189,14 @@ func NewHandlerFunc(config types.FaaSConfig, resolver BaseURLResolver) http.Hand
 
 			//proxy.ProxyRequest(w, r, proxyClient, resolver)
 			// mctx := opentracing.ContextWithSpan(context.Background(), span)
-			agentRes, err := loadBalancer(functionName, exteraPath, sReq, checkInNodes, nil)
+			agentRes, err, decesionTime := loadBalancer(functionName, exteraPath, sReq, checkInNodes, nil)
 			if err != nil {
 				httputil.Errorf(w, http.StatusInternalServerError, "Can't reach service for: %s.", functionName)
 				return
 			}
-
+			atomic.AddInt64(&totalTime, time.Since(initialTime).Microseconds())
+			fmt.Printf("Function Result acheived, RequestURI: %v, decesionTime: %v us, totalTime: %v  \n",
+				functionName, decesionTime.Sub(initialTime).Microseconds(), totalTime)
 			//log.Println("Mohammad add to cache sReqHash:", sReqHash)
 			if UseCache {
 				mutex.Lock()
@@ -217,7 +229,7 @@ func NewHandlerFunc(config types.FaaSConfig, resolver BaseURLResolver) http.Hand
 	//return proxy.NewHandlerFunc(config, resolver)
 }
 
-func loadBalancer(RequestURI string, exteraPath string, sReq []byte, sReqHash string, mctx context.Context) (*pb.TaskResponse, error) {
+func loadBalancer(RequestURI string, exteraPath string, sReq []byte, sReqHash string, mctx context.Context) (*pb.TaskResponse, error, time.Time) {
 	var agentId uint32
 	if BatchChecking {
 		start := time.Now()
@@ -239,7 +251,9 @@ func loadBalancer(RequestURI string, exteraPath string, sReq []byte, sReqHash st
 								RequestURI, agentId, batchCacheHit)
 							ageantAddresses[agentId].Loads++
 							mutexAgent.Unlock()
-							return sendToAgent(ageantAddresses[agentId].Address, RequestURI, exteraPath, sReq, agentId, mctx)
+							endTime := time.Now()
+							res, err := sendToAgent(ageantAddresses[agentId].Address, RequestURI, exteraPath, sReq, agentId, mctx)
+							return res, err, endTime
 						}
 						mutexAgent.Unlock()
 						fmt.Printf("founded data in cache, but node is overloaded RequestURI: %v, agentId: %v, batchCacheHit: %v \n",
@@ -247,7 +261,8 @@ func loadBalancer(RequestURI string, exteraPath string, sReq []byte, sReqHash st
 					} else {
 						fmt.Printf("founded response in cache, RequestURI: %v, len(res.Response): %v, batchCacheHit: %v \n",
 							RequestURI, len(res.Response), batchCacheHit)
-						return &res, nil
+						endTime := time.Now()
+						return &res, nil, endTime
 					}
 				}
 				if totalCaches == 0 {
@@ -280,7 +295,32 @@ func loadBalancer(RequestURI string, exteraPath string, sReq []byte, sReqHash st
 				duration := time.Since(t1)
 				log.Printf("sendToAgent due to Cache cacheHit: %v, address: %v,  RequestURI :%s, duration: %v  \n",
 					cacheHit, ageantAddresses[agentId].Address, RequestURI, duration.Microseconds())
-				return sendToAgent(ageantAddresses[agentId].Address, RequestURI, exteraPath, sReq, agentId, nil)
+				endTime := time.Now()
+				res, err := sendToAgent(ageantAddresses[agentId].Address, RequestURI, exteraPath, sReq, agentId, mctx)
+				return res, err, endTime
+			}
+			atomic.AddUint64(&loadMiss, 1)
+		}
+		duration := time.Since(t1)
+		log.Printf("duration: %v \n", duration.Microseconds())
+	} else if UseTAHC {
+		t1 := time.Now()
+		mutexAgent.Lock()
+		value, found := TAHCCache.Get(sReqHash)
+		mutexAgent.Unlock()
+		if found {
+			agentId = value.(uint32)
+			if ageantAddresses[agentId].Loads < MaxClientLoad {
+				mutexAgent.Lock()
+				ageantAddresses[agentId].Loads++
+				cacheHit++
+				mutexAgent.Unlock()
+				duration := time.Since(t1)
+				log.Printf("UseTAHC sendToAgent due to Cache cacheHit: %v, address: %v,  RequestURI :%s, duration: %v  \n",
+					cacheHit, ageantAddresses[agentId].Address, RequestURI, duration.Microseconds())
+				endTime := time.Now()
+				res, err := sendToAgent(ageantAddresses[agentId].Address, RequestURI, exteraPath, sReq, agentId, mctx)
+				return res, err, endTime
 			}
 			atomic.AddUint64(&loadMiss, 1)
 		}
@@ -298,12 +338,16 @@ func loadBalancer(RequestURI string, exteraPath string, sReq []byte, sReqHash st
 	if UseLoadBalancerCache {
 		CacheAgent.Add(RequestURI, agentId)
 		cacheMiss++
+	} else if UseTAHC {
+		TAHCCache.Add(sReqHash, agentId)
+		cacheMiss++
 	}
 	ageantAddresses[agentId].Loads++
 	log.Printf("sendToAgent loadMiss: %v, cacheMiss: %v, address: %v,  RequestURI :%s", loadMiss, cacheMiss, ageantAddresses[agentId].Address, RequestURI)
 	mutexAgent.Unlock()
-	return sendToAgent(ageantAddresses[agentId].Address, RequestURI, exteraPath, sReq, agentId, nil)
-
+	endTime := time.Now()
+	res, err := sendToAgent(ageantAddresses[agentId].Address, RequestURI, exteraPath, sReq, agentId, mctx)
+	return res, err, endTime
 }
 
 func sendToAgent(address string, RequestURI string, exteraPath string, sReq []byte, agentId uint32, mctx context.Context) (*pb.TaskResponse, error) {
