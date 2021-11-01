@@ -156,6 +156,13 @@ func MakeReplicaUpdateHandler(client *containerd.Client, cni gocni.CNI, resolver
 	}
 }
 
+// waitUntilHealthy blocks until the healthPath returns a HTTP 200 for the
+// IP address resolved for the given function.
+// Maximum retries: 100
+// Delay between each attempt: 20ms
+// A custom path can be set via an annotation in the function's spec:
+//  com.openfaas.health.http.path: /handlers/ready
+//
 func waitUntilHealthy(name string, resolver proxy.BaseURLResolver, healthPath string) error {
 	endpoint, err := resolver.Resolve(name)
 	if err != nil {
