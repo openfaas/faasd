@@ -1,6 +1,10 @@
-## Instructions for hacking on faasd itself
+## Instructions for building and testing faasd locally
 
 > Note: if you're just wanting to try out faasd, then it's likely that you're on the wrong page. This is a detailed set of instructions for those wanting to contribute or customise faasd. Feel free to go back to the homepage and pick a tutorial instead.
+
+Do you want to help the community test a pull request?
+
+See these instructions instead: [Testing patches](/docs/PATCHES.md)
 
 ### Pre-reqs
 
