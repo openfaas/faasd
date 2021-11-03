@@ -51,7 +51,7 @@ Check out faasd on your local computer
 git clone https://github.com/openfaas/faasd
 cd faasd
 
-gh checkout #PR_NUMBER_HERE
+gh pr checkout #PR_NUMBER_HERE
 
 GOOS=linux go build
 
