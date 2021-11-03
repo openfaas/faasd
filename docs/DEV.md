@@ -20,7 +20,7 @@ See these instructions instead: [Testing patches](/docs/PATCHES.md)
 
     For Windows users, install [Git Bash](https://git-scm.com/downloads) along with multipass or vagrant. You can also use WSL1 or WSL2 which provides a Linux environment.
 
-    You will also need [containerd v1.5.4](https://github.com/containerd/containerd) and the [CNI plugins v0.8.5](https://github.com/containernetworking/plugins)
+    You will also need [containerd v1.5.7](https://github.com/containerd/containerd) and the [CNI plugins v0.8.5](https://github.com/containernetworking/plugins)
 
     [faas-cli](https://github.com/openfaas/faas-cli) is optional, but recommended.
 
@@ -88,7 +88,7 @@ You have three options - binaries for PC, binaries for armhf, or build from sour
 * Install containerd `x86_64` only
 
 ```bash
-export VER=1.5.4
+export VER=1.5.7
 curl -sSL https://github.com/containerd/containerd/releases/download/v$VER/containerd-$VER-linux-amd64.tar.gz > /tmp/containerd.tar.gz \
   && sudo tar -xvf /tmp/containerd.tar.gz -C /usr/local/bin/ --strip-components=1
 
@@ -100,7 +100,7 @@ containerd -version
     Building `containerd` on armhf is extremely slow, so I've provided binaries for you.
 
     ```bash
-    curl -sSL https://github.com/alexellis/containerd-armhf/releases/download/v1.5.4/containerd.tgz | sudo tar -xvz --strip-components=2 -C /usr/local/bin/
+    curl -sSL https://github.com/alexellis/containerd-arm/releases/download/v1.5.7/containerd-1.5.7-linux-armhf.tar.gz | sudo tar -xvz --strip-components=2 -C /usr/local/bin/
     ```
 
 * Or clone / build / install [containerd](https://github.com/containerd/containerd) from source:
@@ -112,7 +112,7 @@ containerd -version
     git clone https://github.com/containerd/containerd
     cd containerd
     git fetch origin --tags
-    git checkout v1.5.4
+    git checkout v1.5.7
 
     make
     sudo make install
@@ -123,7 +123,7 @@ containerd -version
 #### Ensure containerd is running
 
 ```bash
-curl -sLS https://raw.githubusercontent.com/containerd/containerd/v1.5.4/containerd.service > /tmp/containerd.service
+curl -sLS https://raw.githubusercontent.com/containerd/containerd/v1.5.7/containerd.service > /tmp/containerd.service
 
 # Extend the timeouts for low-performance VMs
 echo "[Manager]" | tee -a /tmp/containerd.service
