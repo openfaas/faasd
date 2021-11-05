@@ -1,4 +1,5 @@
 #!/bin/bash
+set -eo pipefail
 
 # Copyright OpenFaaS Author(s) 2020
 
