@@ -1,6 +1,9 @@
 package handlers
 
 import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -10,6 +13,8 @@ import (
 	"testing"
 
 	"github.com/openfaas/faas-provider/types"
+	"github.com/openfaas/faasd/pkg"
+	mock "github.com/openfaas/faasd/pkg/provider"
 )
 
 func Test_parseSecret(t *testing.T) {
@@ -157,6 +162,93 @@ func TestSecretCreation(t *testing.T) {
 				if string(data) != tc.secret {
 					t.Fatalf("expected secret value: %s, got %s", tc.secret, string(data))
 				}
+			}
+		})
+	}
+}
+
+func TestListSecrets(t *testing.T) {
+	mountPath, err := os.MkdirTemp("", "test_secret_creation")
+	if err != nil {
+		t.Fatalf("unexpected error while creating temp directory: %s", err)
+	}
+
+	defer os.RemoveAll(mountPath)
+
+	cases := []struct {
+		name       string
+		verb       string
+		namespace  string
+		labels     map[string]string
+		status     int
+		secretPath string
+		secret     string
+		err        string
+		expected   []types.Secret
+	}{
+		{
+			name:       "Get empty secret list for default namespace having no secret",
+			verb:       http.MethodGet,
+			status:     http.StatusOK,
+			secretPath: "/test-fn/foo",
+			secret:     "bar",
+			expected:   make([]types.Secret, 0),
+		},
+		{
+			name:       "Get empty secret list for non-default namespace having no secret",
+			verb:       http.MethodGet,
+			status:     http.StatusOK,
+			secretPath: "/test-fn/foo",
+			secret:     "bar",
+			expected:   make([]types.Secret, 0),
+			namespace:  "other-ns",
+			labels: map[string]string{
+				pkg.NamespaceLabel: "true",
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			fakeStore := &mock.FakeLabeller{}
+			fakeStore.FakeLabels = tc.labels
+
+			handler := MakeSecretHandler(fakeStore, mountPath)
+
+			path := "http://example.com/foo"
+			if len(tc.namespace) > 0 {
+				path = path + fmt.Sprintf("?namespace=%s", tc.namespace)
+			}
+			req := httptest.NewRequest(tc.verb, path, nil)
+			w := httptest.NewRecorder()
+
+			handler(w, req)
+
+			resp := w.Result()
+			if resp.StatusCode != tc.status {
+				t.Logf("response body: %s", w.Body.String())
+				t.Fatalf("expected status: %d, got: %d", tc.status, resp.StatusCode)
+			}
+
+			if resp.StatusCode != http.StatusOK && w.Body.String() != tc.err {
+				t.Fatalf("expected error message: %q, got %q", tc.err, w.Body.String())
+
+			}
+
+			body, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				t.Fatalf("can not read response of list %v", err)
+			}
+
+			var res []types.Secret
+			err = json.Unmarshal(body, &res)
+
+			if err != nil {
+				t.Fatalf("can not read response of list %v", err)
+			}
+
+			if !reflect.DeepEqual(res, tc.expected) {
+				t.Fatalf("expected response: %v, got: %v", tc.expected, res)
 			}
 		})
 	}

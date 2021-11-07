@@ -43,7 +43,7 @@ func MakeDeleteHandler(client *containerd.Client, cni gocni.CNI) func(w http.Res
 		lookupNamespace := getRequestNamespace(readNamespaceFromQuery(r))
 
 		// Check if namespace exists, and it has the openfaas label
-		valid, err := validNamespace(client, lookupNamespace)
+		valid, err := validNamespace(client.NamespaceService(), lookupNamespace)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return

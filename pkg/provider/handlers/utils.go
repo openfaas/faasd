@@ -5,10 +5,9 @@ import (
 	"net/http"
 	"path"
 
-	"github.com/containerd/containerd"
-
 	"github.com/openfaas/faasd/pkg"
 	faasd "github.com/openfaas/faasd/pkg"
+	provider "github.com/openfaas/faasd/pkg/provider"
 )
 
 func getRequestNamespace(namespace string) string {
@@ -30,12 +29,11 @@ func getNamespaceSecretMountPath(userSecretPath string, namespace string) string
 
 // validNamespace indicates whether the namespace is eligable to be
 // used for OpenFaaS functions.
-func validNamespace(client *containerd.Client, namespace string) (bool, error) {
+func validNamespace(store provider.Labeller, namespace string) (bool, error) {
 	if namespace == faasd.DefaultFunctionNamespace {
 		return true, nil
 	}
 
-	store := client.NamespaceService()
 	labels, err := store.Labels(context.Background(), namespace)
 	if err != nil {
 		return false, err
