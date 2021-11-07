@@ -2,9 +2,10 @@ package handlers
 
 import (
 	"encoding/json"
-	"k8s.io/apimachinery/pkg/api/resource"
 	"log"
 	"net/http"
+
+	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/containerd/containerd"
 	"github.com/openfaas/faas-provider/types"
@@ -16,7 +17,7 @@ func MakeReadHandler(client *containerd.Client) func(w http.ResponseWriter, r *h
 
 		lookupNamespace := getRequestNamespace(readNamespaceFromQuery(r))
 		// Check if namespace exists, and it has the openfaas label
-		valid, err := validNamespace(client, lookupNamespace)
+		valid, err := validNamespace(client.NamespaceService(), lookupNamespace)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return

@@ -10,14 +10,14 @@ import (
 	"path"
 	"strings"
 
-	"github.com/containerd/containerd"
 	"github.com/openfaas/faas-provider/types"
+	provider "github.com/openfaas/faasd/pkg/provider"
 )
 
 const secretFilePermission = 0644
 const secretDirPermission = 0755
 
-func MakeSecretHandler(c *containerd.Client, mountPath string) func(w http.ResponseWriter, r *http.Request) {
+func MakeSecretHandler(store provider.Labeller, mountPath string) func(w http.ResponseWriter, r *http.Request) {
 
 	err := os.MkdirAll(mountPath, secretFilePermission)
 	if err != nil {
@@ -31,13 +31,13 @@ func MakeSecretHandler(c *containerd.Client, mountPath string) func(w http.Respo
 
 		switch r.Method {
 		case http.MethodGet:
-			listSecrets(c, w, r, mountPath)
+			listSecrets(store, w, r, mountPath)
 		case http.MethodPost:
-			createSecret(c, w, r, mountPath)
+			createSecret(w, r, mountPath)
 		case http.MethodPut:
-			createSecret(c, w, r, mountPath)
+			createSecret(w, r, mountPath)
 		case http.MethodDelete:
-			deleteSecret(c, w, r, mountPath)
+			deleteSecret(w, r, mountPath)
 		default:
 			w.WriteHeader(http.StatusBadRequest)
 			return
@@ -46,11 +46,11 @@ func MakeSecretHandler(c *containerd.Client, mountPath string) func(w http.Respo
 	}
 }
 
-func listSecrets(c *containerd.Client, w http.ResponseWriter, r *http.Request, mountPath string) {
+func listSecrets(store provider.Labeller, w http.ResponseWriter, r *http.Request, mountPath string) {
 
 	lookupNamespace := getRequestNamespace(readNamespaceFromQuery(r))
 	// Check if namespace exists, and it has the openfaas label
-	valid, err := validNamespace(c, lookupNamespace)
+	valid, err := validNamespace(store, lookupNamespace)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -63,8 +63,15 @@ func listSecrets(c *containerd.Client, w http.ResponseWriter, r *http.Request, m
 
 	mountPath = getNamespaceSecretMountPath(mountPath, lookupNamespace)
 
-	files, err := ioutil.ReadDir(mountPath)
+	files, err := os.ReadDir(mountPath)
+	if os.IsNotExist(err) {
+		bytesOut, _ := json.Marshal([]types.Secret{})
+		w.Write(bytesOut)
+		return
+	}
+
 	if err != nil {
+		fmt.Printf("Error Occured: %s \n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -78,7 +85,7 @@ func listSecrets(c *containerd.Client, w http.ResponseWriter, r *http.Request, m
 	w.Write(bytesOut)
 }
 
-func createSecret(c *containerd.Client, w http.ResponseWriter, r *http.Request, mountPath string) {
+func createSecret(w http.ResponseWriter, r *http.Request, mountPath string) {
 	secret, err := parseSecret(r)
 	if err != nil {
 		log.Printf("[secret] error %s", err.Error())
@@ -118,7 +125,7 @@ func createSecret(c *containerd.Client, w http.ResponseWriter, r *http.Request, 
 	}
 }
 
-func deleteSecret(c *containerd.Client, w http.ResponseWriter, r *http.Request, mountPath string) {
+func deleteSecret(w http.ResponseWriter, r *http.Request, mountPath string) {
 	secret, err := parseSecret(r)
 	if err != nil {
 		log.Printf("[secret] error %s", err.Error())

@@ -42,7 +42,7 @@ func MakeReplicaUpdateHandler(client *containerd.Client, cni gocni.CNI) func(w h
 		namespace := getRequestNamespace(readNamespaceFromQuery(r))
 
 		// Check if namespace exists, and it has the openfaas label
-		valid, err := validNamespace(client, namespace)
+		valid, err := validNamespace(client.NamespaceService(), namespace)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return

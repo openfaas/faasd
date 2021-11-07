@@ -103,7 +103,7 @@ func makeProviderCmd() *cobra.Command {
 			HealthHandler:        func(w http.ResponseWriter, r *http.Request) {},
 			InfoHandler:          handlers.MakeInfoHandler(Version, GitCommit),
 			ListNamespaceHandler: handlers.MakeNamespacesLister(client),
-			SecretHandler:        handlers.MakeSecretHandler(client, baseUserSecretsPath),
+			SecretHandler:        handlers.MakeSecretHandler(client.NamespaceService(), baseUserSecretsPath),
 			LogHandler:           logs.NewLogHandlerFunc(faasdlogs.New(), config.ReadTimeout),
 		}
 

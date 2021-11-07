@@ -37,7 +37,7 @@ type Function struct {
 func ListFunctions(client *containerd.Client, namespace string) (map[string]*Function, error) {
 
 	// Check if namespace exists, and it has the openfaas label
-	valid, err := validNamespace(client, namespace)
+	valid, err := validNamespace(client.NamespaceService(), namespace)
 	if err != nil {
 		return nil, err
 	}
