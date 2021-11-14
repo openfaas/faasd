@@ -167,4 +167,6 @@ For completed features, WIP and upcoming roadmap see:
 
 See [ROADMAP.md](docs/ROADMAP.md)
 
+Want to build a patch without setting up a complete development environment? See [docs/PATCHES.md](docs/PATCHES.md)
+
 Are you looking to hack on faasd? Follow the [developer instructions](docs/DEV.md) for a manual installation, or use the `hack/install.sh` script and pick up from there.
