@@ -45,7 +45,7 @@ Additional resources:
 
 Most importantly, it's easy to manage so you can set it up and leave it alone to run your functions.
 
-![demo](https://pbs.twimg.com/media/EPNQz00W4AEwDxM?format=jpg&name=small)
+[![demo](https://pbs.twimg.com/media/EPNQz00W4AEwDxM?format=jpg&name=medium)](https://www.youtube.com/watch?v=WX1tZoSXy8E)
 
 > Demo of faasd running asynchronous functions
 
