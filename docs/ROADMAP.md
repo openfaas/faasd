@@ -75,10 +75,10 @@ sudo systemctl restart faasd
 
 Should have:
 
-* [ ] Resolve core services from functions by populating/sharing `/etc/hosts` between `faasd` and `faasd-provider`
-* [ ] Docs or examples on how to use the various connectors and connector-sdk
+* [ ] Offer a recommendation or implement a strategy for faasd replication/HA
 * [ ] Monitor and restart any of the core components at runtime if the container stops
-* [ ] Asynchronous deletion instead of synchronous
+* [ ] Asynchronous function deletion instead of synchronous
+* [ ] Asynchronous function start-up instead of synchronous
 
 Nice to Have:
 
@@ -89,6 +89,8 @@ Nice to Have:
 
 ### Completed
 
+* [x] Docs or examples on how to use the various event connectors (Yes in the eBook)
+* [x] Resolve core services from functions by populating/sharing `/etc/hosts` between `faasd` and `faasd-provider`
 * [x] Provide a cloud-init configuration for faasd bootstrap
 * [x] Configure core services from a docker-compose.yaml file
 * [x] Store and fetch logs from the journal
