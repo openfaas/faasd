@@ -20,21 +20,36 @@ services:
 
   nats:
     image: docker.io/library/nats-streaming:0.22.0
+# nobody
+    user: "65534"
     command:
       - "/nats-streaming-server"
       - "-m"
       - "8222"
-      - "--store=memory"
+      - "--store=file"
+      - "--dir=/nats"
       - "--cluster_id=faas-cluster"
+    volumes:
+# Data directory
+      - type: bind
+        source: ./nats
+        target: /nats
     # ports:
     #    - "127.0.0.1:8222:8222"
 
   prometheus:
     image: docker.io/prom/prometheus:v2.14.0
+# nobody
+    user: "65534"
     volumes:
+# Config directory
       - type: bind
         source: ./prometheus.yml
         target: /etc/prometheus/prometheus.yml
+# Data directory
+      - type: bind
+        source: ./prometheus
+        target: /prometheus
     cap_add:
       - CAP_NET_RAW
     ports:

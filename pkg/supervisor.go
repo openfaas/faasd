@@ -8,6 +8,8 @@ import (
 	"os"
 	"path"
 	"sort"
+	"strconv"
+	"strings"
 
 	"github.com/alexellis/k3sup/pkg/env"
 	"github.com/compose-spec/compose-go/loader"
@@ -26,7 +28,8 @@ import (
 )
 
 const (
-	workingDirectoryPermission = 0644
+	// workingDirectoryPermission user read/write/execute, group and others: read-only
+	workingDirectoryPermission = 0744
 )
 
 type Service struct {
@@ -145,6 +148,28 @@ func (s *Supervisor) Start(svcs []Service) error {
 					Type:        "bind",
 					Options:     []string{"rbind", "rw"},
 				})
+
+				// Only create directories, not files.
+				// Some files don't have a suffix, such as secrets.
+				if len(path.Ext(mnt.Src)) == 0 &&
+					!strings.HasPrefix(mnt.Src, "/var/lib/faasd/secrets/") {
+					// src is already prefixed with wd from an earlier step
+					src := mnt.Src
+					fmt.Printf("Creating local directory: %s\n", src)
+					if err := os.MkdirAll(src, workingDirectoryPermission); err != nil {
+						if !errors.Is(os.ErrExist, err) {
+							fmt.Printf("Unable to create: %s, %s\n", src, err)
+						}
+					}
+					if len(svc.User) > 0 {
+						uid, err := strconv.Atoi(svc.User)
+						if err == nil {
+							if err := os.Chown(src, uid, -1); err != nil {
+								fmt.Printf("Unable to chown: %s to %d, error: %s\n", src, uid, err)
+							}
+						}
+					}
+				}
 			}
 		}
 
