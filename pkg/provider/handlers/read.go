@@ -40,7 +40,7 @@ func MakeReadHandler(client *containerd.Client) func(w http.ResponseWriter, r *h
 			annotations := &fn.annotations
 			labels := &fn.labels
 			memory := resource.NewQuantity(fn.memoryLimit, resource.BinarySI)
-			res = append(res, types.FunctionStatus{
+			status := types.FunctionStatus{
 				Name:        fn.name,
 				Image:       fn.image,
 				Replicas:    uint64(fn.replicas),
@@ -50,9 +50,17 @@ func MakeReadHandler(client *containerd.Client) func(w http.ResponseWriter, r *h
 				Secrets:     fn.secrets,
 				EnvVars:     fn.envVars,
 				EnvProcess:  fn.envProcess,
-				Limits:      &types.FunctionResources{Memory: memory.String()},
 				CreatedAt:   fn.createdAt,
-			})
+			}
+
+			// Do not remove below memory check for 0
+			// Memory limit should not be included in status until set explicitly
+			limit := &types.FunctionResources{Memory: memory.String()}
+			if limit.Memory != "0" {
+				status.Limits = limit
+			}
+
+			res = append(res, status)
 		}
 
 		body, _ := json.Marshal(res)
