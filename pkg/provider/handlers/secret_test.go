@@ -14,7 +14,7 @@ import (
 
 	"github.com/openfaas/faas-provider/types"
 	"github.com/openfaas/faasd/pkg"
-	mock "github.com/openfaas/faasd/pkg/provider"
+	provider "github.com/openfaas/faasd/pkg/provider"
 )
 
 func Test_parseSecret(t *testing.T) {
@@ -210,10 +210,9 @@ func TestListSecrets(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			fakeStore := &mock.FakeLabeller{}
-			fakeStore.FakeLabels = tc.labels
+			labelStore := provider.NewFakeLabeller(tc.labels)
 
-			handler := MakeSecretHandler(fakeStore, mountPath)
+			handler := MakeSecretHandler(labelStore, mountPath)
 
 			path := "http://example.com/foo"
 			if len(tc.namespace) > 0 {
@@ -226,29 +225,27 @@ func TestListSecrets(t *testing.T) {
 
 			resp := w.Result()
 			if resp.StatusCode != tc.status {
-				t.Logf("response body: %s", w.Body.String())
-				t.Fatalf("expected status: %d, got: %d", tc.status, resp.StatusCode)
+				t.Fatalf("want status: %d, but got: %d", tc.status, resp.StatusCode)
 			}
 
 			if resp.StatusCode != http.StatusOK && w.Body.String() != tc.err {
-				t.Fatalf("expected error message: %q, got %q", tc.err, w.Body.String())
-
+				t.Fatalf("want error message: %q, but got %q", tc.err, w.Body.String())
 			}
 
 			body, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
-				t.Fatalf("can not read response of list %v", err)
+				t.Fatalf("can't read response of list %v", err)
 			}
 
 			var res []types.Secret
 			err = json.Unmarshal(body, &res)
 
 			if err != nil {
-				t.Fatalf("can not read response of list %v", err)
+				t.Fatalf("unable to unmarshal %q, error: %v", string(body), err)
 			}
 
 			if !reflect.DeepEqual(res, tc.expected) {
-				t.Fatalf("expected response: %v, got: %v", tc.expected, res)
+				t.Fatalf("want response: %v, but got: %v", tc.expected, res)
 			}
 		})
 	}
