@@ -46,13 +46,13 @@ has_pacman() {
 install_required_packages() {
   if $(has_apt_get); then
     $SUDO apt-get update -y
-    $SUDO apt-get install -y curl runc bridge-utils
+    $SUDO apt-get install -y curl runc bridge-utils iptables
   elif $(has_yum); then
     $SUDO yum check-update -y
-    $SUDO yum install -y curl runc
+    $SUDO yum install -y curl runc iptables
   elif $(has_pacman); then
     $SUDO pacman -Syy
-    $SUDO pacman -Sy curl runc bridge-utils
+    $SUDO pacman -Sy curl runc bridge-utils iptables
   else
     fatal "Could not find apt-get, yum, or pacman. Cannot install dependencies on this OS."
     exit 1
