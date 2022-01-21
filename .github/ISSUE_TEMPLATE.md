@@ -1,3 +1,7 @@
+## Due diligence
+
+Before you for help or support, make sure that you've [consulted the faasd manual "Serverless For Everyone Else"](https://openfaas.gumroad.com/l/serverless-for-everyone-else).
+
 <!--- Provide a general summary of the issue in the Title above -->
 
 ## Expected Behaviour
