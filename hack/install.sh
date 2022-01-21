@@ -45,14 +45,18 @@ has_pacman() {
 
 install_required_packages() {
   if $(has_apt_get); then
+    # Debian bullseye is missing iptables. Added to required packages
+    # to get it working in raspberry pi. No such known issues in
+    # other distros. Hence, adding only to this block.
+    # reference: https://github.com/openfaas/faasd/pull/237
     $SUDO apt-get update -y
     $SUDO apt-get install -y curl runc bridge-utils iptables
   elif $(has_yum); then
     $SUDO yum check-update -y
-    $SUDO yum install -y curl runc iptables
+    $SUDO yum install -y curl runc
   elif $(has_pacman); then
     $SUDO pacman -Syy
-    $SUDO pacman -Sy curl runc bridge-utils iptables
+    $SUDO pacman -Sy curl runc bridge-utils
   else
     fatal "Could not find apt-get, yum, or pacman. Cannot install dependencies on this OS."
     exit 1
