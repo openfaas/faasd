@@ -662,10 +662,12 @@ github.com/opencontainers/runtime-tools v0.0.0-20181011054405-1d69bd0f9c39/go.mo
 github.com/opencontainers/selinux v1.6.0/go.mod h1:VVGKuOLlE7v4PJyT6h7mNWvq1rzqiriPsEqVhc+svHE=
 github.com/opencontainers/selinux v1.8.0 h1:+77ba4ar4jsCbL1GLbFL8fFM57w6suPfSS9PDLDY7KM=
 github.com/opencontainers/selinux v1.8.0/go.mod h1:RScLhm78qiWa2gbVCcGkC7tCGdgk3ogry1nUQF8Evvo=
-github.com/openfaas/faas-provider v0.18.6 h1:wypzvPKZqta8t4rx3W6Dm14ommBCc+rQ4DKDiBdGB7M=
 github.com/openfaas/faas-provider v0.18.6/go.mod h1:fq1JL0mX4rNvVVvRLaLRJ3H6o667sHuyP5p/7SZEe98=
-github.com/openfaas/faas/gateway v0.0.0-20210726163109-539f0a2c946e h1:FeJv/Kj1Bgvc8W89GYKP33MlEl++vat/rmMtLKmQjS4=
-github.com/openfaas/faas/gateway v0.0.0-20210726163109-539f0a2c946e/go.mod h1:dTwtGnbhwl7CjLuYTvp8fgNHq93PrQSTDKkNRpLce18=
+github.com/openfaas/faas-provider v0.18.7/go.mod h1:S217qfIaMrv+XKJxgbhBzJzCfyFvoIF+BvYdDo6XIDQ=
+github.com/openfaas/faas-provider v0.18.9 h1:nHPlq9PYLGLuyhuXfASlBPOvXiZC/fJqHOr6m+0Fn1s=
+github.com/openfaas/faas-provider v0.18.9/go.mod h1:S217qfIaMrv+XKJxgbhBzJzCfyFvoIF+BvYdDo6XIDQ=
+github.com/openfaas/faas/gateway v0.0.0-20220124164130-cdb6badddaed h1:IUR44PymXKr2Dj/fd5AsmHQQ7qKBqqkRsv7L05WUUvM=
+github.com/openfaas/faas/gateway v0.0.0-20220124164130-cdb6badddaed/go.mod h1:whIGF77conBmsgi5s56E2yjX3dXiw4DXypt4+eTxVQM=
 github.com/openfaas/nats-queue-worker v0.0.0-20210726161954-ada9a31504c9/go.mod h1:ajlN2z+D8JPBq3kWNv4WLT6mtKPqlgeE3dYEx39d1tk=
 github.com/opentracing-contrib/go-observer v0.0.0-20170622124052-a52f23424492/go.mod h1:Ngi6UdF0k5OKD5t5wlmGhe/EDKPoUM3BXZSSfIuJbis=
 github.com/opentracing/basictracer-go v1.0.0/go.mod h1:QfBfYuafItcjQuMwinw9GhYKwFXS9KnPs5lxoYwgW74=
