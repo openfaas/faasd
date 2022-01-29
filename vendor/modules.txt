@@ -4,7 +4,7 @@ github.com/Microsoft/go-winio/backuptar
 github.com/Microsoft/go-winio/pkg/guid
 github.com/Microsoft/go-winio/pkg/security
 github.com/Microsoft/go-winio/vhd
-# github.com/Microsoft/hcsshim v0.8.18
+# github.com/Microsoft/hcsshim v0.8.23
 github.com/Microsoft/hcsshim
 github.com/Microsoft/hcsshim/computestorage
 github.com/Microsoft/hcsshim/internal/cow
@@ -32,6 +32,8 @@ github.com/alexellis/go-execute/pkg/v1
 # github.com/alexellis/k3sup v0.0.0-20210726065733-9717ee3b75a0
 ## explicit
 github.com/alexellis/k3sup/pkg/env
+# github.com/bits-and-blooms/bitset v1.2.0
+github.com/bits-and-blooms/bitset
 # github.com/compose-spec/compose-go v0.0.0-20200528042322-36d8ce368e05
 ## explicit
 github.com/compose-spec/compose-go/envfile
@@ -42,7 +44,7 @@ github.com/compose-spec/compose-go/template
 github.com/compose-spec/compose-go/types
 # github.com/containerd/cgroups v1.0.1
 github.com/containerd/cgroups/stats/v1
-# github.com/containerd/containerd v1.5.4
+# github.com/containerd/containerd v1.5.9
 ## explicit
 github.com/containerd/containerd
 github.com/containerd/containerd/api/services/containers/v1
@@ -111,7 +113,7 @@ github.com/containerd/fifo
 # github.com/containerd/go-cni v1.0.2
 ## explicit
 github.com/containerd/go-cni
-# github.com/containerd/ttrpc v1.0.2
+# github.com/containerd/ttrpc v1.1.0
 github.com/containerd/ttrpc
 # github.com/containerd/typeurl v1.0.2
 github.com/containerd/typeurl
@@ -173,7 +175,7 @@ github.com/google/uuid
 # github.com/gorilla/mux v1.8.0
 ## explicit
 github.com/gorilla/mux
-# github.com/imdario/mergo v0.3.11
+# github.com/imdario/mergo v0.3.12
 github.com/imdario/mergo
 # github.com/inconshreveable/mousetrap v1.0.0
 github.com/inconshreveable/mousetrap
@@ -196,16 +198,16 @@ github.com/moby/sys/mountinfo
 github.com/morikuni/aec
 # github.com/opencontainers/go-digest v1.0.0
 github.com/opencontainers/go-digest
-# github.com/opencontainers/image-spec v1.0.1
+# github.com/opencontainers/image-spec v1.0.2
 github.com/opencontainers/image-spec/identity
 github.com/opencontainers/image-spec/specs-go
 github.com/opencontainers/image-spec/specs-go/v1
-# github.com/opencontainers/runc v1.0.0-rc93
+# github.com/opencontainers/runc v1.0.2
 github.com/opencontainers/runc/libcontainer/user
-# github.com/opencontainers/runtime-spec v1.0.3-0.20200929063507-e6143ca7d51d
+# github.com/opencontainers/runtime-spec v1.0.3-0.20210326190908-1c3f411f0417
 ## explicit
 github.com/opencontainers/runtime-spec/specs-go
-# github.com/opencontainers/selinux v1.8.0
+# github.com/opencontainers/selinux v1.8.2
 github.com/opencontainers/selinux/go-selinux
 github.com/opencontainers/selinux/go-selinux/label
 github.com/opencontainers/selinux/pkg/pwalk
@@ -226,7 +228,7 @@ github.com/pkg/errors
 # github.com/sethvargo/go-password v0.2.0
 ## explicit
 github.com/sethvargo/go-password/password
-# github.com/sirupsen/logrus v1.7.0
+# github.com/sirupsen/logrus v1.8.1
 github.com/sirupsen/logrus
 # github.com/spf13/cobra v1.2.1
 ## explicit
@@ -241,8 +243,6 @@ github.com/vishvananda/netlink/nl
 # github.com/vishvananda/netns v0.0.0-20200728191858-db3c7e526aae
 ## explicit
 github.com/vishvananda/netns
-# github.com/willf/bitset v1.1.11
-github.com/willf/bitset
 # github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb
 ## explicit
 github.com/xeipuuv/gojsonpointer
@@ -325,7 +325,7 @@ google.golang.org/grpc/serviceconfig
 google.golang.org/grpc/stats
 google.golang.org/grpc/status
 google.golang.org/grpc/tap
-# google.golang.org/protobuf v1.26.0
+# google.golang.org/protobuf v1.27.1
 google.golang.org/protobuf/encoding/prototext
 google.golang.org/protobuf/encoding/protowire
 google.golang.org/protobuf/internal/descfmt
