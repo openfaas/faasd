@@ -361,3 +361,31 @@ The default Basic Auth username is `admin`, which is written to `/var/lib/faasd/
 * `faasd install` - install faasd and containerd with systemd, this must be run from `$GOPATH/src/github.com/openfaas/faasd`
 * `journalctl -u faasd -f` - faasd service logs
 * `journalctl -u faasd-provider -f` - faasd-provider service logs
+
+#### Uninstall
+
+* Stop faasd and faasd-provider
+```
+sudo systemctl stop faasd
+sudo systemctl stop faasd-provider
+sudo systemctl stop containerd
+```
+
+* Remove faasd from machine
+```
+sudo systemctl disable faasd
+sudo systemctl disable faasd-provider
+sudo systemctl disable containerd
+sudo rm -rf /usr/local/bin/faasd
+sudo rm -rf /var/lib/faasd
+sudo rm -rf /usr/lib/systemd/system/faasd-provider.service
+sudo rm -rf /usr/lib/systemd/system/faasd.service
+sudo rm -rf /usr/lib/systemd/system/containerd
+sudo systemctl daemon-reload
+```
+
+* Remove additional dependencies. Be cautious as other software will be dependent on these.
+```
+sudo apt-get remove runc bridge-utils
+sudo rm -rf /opt/cni/bin
+```
