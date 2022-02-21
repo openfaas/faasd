@@ -19,11 +19,11 @@ services:
       - CAP_NET_RAW
 
   nats:
-    image: docker.io/library/nats-streaming:0.22.0
+    image: docker.io/library/nats-streaming:0.24-alpine
 # nobody
     user: "65534"
     command:
-      - "/nats-streaming-server"
+      - "nats-streaming-server"
       - "-m"
       - "8222"
       - "--store=file"
