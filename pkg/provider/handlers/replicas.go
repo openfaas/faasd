@@ -31,6 +31,7 @@ func MakeReplicaReaderHandler(client *containerd.Client) func(w http.ResponseWri
 		if f, err := GetFunction(client, functionName, lookupNamespace); err == nil {
 			found := types.FunctionStatus{
 				Name:              functionName,
+				Image:             f.image,
 				AvailableReplicas: uint64(f.replicas),
 				Replicas:          uint64(f.replicas),
 				Namespace:         f.namespace,
