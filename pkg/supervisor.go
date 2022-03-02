@@ -19,6 +19,7 @@ import (
 	"github.com/containerd/containerd/containers"
 	"github.com/containerd/containerd/oci"
 	gocni "github.com/containerd/go-cni"
+	"github.com/docker/distribution/reference"
 	"github.com/openfaas/faasd/pkg/cninetwork"
 	"github.com/openfaas/faasd/pkg/service"
 	"github.com/pkg/errors"
@@ -107,7 +108,14 @@ func (s *Supervisor) Start(svcs []Service) error {
 	for _, svc := range svcs {
 		fmt.Printf("Preparing %s with image: %s\n", svc.Name, svc.Image)
 
-		img, err := service.PrepareImage(ctx, s.client, svc.Image, defaultSnapshotter, faasServicesPullAlways)
+		r, err := reference.ParseNormalizedNamed(svc.Image)
+		if err != nil {
+			return err
+		}
+
+		imgRef := reference.TagNameOnly(r).String()
+
+		img, err := service.PrepareImage(ctx, s.client, imgRef, defaultSnapshotter, faasServicesPullAlways)
 		if err != nil {
 			return err
 		}
