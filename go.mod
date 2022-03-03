@@ -6,7 +6,7 @@ require (
 	github.com/alexellis/go-execute v0.5.0
 	github.com/alexellis/k3sup v0.0.0-20210726065733-9717ee3b75a0
 	github.com/compose-spec/compose-go v0.0.0-20200528042322-36d8ce368e05
-	github.com/containerd/containerd v1.5.4
+	github.com/containerd/containerd v1.5.10
 	github.com/containerd/go-cni v1.0.2
 	github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf
 	github.com/docker/cli v0.0.0-20191105005515-99c5edceb48d
@@ -16,7 +16,7 @@ require (
 	github.com/docker/go-units v0.4.0
 	github.com/gorilla/mux v1.8.0
 	github.com/morikuni/aec v1.0.0
-	github.com/opencontainers/runtime-spec v1.0.3-0.20200929063507-e6143ca7d51d
+	github.com/opencontainers/runtime-spec v1.0.3-0.20210326190908-1c3f411f0417
 	github.com/openfaas/faas-provider v0.18.9
 	github.com/openfaas/faas/gateway v0.0.0-20220124164130-cdb6badddaed
 	github.com/pkg/errors v0.9.1
