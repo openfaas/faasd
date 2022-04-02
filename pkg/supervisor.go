@@ -24,6 +24,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/containerd/containerd/namespaces"
+	units "github.com/docker/go-units"
 	"github.com/opencontainers/runtime-spec/specs-go"
 )
 
@@ -112,7 +113,7 @@ func (s *Supervisor) Start(svcs []Service) error {
 		}
 		images[svc.Name] = img
 		size, _ := img.Size(ctx)
-		fmt.Printf("Prepare done for: %s, %d bytes\n", svc.Image, size)
+		fmt.Printf("Prepare done for: %s, %s\n", svc.Image, units.HumanSize(float64(size)))
 	}
 
 	for _, svc := range svcs {
