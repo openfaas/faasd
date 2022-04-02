@@ -13,6 +13,7 @@ require (
 	github.com/docker/distribution v2.8.0+incompatible
 	github.com/docker/docker v17.12.0-ce-rc1.0.20191113042239-ea84732a7725+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.6.3 // indirect
+	github.com/docker/go-units v0.4.0
 	github.com/gorilla/mux v1.8.0
 	github.com/morikuni/aec v1.0.0
 	github.com/opencontainers/runtime-spec v1.0.3-0.20200929063507-e6143ca7d51d
