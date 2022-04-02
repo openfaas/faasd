@@ -16,6 +16,7 @@ import (
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
 
+	units "github.com/docker/go-units"
 	"github.com/openfaas/faasd/pkg"
 )
 
@@ -68,7 +69,7 @@ func runUp(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	log.Printf("Supervisor created in: %s\n", time.Since(start).String())
+	log.Printf("Supervisor created in: %s\n", units.HumanDuration(time.Since(start)))
 
 	start = time.Now()
 	if err := supervisor.Start(services); err != nil {
@@ -76,7 +77,7 @@ func runUp(cmd *cobra.Command, _ []string) error {
 	}
 	defer supervisor.Close()
 
-	log.Printf("Supervisor init done in: %s\n", time.Since(start).String())
+	log.Printf("Supervisor init done in: %s\n", units.HumanDuration(time.Since(start)))
 
 	shutdownTimeout := time.Second * 1
 	timeout := time.Second * 60
