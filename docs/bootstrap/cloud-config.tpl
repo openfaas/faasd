@@ -11,7 +11,7 @@ runcmd:
 - systemctl daemon-reload && systemctl start containerd
 - /sbin/sysctl -w net.ipv4.conf.all.forwarding=1
 - mkdir -p /opt/cni/bin
-- curl -sSL https://github.com/containernetworking/plugins/releases/download/v0.8.5/cni-plugins-linux-amd64-v0.8.5.tgz | tar -xz -C /opt/cni/bin
+- curl -sSL https://github.com/containernetworking/plugins/releases/download/v0.9.1/cni-plugins-linux-amd64-v0.9.1.tgz | tar -xz -C /opt/cni/bin
 - mkdir -p /go/src/github.com/openfaas/
 - mkdir -p /var/lib/faasd/secrets/
 - echo ${gw_password} > /var/lib/faasd/secrets/basic-auth-password
