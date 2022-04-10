@@ -19,13 +19,15 @@ package cni
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"sync"
 
 	cnilibrary "github.com/containernetworking/cni/libcni"
+	"github.com/containernetworking/cni/pkg/invoke"
 	"github.com/containernetworking/cni/pkg/types"
-	"github.com/containernetworking/cni/pkg/types/current"
-	"github.com/pkg/errors"
+	types100 "github.com/containernetworking/cni/pkg/types/100"
+	"github.com/containernetworking/cni/pkg/version"
 )
 
 type CNI interface {
@@ -33,6 +35,8 @@ type CNI interface {
 	Setup(ctx context.Context, id string, path string, opts ...NamespaceOpts) (*Result, error)
 	// Remove tears down the network of the namespace.
 	Remove(ctx context.Context, id string, path string, opts ...NamespaceOpts) error
+	// Check checks if the network is still in desired state
+	Check(ctx context.Context, id string, path string, opts ...NamespaceOpts) error
 	// Load loads the cni network config
 	Load(opts ...Opt) error
 	// Status checks the status of the cni initialization
@@ -85,9 +89,15 @@ func defaultCNIConfig() *libcni {
 			pluginMaxConfNum: DefaultMaxConfNum,
 			prefix:           DefaultPrefix,
 		},
-		cniConfig: &cnilibrary.CNIConfig{
-			Path: []string{DefaultCNIDir},
-		},
+		cniConfig: cnilibrary.NewCNIConfig(
+			[]string{
+				DefaultCNIDir,
+			},
+			&invoke.DefaultExec{
+				RawExec:       &invoke.RawExec{Stderr: os.Stderr},
+				PluginDecoder: version.PluginDecoder{},
+			},
+		),
 		networkCount: 1,
 	}
 }
@@ -115,7 +125,7 @@ func (c *libcni) Load(opts ...Opt) error {
 
 	for _, o := range opts {
 		if err = o(c); err != nil {
-			return errors.Wrapf(ErrLoad, fmt.Sprintf("cni config load failed: %v", err))
+			return fmt.Errorf("cni config load failed: %v: %w", err, ErrLoad)
 		}
 	}
 	return nil
@@ -155,16 +165,39 @@ func (c *libcni) Setup(ctx context.Context, id string, path string, opts ...Name
 	return c.createResult(result)
 }
 
-func (c *libcni) attachNetworks(ctx context.Context, ns *Namespace) ([]*current.Result, error) {
-	var results []*current.Result
-	for _, network := range c.Networks() {
-		r, err := network.Attach(ctx, ns)
-		if err != nil {
-			return nil, err
-		}
-		results = append(results, r)
+type asynchAttachResult struct {
+	index int
+	res   *types100.Result
+	err   error
+}
+
+func asynchAttach(ctx context.Context, index int, n *Network, ns *Namespace, wg *sync.WaitGroup, rc chan asynchAttachResult) {
+	defer wg.Done()
+	r, err := n.Attach(ctx, ns)
+	rc <- asynchAttachResult{index: index, res: r, err: err}
+}
+
+func (c *libcni) attachNetworks(ctx context.Context, ns *Namespace) ([]*types100.Result, error) {
+	var wg sync.WaitGroup
+	var firstError error
+	results := make([]*types100.Result, len(c.Networks()))
+	rc := make(chan asynchAttachResult)
+
+	for i, network := range c.Networks() {
+		wg.Add(1)
+		go asynchAttach(ctx, i, network, ns, &wg, rc)
 	}
-	return results, nil
+
+	for range c.Networks() {
+		rs := <-rc
+		if rs.err != nil && firstError == nil {
+			firstError = rs.err
+		}
+		results[rs.index] = rs.res
+	}
+	wg.Wait()
+
+	return results, firstError
 }
 
 // Remove removes the network config from the namespace
@@ -184,12 +217,33 @@ func (c *libcni) Remove(ctx context.Context, id string, path string, opts ...Nam
 			// https://github.com/containernetworking/plugins/issues/210
 			// TODO(random-liu): Remove the error handling when the issue is
 			// fixed and the CNI spec v0.6.0 support is deprecated.
-			if path == "" && strings.Contains(err.Error(), "no such file or directory") {
+			// NOTE(claudiub): Some CNIs could return a "not found" error, which could mean that
+			// it was already deleted.
+			if (path == "" && strings.Contains(err.Error(), "no such file or directory")) || strings.Contains(err.Error(), "not found") {
 				continue
 			}
 			return err
 		}
 	}
+	return nil
+}
+
+// Check checks if the network is still in desired state
+func (c *libcni) Check(ctx context.Context, id string, path string, opts ...NamespaceOpts) error {
+	if err := c.Status(); err != nil {
+		return err
+	}
+	ns, err := newNamespace(id, path, opts...)
+	if err != nil {
+		return err
+	}
+	for _, network := range c.Networks() {
+		err := network.Check(ctx, ns)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
