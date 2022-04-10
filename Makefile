@@ -32,7 +32,7 @@ hashgen:
 
 .PHONY: prepare-test
 prepare-test:
-	curl -sLSf https://github.com/containerd/containerd/releases/download/v$(CONTAINERD_VER)/containerd-$(CONTAINERD_VER).linux-amd64.tar.gz > /tmp/containerd.tar.gz && sudo tar -xvf /tmp/containerd.tar.gz -C /usr/local/bin/ --strip-components=1
+	curl -sLSf https://github.com/containerd/containerd/releases/download/v$(CONTAINERD_VER)/containerd-$(CONTAINERD_VER)-linux-amd64.tar.gz > /tmp/containerd.tar.gz && sudo tar -xvf /tmp/containerd.tar.gz -C /usr/local/bin/ --strip-components=1
 	curl -SLfs https://raw.githubusercontent.com/containerd/containerd/v1.6.2/containerd.service | sudo tee /etc/systemd/system/containerd.service
 	sudo systemctl daemon-reload && sudo systemctl start containerd
 	sudo /sbin/sysctl -w net.ipv4.conf.all.forwarding=1
