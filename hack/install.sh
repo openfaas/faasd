@@ -1,10 +1,8 @@
 #!/bin/bash
-set -eo pipefail
 
 # Copyright OpenFaaS Author(s) 2022
 
-# Consider adding?
-# set -e -x -o pipefail
+set -e -x -o pipefail
 
 export OWNER="openfaas"
 export REPO="faasd"
