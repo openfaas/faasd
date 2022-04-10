@@ -88,8 +88,8 @@ install_cni_plugins() {
 
 install_containerd() {
   arch=$(uname -m)
-  case $arch in
   CONTAINERD_VER=1.6.2
+  case $arch in
   x86_64 | amd64)
     curl -sLSf https://github.com/containerd/containerd/releases/download/v${CONTAINERD_VER}/containerd-${CONTAINERD_VER}-linux-amd64.tar.gz | $SUDO tar -xvz --strip-components=1 -C /usr/local/bin/
     ;;
