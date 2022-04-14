@@ -61,53 +61,20 @@ install_required_packages() {
   fi
 }
 
+install_arkade(){
+  curl -sLS https://get.arkade.dev | sudo sh
+  arkade --help
+}
+
 install_cni_plugins() {
   cni_version=v0.9.1
-  suffix=""
-  arch=$(uname -m)
-  case $arch in
-  x86_64 | amd64)
-    suffix=amd64
-    ;;
-  aarch64)
-    suffix=arm64
-    ;;
-  arm*)
-    suffix=arm
-    ;;
-  *)
-    fatal "Unsupported architecture $arch"
-    ;;
-  esac
-
-  $SUDO mkdir -p /opt/cni/bin
-  curl -sSL https://github.com/containernetworking/plugins/releases/download/${cni_version}/cni-plugins-linux-${suffix}-${cni_version}.tgz | $SUDO tar -xvz -C /opt/cni/bin
+  sudo arkade system install cni --version ${cni_version} --path /opt/cni/bin
 }
 
 install_containerd() {
-  arch=$(uname -m)
-  CONTAINERD_VER=1.6.4
-  case $arch in
-  x86_64 | amd64)
-    curl -sLSf https://github.com/containerd/containerd/releases/download/v${CONTAINERD_VER}/containerd-${CONTAINERD_VER}-linux-amd64.tar.gz | $SUDO tar -xvz --strip-components=1 -C /usr/local/bin/
-    ;;
-  armv7l)
-    curl -sSL https://github.com/alexellis/containerd-arm/releases/download/v${CONTAINERD_VER}/containerd-${CONTAINERD_VER}-linux-armhf.tar.gz | $SUDO tar -xvz --strip-components=1 -C /usr/local/bin/
-    ;;
-  aarch64)
-      curl -sLSf https://github.com/containerd/containerd/releases/download/v${CONTAINERD_VER}/containerd-${CONTAINERD_VER}-linux-arm64.tar.gz | $SUDO tar -xvz --strip-components=1 -C /usr/local/bin/
-
-    ;;
-  *)
-    fatal "Unsupported architecture $arch"
-    ;;
-  esac
-
+  CONTAINERD_VER=v1.6.4
   $SUDO systemctl unmask containerd || :
-  $SUDO curl -SLfs https://raw.githubusercontent.com/containerd/containerd/v${CONTAINERD_VER}/containerd.service --output /etc/systemd/system/containerd.service
-  $SUDO systemctl enable containerd
-  $SUDO systemctl start containerd
-
+  sudo arkade system install containerd --systemd --version ${CONTAINERD_VER}
   sleep 5
 }
 
@@ -144,24 +111,10 @@ install_faasd() {
 
 install_caddy() {
   if [ ! -z "${FAASD_DOMAIN}" ]; then
-    arch=$(uname -m)
-    case $arch in
-    x86_64 | amd64)
-      suffix="amd64"
-      ;;
-    aarch64)
-      suffix=arm64
-      ;;
-    armv7l)
-      suffix=armv7
-      ;;
-    *)
-      echo "Unsupported architecture $arch"
-      exit 1
-      ;;
-    esac
+    CADDY_VER=v2.4.3
+    arkade get caddy -v ${CADDY_VER}
+    $SUDO install -m 755 $HOME/.arkade/bin/caddy /usr/local/bin/
 
-    curl -sSL "https://github.com/caddyserver/caddy/releases/download/v2.4.3/caddy_2.4.3_linux_${suffix}.tar.gz" | $SUDO tar -xvz -C /usr/bin/ caddy
     $SUDO curl -fSLs https://raw.githubusercontent.com/caddyserver/dist/master/init/caddy.service --output /etc/systemd/system/caddy.service
 
     $SUDO mkdir -p /etc/caddy
@@ -194,7 +147,8 @@ EOF
 }
 
 install_faas_cli() {
-  curl -sLS https://cli.openfaas.com | $SUDO sh
+  arkade get faas-cli
+  $SUDO install -m 755 $HOME/.arkade/bin/faas-cli /usr/local/bin/
 }
 
 verify_system
@@ -203,6 +157,7 @@ install_required_packages
 $SUDO /sbin/sysctl -w net.ipv4.conf.all.forwarding=1
 echo "net.ipv4.conf.all.forwarding=1" | $SUDO tee -a /etc/sysctl.conf
 
+install_arkade
 install_cni_plugins
 install_containerd
 install_faas_cli
