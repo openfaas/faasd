@@ -175,7 +175,7 @@ func deploy(ctx context.Context, req types.FunctionDeployment, client *container
 		return fmt.Errorf("unable to create container: %s, error: %w", name, err)
 	}
 
-	return createTask(ctx, client, container, cni)
+	return createTask(ctx, container, cni)
 
 }
 
@@ -203,7 +203,7 @@ func buildLabels(request *types.FunctionDeployment) (map[string]string, error) {
 	return labels, nil
 }
 
-func createTask(ctx context.Context, client *containerd.Client, container containerd.Container, cni gocni.CNI) error {
+func createTask(ctx context.Context, container containerd.Container, cni gocni.CNI) error {
 
 	name := container.ID()
 
