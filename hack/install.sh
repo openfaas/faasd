@@ -150,7 +150,7 @@ install_caddy() {
       suffix="amd64"
       ;;
     aarch64)
-      suffix=-arm64
+      suffix=arm64
       ;;
     armv7l)
       suffix=-armv7
