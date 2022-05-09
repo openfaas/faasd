@@ -131,7 +131,7 @@ func MakeReplicaUpdateHandler(client *containerd.Client, cni gocni.CNI) func(w h
 		}
 
 		if createNewTask {
-			deployErr := createTask(ctx, client, ctr, cni)
+			deployErr := createTask(ctx, ctr, cni)
 			if deployErr != nil {
 				log.Printf("[Scale] error deploying %s, error: %s\n", name, deployErr)
 				http.Error(w, deployErr.Error(), http.StatusBadRequest)

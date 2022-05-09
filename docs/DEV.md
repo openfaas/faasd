@@ -20,7 +20,7 @@ See these instructions instead: [Testing patches](/docs/PATCHES.md)
 
     For Windows users, install [Git Bash](https://git-scm.com/downloads) along with multipass or vagrant. You can also use WSL1 or WSL2 which provides a Linux environment.
 
-    You will also need [containerd v1.5.4](https://github.com/containerd/containerd) and the [CNI plugins v0.8.5](https://github.com/containernetworking/plugins)
+    You will also need [containerd v1.6.2](https://github.com/containerd/containerd) and the [CNI plugins v0.9.1](https://github.com/containernetworking/plugins)
 
     [faas-cli](https://github.com/openfaas/faas-cli) is optional, but recommended.
 
@@ -64,7 +64,7 @@ Then run:
 
 ```bash
 export ARCH=amd64
-export CNI_VERSION=v0.8.5
+export CNI_VERSION=v0.9.1
 
 sudo mkdir -p /opt/cni/bin
 curl -sSL https://github.com/containernetworking/plugins/releases/download/${CNI_VERSION}/cni-plugins-linux-${ARCH}-${CNI_VERSION}.tgz | sudo tar -xz -C /opt/cni/bin
@@ -88,7 +88,7 @@ You have three options - binaries for PC, binaries for armhf, or build from sour
 * Install containerd `x86_64` only
 
 ```bash
-export VER=1.5.4
+export VER=1.6.2
 curl -sSL https://github.com/containerd/containerd/releases/download/v$VER/containerd-$VER-linux-amd64.tar.gz > /tmp/containerd.tar.gz \
   && sudo tar -xvf /tmp/containerd.tar.gz -C /usr/local/bin/ --strip-components=1
 
@@ -100,7 +100,7 @@ containerd -version
     Building `containerd` on armhf is extremely slow, so I've provided binaries for you.
 
     ```bash
-    curl -sSL https://github.com/alexellis/containerd-armhf/releases/download/v1.5.4/containerd.tgz | sudo tar -xvz --strip-components=2 -C /usr/local/bin/
+    curl -sSL https://github.com/alexellis/containerd-armhf/releases/download/v1.6.2/containerd.tgz | sudo tar -xvz --strip-components=2 -C /usr/local/bin/
     ```
 
 * Or clone / build / install [containerd](https://github.com/containerd/containerd) from source:
@@ -112,7 +112,7 @@ containerd -version
     git clone https://github.com/containerd/containerd
     cd containerd
     git fetch origin --tags
-    git checkout v1.5.4
+    git checkout v1.6.2
 
     make
     sudo make install
@@ -123,7 +123,7 @@ containerd -version
 #### Ensure containerd is running
 
 ```bash
-curl -sLS https://raw.githubusercontent.com/containerd/containerd/v1.5.4/containerd.service > /tmp/containerd.service
+curl -sLS https://raw.githubusercontent.com/containerd/containerd/v1.6.2/containerd.service > /tmp/containerd.service
 
 # Extend the timeouts for low-performance VMs
 echo "[Manager]" | tee -a /tmp/containerd.service
@@ -361,3 +361,31 @@ The default Basic Auth username is `admin`, which is written to `/var/lib/faasd/
 * `faasd install` - install faasd and containerd with systemd, this must be run from `$GOPATH/src/github.com/openfaas/faasd`
 * `journalctl -u faasd -f` - faasd service logs
 * `journalctl -u faasd-provider -f` - faasd-provider service logs
+
+#### Uninstall
+
+* Stop faasd and faasd-provider
+```
+sudo systemctl stop faasd
+sudo systemctl stop faasd-provider
+sudo systemctl stop containerd
+```
+
+* Remove faasd from machine
+```
+sudo systemctl disable faasd
+sudo systemctl disable faasd-provider
+sudo systemctl disable containerd
+sudo rm -rf /usr/local/bin/faasd
+sudo rm -rf /var/lib/faasd
+sudo rm -rf /usr/lib/systemd/system/faasd-provider.service
+sudo rm -rf /usr/lib/systemd/system/faasd.service
+sudo rm -rf /usr/lib/systemd/system/containerd
+sudo systemctl daemon-reload
+```
+
+* Remove additional dependencies. Be cautious as other software will be dependent on these.
+```
+sudo apt-get remove runc bridge-utils
+sudo rm -rf /opt/cni/bin
+```

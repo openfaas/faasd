@@ -19,11 +19,13 @@ import (
 	"github.com/containerd/containerd/containers"
 	"github.com/containerd/containerd/oci"
 	gocni "github.com/containerd/go-cni"
+	"github.com/docker/distribution/reference"
 	"github.com/openfaas/faasd/pkg/cninetwork"
 	"github.com/openfaas/faasd/pkg/service"
 	"github.com/pkg/errors"
 
 	"github.com/containerd/containerd/namespaces"
+	units "github.com/docker/go-units"
 	"github.com/opencontainers/runtime-spec/specs-go"
 )
 
@@ -106,13 +108,20 @@ func (s *Supervisor) Start(svcs []Service) error {
 	for _, svc := range svcs {
 		fmt.Printf("Preparing %s with image: %s\n", svc.Name, svc.Image)
 
-		img, err := service.PrepareImage(ctx, s.client, svc.Image, defaultSnapshotter, faasServicesPullAlways)
+		r, err := reference.ParseNormalizedNamed(svc.Image)
+		if err != nil {
+			return err
+		}
+
+		imgRef := reference.TagNameOnly(r).String()
+
+		img, err := service.PrepareImage(ctx, s.client, imgRef, defaultSnapshotter, faasServicesPullAlways)
 		if err != nil {
 			return err
 		}
 		images[svc.Name] = img
 		size, _ := img.Size(ctx)
-		fmt.Printf("Prepare done for: %s, %d bytes\n", svc.Image, size)
+		fmt.Printf("Prepare done for: %s, %s\n", svc.Image, units.HumanSize(float64(size)))
 	}
 
 	for _, svc := range svcs {

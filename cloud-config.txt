@@ -10,7 +10,7 @@ packages:
  - git
 
 runcmd:
-- curl -sfL https://raw.githubusercontent.com/openfaas/faasd/master/hack/install.sh | sh -s -
+- curl -sfL https://raw.githubusercontent.com/openfaas/faasd/master/hack/install.sh | bash -s -
 - systemctl status -l containerd --no-pager
 - journalctl -u faasd-provider --no-pager
 - systemctl status -l faasd-provider --no-pager
