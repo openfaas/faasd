@@ -53,19 +53,19 @@ func Serve(handlers *types.FaaSHandlers, config *types.FaaSConfig) {
 	}
 
 	// System (auth) endpoints
-	r.HandleFunc("/system/functions", handlers.FunctionReader).Methods("GET")
-	r.HandleFunc("/system/functions", handlers.DeployHandler).Methods("POST")
-	r.HandleFunc("/system/functions", handlers.DeleteHandler).Methods("DELETE")
-	r.HandleFunc("/system/functions", handlers.UpdateHandler).Methods("PUT")
+	r.HandleFunc("/system/functions", handlers.FunctionReader).Methods(http.MethodGet)
+	r.HandleFunc("/system/functions", handlers.DeployHandler).Methods(http.MethodPost)
+	r.HandleFunc("/system/functions", handlers.DeleteHandler).Methods(http.MethodDelete)
+	r.HandleFunc("/system/functions", handlers.UpdateHandler).Methods(http.MethodPut)
 
-	r.HandleFunc("/system/function/{name:["+NameExpression+"]+}", handlers.ReplicaReader).Methods("GET")
-	r.HandleFunc("/system/scale-function/{name:["+NameExpression+"]+}", handlers.ReplicaUpdater).Methods("POST")
-	r.HandleFunc("/system/info", handlers.InfoHandler).Methods("GET")
+	r.HandleFunc("/system/function/{name:["+NameExpression+"]+}", handlers.ReplicaReader).Methods(http.MethodGet)
+	r.HandleFunc("/system/scale-function/{name:["+NameExpression+"]+}", handlers.ReplicaUpdater).Methods(http.MethodPost)
+	r.HandleFunc("/system/info", handlers.InfoHandler).Methods(http.MethodGet)
 
 	r.HandleFunc("/system/secrets", handlers.SecretHandler).Methods(http.MethodGet, http.MethodPut, http.MethodPost, http.MethodDelete)
 	r.HandleFunc("/system/logs", handlers.LogHandler).Methods(http.MethodGet)
 
-	r.HandleFunc("/system/namespaces", handlers.ListNamespaceHandler).Methods("GET")
+	r.HandleFunc("/system/namespaces", handlers.ListNamespaceHandler).Methods(http.MethodGet)
 
 	// Open endpoints
 	r.HandleFunc("/function/{name:["+NameExpression+"]+}", handlers.FunctionProxy)
@@ -73,19 +73,19 @@ func Serve(handlers *types.FaaSHandlers, config *types.FaaSConfig) {
 	r.HandleFunc("/function/{name:["+NameExpression+"]+}/{params:.*}", handlers.FunctionProxy)
 
 	if handlers.HealthHandler != nil {
-		r.HandleFunc("/healthz", handlers.HealthHandler).Methods("GET")
+		r.HandleFunc("/healthz", handlers.HealthHandler).Methods(http.MethodGet)
 	}
 
 	readTimeout := config.ReadTimeout
 	writeTimeout := config.WriteTimeout
 
-	tcpPort := 8080
+	port := 8080
 	if config.TCPPort != nil {
-		tcpPort = *config.TCPPort
+		port = *config.TCPPort
 	}
 
 	s := &http.Server{
-		Addr:           fmt.Sprintf(":%d", tcpPort),
+		Addr:           fmt.Sprintf(":%d", port),
 		ReadTimeout:    readTimeout,
 		WriteTimeout:   writeTimeout,
 		MaxHeaderBytes: http.DefaultMaxHeaderBytes, // 1MB - can be overridden by setting Server.MaxHeaderBytes.
