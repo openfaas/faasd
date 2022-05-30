@@ -6,6 +6,10 @@ set -e -x -o pipefail
 
 export OWNER="openfaas"
 export REPO="faasd"
+
+# On CentOS /usr/local/bin is not included in the PATH when using sudo. 
+# Running arkade with sudo on CentOS requires the full path
+# to the arkade binary. 
 export ARKADE=/usr/local/bin/arkade
 
 version=""
