@@ -6,6 +6,7 @@ set -e -x -o pipefail
 
 export OWNER="openfaas"
 export REPO="faasd"
+export ARKADE=/usr/local/bin/arkade
 
 version=""
 
@@ -51,7 +52,7 @@ install_required_packages() {
     $SUDO apt-get install -y curl runc bridge-utils iptables
   elif $(has_yum); then
     $SUDO yum check-update -y
-    $SUDO yum install -y curl runc
+    $SUDO yum install -y curl runc iptables-services
   elif $(has_pacman); then
     $SUDO pacman -Syy
     $SUDO pacman -Sy curl runc bridge-utils
@@ -68,13 +69,13 @@ install_arkade(){
 
 install_cni_plugins() {
   cni_version=v0.9.1
-  sudo arkade system install cni --version ${cni_version} --path /opt/cni/bin
+  $SUDO $ARKADE system install cni --version ${cni_version} --path /opt/cni/bin
 }
 
 install_containerd() {
   CONTAINERD_VER=v1.6.4
   $SUDO systemctl unmask containerd || :
-  sudo arkade system install containerd --systemd --version ${CONTAINERD_VER}
+  $SUDO $ARKADE system install containerd --systemd --version ${CONTAINERD_VER}
   sleep 5
 }
 
