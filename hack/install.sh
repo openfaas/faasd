@@ -69,13 +69,13 @@ install_arkade(){
 
 install_cni_plugins() {
   cni_version=v0.9.1
-  $SUDO $ARKADE system install cni --version ${cni_version} --path /opt/cni/bin
+  $SUDO $ARKADE system install cni --version ${cni_version} --path /opt/cni/bin --progress=false
 }
 
 install_containerd() {
   CONTAINERD_VER=v1.6.4
   $SUDO systemctl unmask containerd || :
-  $SUDO $ARKADE system install containerd --systemd --version ${CONTAINERD_VER}
+  $SUDO $ARKADE system install containerd --systemd --version ${CONTAINERD_VER}  --progress=false
   sleep 5
 }
 
@@ -113,7 +113,7 @@ install_faasd() {
 install_caddy() {
   if [ ! -z "${FAASD_DOMAIN}" ]; then
     CADDY_VER=v2.4.3
-    arkade get caddy -v ${CADDY_VER}
+    arkade get --progress=false caddy -v ${CADDY_VER}
     $SUDO install -m 755 $HOME/.arkade/bin/caddy /usr/local/bin/
 
     $SUDO curl -fSLs https://raw.githubusercontent.com/caddyserver/dist/master/init/caddy.service --output /etc/systemd/system/caddy.service
@@ -148,7 +148,7 @@ EOF
 }
 
 install_faas_cli() {
-  arkade get faas-cli
+  arkade get --progress=false faas-cli
   $SUDO install -m 755 $HOME/.arkade/bin/faas-cli /usr/local/bin/
 }
 
