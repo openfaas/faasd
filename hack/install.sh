@@ -12,6 +12,13 @@ export REPO="faasd"
 # to the arkade binary. 
 export ARKADE=/usr/local/bin/arkade
 
+# When running as a startup script (cloud-init), the HOME variable is not always set.
+# As it is required for arkade to properly download tools, 
+# set the variable to /usr/local so arkade will download binaries to /usr/local/.arkade
+if [ -z "${HOME}" ]; then
+  export HOME=/usr/local
+fi
+
 version=""
 
 echo "Finding latest version from GitHub"
