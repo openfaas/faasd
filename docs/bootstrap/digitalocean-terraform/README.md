@@ -4,7 +4,7 @@
 2) [Download Terraform](https://www.terraform.io)
 3) Clone this gist using the URL from the address bar
 4) Run `terraform init`
-5) Configure terraform variables as needed by updating the `main.tfvars` file:
+5) Configure terraform variables as needed by updating the `main.tf` vars file:
 
    | Variable     | Description         | Default         |
    | ------------ | ------------------- | --------------- |
