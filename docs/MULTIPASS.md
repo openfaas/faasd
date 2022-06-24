@@ -37,7 +37,7 @@ It took me about 2-3 minutes to run through everything after installing multipas
     This command will update the key with your local public key value and start the VM.
 
     ```sh
-    sed "s/ssh-rsa.*/$(cat $HOME/.ssh/id_*.pub)/" cloud-config.txt | multipass launch --name faasd --cloud-init -
+    sed "s/ssh-rsa.*/$(cat $HOME/.ssh/id_*.pub | sed 's/\//\\\//g')/" cloud-config.txt | multipass launch --name faasd --cloud-init -
     ```
 
     This can also be done manually, just replace the 2nd line of the `cloud-config.txt` with the coPntents of your public ssh key, usually either `~/.ssh/id_rsa.pub` or `~/.ssh/id_ed25519.pub`
