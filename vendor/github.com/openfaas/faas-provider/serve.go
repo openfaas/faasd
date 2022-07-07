@@ -11,6 +11,8 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/openfaas/faas-provider/auth"
 	"github.com/openfaas/faas-provider/types"
+
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 // NameExpression for a function / service
@@ -52,29 +54,41 @@ func Serve(handlers *types.FaaSHandlers, config *types.FaaSConfig) {
 		handlers.LogHandler = auth.DecorateWithBasicAuth(handlers.LogHandler, credentials)
 	}
 
+	hm := newHttpMetrics()
+
 	// System (auth) endpoints
-	r.HandleFunc("/system/functions", handlers.FunctionReader).Methods(http.MethodGet)
-	r.HandleFunc("/system/functions", handlers.DeployHandler).Methods(http.MethodPost)
-	r.HandleFunc("/system/functions", handlers.DeleteHandler).Methods(http.MethodDelete)
-	r.HandleFunc("/system/functions", handlers.UpdateHandler).Methods(http.MethodPut)
+	r.HandleFunc("/system/functions", hm.InstrumentHandler(handlers.FunctionReader, "")).Methods(http.MethodGet)
+	r.HandleFunc("/system/functions", hm.InstrumentHandler(handlers.DeployHandler, "")).Methods(http.MethodPost)
+	r.HandleFunc("/system/functions", hm.InstrumentHandler(handlers.DeleteHandler, "")).Methods(http.MethodDelete)
+	r.HandleFunc("/system/functions", hm.InstrumentHandler(handlers.UpdateHandler, "")).Methods(http.MethodPut)
 
-	r.HandleFunc("/system/function/{name:["+NameExpression+"]+}", handlers.ReplicaReader).Methods(http.MethodGet)
-	r.HandleFunc("/system/scale-function/{name:["+NameExpression+"]+}", handlers.ReplicaUpdater).Methods(http.MethodPost)
-	r.HandleFunc("/system/info", handlers.InfoHandler).Methods(http.MethodGet)
+	r.HandleFunc("/system/function/{name:["+NameExpression+"]+}",
+		hm.InstrumentHandler(handlers.ReplicaReader, "/system/function")).Methods(http.MethodGet)
+	r.HandleFunc("/system/scale-function/{name:["+NameExpression+"]+}",
 
-	r.HandleFunc("/system/secrets", handlers.SecretHandler).Methods(http.MethodGet, http.MethodPut, http.MethodPost, http.MethodDelete)
-	r.HandleFunc("/system/logs", handlers.LogHandler).Methods(http.MethodGet)
+		hm.InstrumentHandler(handlers.ReplicaUpdater, "/system/scale-function")).Methods(http.MethodPost)
+	r.HandleFunc("/system/info",
+		hm.InstrumentHandler(handlers.InfoHandler, "")).Methods(http.MethodGet)
 
-	r.HandleFunc("/system/namespaces", handlers.ListNamespaceHandler).Methods(http.MethodGet)
+	r.HandleFunc("/system/secrets",
+		hm.InstrumentHandler(handlers.SecretHandler, "")).Methods(http.MethodGet, http.MethodPut, http.MethodPost, http.MethodDelete)
+	r.HandleFunc("/system/logs",
+		hm.InstrumentHandler(handlers.LogHandler, "")).Methods(http.MethodGet)
+
+	r.HandleFunc("/system/namespaces", hm.InstrumentHandler(handlers.ListNamespaceHandler, "")).Methods(http.MethodGet)
+
+	proxyHandler := handlers.FunctionProxy
 
 	// Open endpoints
-	r.HandleFunc("/function/{name:["+NameExpression+"]+}", handlers.FunctionProxy)
-	r.HandleFunc("/function/{name:["+NameExpression+"]+}/", handlers.FunctionProxy)
-	r.HandleFunc("/function/{name:["+NameExpression+"]+}/{params:.*}", handlers.FunctionProxy)
+	r.HandleFunc("/function/{name:["+NameExpression+"]+}", proxyHandler)
+	r.HandleFunc("/function/{name:["+NameExpression+"]+}/", proxyHandler)
+	r.HandleFunc("/function/{name:["+NameExpression+"]+}/{params:.*}", proxyHandler)
 
 	if handlers.HealthHandler != nil {
 		r.HandleFunc("/healthz", handlers.HealthHandler).Methods(http.MethodGet)
 	}
+
+	r.HandleFunc("/metrics", promhttp.Handler().ServeHTTP)
 
 	readTimeout := config.ReadTimeout
 	writeTimeout := config.WriteTimeout
