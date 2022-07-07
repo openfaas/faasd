@@ -26,3 +26,7 @@ scrape_configs:
   - job_name: 'gateway'
     static_configs:
     - targets: ['gateway:8082']
+
+  - job_name: 'provider'
+    static_configs:
+    - targets: ['faasd-provider:8081']
