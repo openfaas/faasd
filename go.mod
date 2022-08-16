@@ -3,8 +3,8 @@ module github.com/openfaas/faasd
 go 1.18
 
 require (
+	github.com/alexellis/arkade v0.0.0-20220816075441-1a4d561feb3e
 	github.com/alexellis/go-execute v0.5.0
-	github.com/alexellis/k3sup v0.0.0-20220105194923-e2bb18116d36
 	github.com/compose-spec/compose-go v0.0.0-20200528042322-36d8ce368e05
 	github.com/containerd/containerd v1.6.6
 	github.com/containerd/go-cni v1.1.6
@@ -17,20 +17,20 @@ require (
 	github.com/morikuni/aec v1.0.0
 	github.com/opencontainers/runtime-spec v1.0.3-0.20210326190908-1c3f411f0417
 	github.com/openfaas/faas-provider v0.19.1
-	github.com/openfaas/faas/gateway v0.0.0-20220509091830-4e868f5f9d81
+	github.com/openfaas/faas/gateway v0.0.0-20220811112234-2cdc7f308316
 	github.com/pkg/errors v0.9.1
 	github.com/sethvargo/go-password v0.2.0
-	github.com/spf13/cobra v1.4.0
+	github.com/spf13/cobra v1.5.0
 	github.com/spf13/pflag v1.0.5
-	github.com/vishvananda/netlink v1.1.1-0.20210330154013-f5de75959ad5
-	github.com/vishvananda/netns v0.0.0-20210104183010-2eb08e3e575f
-	golang.org/x/sys v0.0.0-20220702020025-31831981b65f
-	k8s.io/apimachinery v0.24.0
+	github.com/vishvananda/netlink v1.2.1-beta.2
+	github.com/vishvananda/netns v0.0.0-20211101163701-50045581ed74
+	golang.org/x/sys v0.0.0-20220811171246-fbc7d0a398ab
+	k8s.io/apimachinery v0.24.3
 )
 
 require (
 	github.com/Microsoft/go-winio v0.5.1 // indirect
-	github.com/Microsoft/hcsshim v0.9.3 // indirect
+	github.com/Microsoft/hcsshim v0.9.4 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/containerd/cgroups v1.0.3 // indirect
@@ -70,7 +70,7 @@ require (
 	github.com/xeipuuv/gojsonschema v1.2.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
-	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
+	golang.org/x/sync v0.0.0-20220601150217-0de741cfad7f // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa // indirect
 	google.golang.org/grpc v1.43.0 // indirect

@@ -1,7 +1,7 @@
 Version := $(shell git describe --tags --dirty)
 GitCommit := $(shell git rev-parse HEAD)
 LDFLAGS := "-s -w -X main.Version=$(Version) -X main.GitCommit=$(GitCommit)"
-CONTAINERD_VER := 1.6.4
+CONTAINERD_VER := 1.6.8
 CNI_VERSION := v0.9.1
 ARCH := amd64
 
@@ -33,7 +33,7 @@ hashgen:
 .PHONY: prepare-test
 prepare-test:
 	curl -sLSf https://github.com/containerd/containerd/releases/download/v$(CONTAINERD_VER)/containerd-$(CONTAINERD_VER)-linux-amd64.tar.gz > /tmp/containerd.tar.gz && sudo tar -xvf /tmp/containerd.tar.gz -C /usr/local/bin/ --strip-components=1
-	curl -SLfs https://raw.githubusercontent.com/containerd/containerd/v1.6.4/containerd.service | sudo tee /etc/systemd/system/containerd.service
+	curl -SLfs https://raw.githubusercontent.com/containerd/containerd/v1.6.8/containerd.service | sudo tee /etc/systemd/system/containerd.service
 	sudo systemctl daemon-reload && sudo systemctl start containerd
 	sudo /sbin/sysctl -w net.ipv4.conf.all.forwarding=1
 	sudo mkdir -p /opt/cni/bin
