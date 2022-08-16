@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/alexellis/k3sup/pkg/env"
+	"github.com/alexellis/arkade/pkg/env"
 	"github.com/compose-spec/compose-go/loader"
 	compose "github.com/compose-spec/compose-go/types"
 	"github.com/containerd/containerd"

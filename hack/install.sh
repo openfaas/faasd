@@ -84,10 +84,9 @@ install_cni_plugins() {
 }
 
 install_containerd() {
-
+  CONTAINERD_VER=v1.6.8
   $SUDO systemctl unmask containerd || :
 
-  CONTAINERD_VER=1.6.4
   arch=$(uname -m)
   if [ $arch == "armv7l" ]; then
     $SUDO curl -fSLs "https://github.com/alexellis/containerd-arm/releases/download/v${CONTAINERD_VER}/containerd-${CONTAINERD_VER}-linux-armhf.tar.gz" --output "/tmp/containerd.tar.gz"

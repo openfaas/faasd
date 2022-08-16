@@ -5,7 +5,7 @@ github.com/Microsoft/go-winio/backuptar
 github.com/Microsoft/go-winio/pkg/guid
 github.com/Microsoft/go-winio/pkg/security
 github.com/Microsoft/go-winio/vhd
-# github.com/Microsoft/hcsshim v0.9.3
+# github.com/Microsoft/hcsshim v0.9.4
 ## explicit; go 1.13
 github.com/Microsoft/hcsshim
 github.com/Microsoft/hcsshim/computestorage
@@ -30,12 +30,12 @@ github.com/Microsoft/hcsshim/internal/wclayer
 github.com/Microsoft/hcsshim/internal/winapi
 github.com/Microsoft/hcsshim/osversion
 github.com/Microsoft/hcsshim/pkg/ociwclayer
+# github.com/alexellis/arkade v0.0.0-20220816075441-1a4d561feb3e
+## explicit; go 1.17
+github.com/alexellis/arkade/pkg/env
 # github.com/alexellis/go-execute v0.5.0
 ## explicit; go 1.16
 github.com/alexellis/go-execute/pkg/v1
-# github.com/alexellis/k3sup v0.0.0-20220105194923-e2bb18116d36
-## explicit; go 1.15
-github.com/alexellis/k3sup/pkg/env
 # github.com/beorn7/perks v1.0.1
 ## explicit; go 1.11
 github.com/beorn7/perks/quantile
@@ -263,8 +263,8 @@ github.com/openfaas/faas-provider/httputil
 github.com/openfaas/faas-provider/logs
 github.com/openfaas/faas-provider/proxy
 github.com/openfaas/faas-provider/types
-# github.com/openfaas/faas/gateway v0.0.0-20220509091830-4e868f5f9d81
-## explicit; go 1.16
+# github.com/openfaas/faas/gateway v0.0.0-20220811112234-2cdc7f308316
+## explicit; go 1.17
 github.com/openfaas/faas/gateway/requests
 # github.com/pkg/errors v0.9.1
 ## explicit
@@ -294,17 +294,17 @@ github.com/sethvargo/go-password/password
 # github.com/sirupsen/logrus v1.8.1
 ## explicit; go 1.13
 github.com/sirupsen/logrus
-# github.com/spf13/cobra v1.4.0
+# github.com/spf13/cobra v1.5.0
 ## explicit; go 1.15
 github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.5
 ## explicit; go 1.12
 github.com/spf13/pflag
-# github.com/vishvananda/netlink v1.1.1-0.20210330154013-f5de75959ad5
+# github.com/vishvananda/netlink v1.2.1-beta.2
 ## explicit; go 1.12
 github.com/vishvananda/netlink
 github.com/vishvananda/netlink/nl
-# github.com/vishvananda/netns v0.0.0-20210104183010-2eb08e3e575f
+# github.com/vishvananda/netns v0.0.0-20211101163701-50045581ed74
 ## explicit; go 1.12
 github.com/vishvananda/netns
 # github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb
@@ -332,11 +332,11 @@ golang.org/x/net/http2/hpack
 golang.org/x/net/idna
 golang.org/x/net/internal/timeseries
 golang.org/x/net/trace
-# golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
+# golang.org/x/sync v0.0.0-20220601150217-0de741cfad7f
 ## explicit
 golang.org/x/sync/errgroup
 golang.org/x/sync/semaphore
-# golang.org/x/sys v0.0.0-20220702020025-31831981b65f
+# golang.org/x/sys v0.0.0-20220811171246-fbc7d0a398ab
 ## explicit; go 1.17
 golang.org/x/sys/execabs
 golang.org/x/sys/internal/unsafeheader
@@ -437,6 +437,6 @@ gopkg.in/inf.v0
 # gopkg.in/yaml.v2 v2.4.0
 ## explicit; go 1.15
 gopkg.in/yaml.v2
-# k8s.io/apimachinery v0.24.0
+# k8s.io/apimachinery v0.24.3
 ## explicit; go 1.16
 k8s.io/apimachinery/pkg/api/resource

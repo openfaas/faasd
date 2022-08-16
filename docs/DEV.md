@@ -88,7 +88,7 @@ You have three options - binaries for PC, binaries for armhf, or build from sour
 * Install containerd `x86_64` only
 
 ```bash
-export VER=1.6.4
+export VER=1.6.8
 curl -sSL https://github.com/containerd/containerd/releases/download/v$VER/containerd-$VER-linux-amd64.tar.gz > /tmp/containerd.tar.gz \
   && sudo tar -xvf /tmp/containerd.tar.gz -C /usr/local/bin/ --strip-components=1
 
@@ -100,7 +100,7 @@ containerd -version
     Building `containerd` on armhf is extremely slow, so I've provided binaries for you.
 
     ```bash
-    curl -sSL https://github.com/alexellis/containerd-armhf/releases/download/v1.6.4/containerd.tgz | sudo tar -xvz --strip-components=2 -C /usr/local/bin/
+    curl -sSL https://github.com/alexellis/containerd-armhf/releases/download/v1.6.8/containerd.tgz | sudo tar -xvz --strip-components=2 -C /usr/local/bin/
     ```
 
 * Or clone / build / install [containerd](https://github.com/containerd/containerd) from source:
@@ -112,7 +112,7 @@ containerd -version
     git clone https://github.com/containerd/containerd
     cd containerd
     git fetch origin --tags
-    git checkout v1.6.4
+    git checkout v1.6.8
 
     make
     sudo make install
@@ -123,7 +123,7 @@ containerd -version
 #### Ensure containerd is running
 
 ```bash
-curl -sLS https://raw.githubusercontent.com/containerd/containerd/v1.6.4/containerd.service > /tmp/containerd.service
+curl -sLS https://raw.githubusercontent.com/containerd/containerd/v1.6.8/containerd.service > /tmp/containerd.service
 
 # Extend the timeouts for low-performance VMs
 echo "[Manager]" | tee -a /tmp/containerd.service
