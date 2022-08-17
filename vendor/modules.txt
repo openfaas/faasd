@@ -255,7 +255,7 @@ github.com/opencontainers/selinux/go-selinux
 github.com/opencontainers/selinux/go-selinux/label
 github.com/opencontainers/selinux/pkg/pwalk
 github.com/opencontainers/selinux/pkg/pwalkdir
-# github.com/openfaas/faas-provider v0.19.0
+# github.com/openfaas/faas-provider v0.19.1
 ## explicit; go 1.17
 github.com/openfaas/faas-provider
 github.com/openfaas/faas-provider/auth

@@ -12,12 +12,11 @@ require (
 	github.com/docker/cli v0.0.0-20191105005515-99c5edceb48d
 	github.com/docker/distribution v2.8.1+incompatible
 	github.com/docker/docker v17.12.0-ce-rc1.0.20191113042239-ea84732a7725+incompatible // indirect
-	github.com/docker/docker-credential-helpers v0.6.3 // indirect
 	github.com/docker/go-units v0.4.0
 	github.com/gorilla/mux v1.8.0
 	github.com/morikuni/aec v1.0.0
 	github.com/opencontainers/runtime-spec v1.0.3-0.20210326190908-1c3f411f0417
-	github.com/openfaas/faas-provider v0.19.0
+	github.com/openfaas/faas-provider v0.19.1
 	github.com/openfaas/faas/gateway v0.0.0-20220509091830-4e868f5f9d81
 	github.com/pkg/errors v0.9.1
 	github.com/sethvargo/go-password v0.2.0
@@ -40,6 +39,7 @@ require (
 	github.com/containerd/ttrpc v1.1.0 // indirect
 	github.com/containerd/typeurl v1.0.2 // indirect
 	github.com/containernetworking/cni v1.1.1 // indirect
+	github.com/docker/docker-credential-helpers v0.6.3 // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-events v0.0.0-20190806004212-e31b211e4f1c // indirect
 	github.com/gogo/googleapis v1.4.0 // indirect

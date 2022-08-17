@@ -12,14 +12,14 @@ func NewHttpWriteInterceptor(w http.ResponseWriter) *HttpWriteInterceptor {
 
 type HttpWriteInterceptor struct {
 	http.ResponseWriter
-	StatusCode int
+	statusCode int
 }
 
 func (c *HttpWriteInterceptor) Status() int {
-	if c.StatusCode == 0 {
+	if c.statusCode == 0 {
 		return http.StatusOK
 	}
-	return c.StatusCode
+	return c.statusCode
 }
 
 func (c *HttpWriteInterceptor) Header() http.Header {
@@ -27,11 +27,14 @@ func (c *HttpWriteInterceptor) Header() http.Header {
 }
 
 func (c *HttpWriteInterceptor) Write(data []byte) (int, error) {
+	if c.statusCode == 0 {
+		c.WriteHeader(http.StatusOK)
+	}
 	return c.ResponseWriter.Write(data)
 }
 
 func (c *HttpWriteInterceptor) WriteHeader(code int) {
-	c.StatusCode = code
+	c.statusCode = code
 	c.ResponseWriter.WriteHeader(code)
 }
 

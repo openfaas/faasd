@@ -53,7 +53,7 @@ func (hm *httpMetrics) InstrumentHandler(next http.Handler, pathOverride string)
 
 		defer func() {
 			hm.RequestsTotal.With(
-				prometheus.Labels{"code": strconv.Itoa(ww.StatusCode),
+				prometheus.Labels{"code": strconv.Itoa(ww.Status()),
 					"method": r.Method,
 					"path":   path,
 				}).
@@ -62,7 +62,7 @@ func (hm *httpMetrics) InstrumentHandler(next http.Handler, pathOverride string)
 
 		defer func() {
 			hm.RequestDurationHistogram.With(
-				prometheus.Labels{"code": strconv.Itoa(ww.StatusCode),
+				prometheus.Labels{"code": strconv.Itoa(ww.Status()),
 					"method": r.Method,
 					"path":   path,
 				}).
