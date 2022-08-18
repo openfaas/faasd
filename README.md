@@ -159,7 +159,7 @@ Commercial users and solo business owners should become OpenFaaS GitHub Sponsors
 If you are learning faasd, or want to share your use-case, you can join the OpenFaaS Slack community.
 
 * [Become an OpenFaaS GitHub Sponsor](https://github.com/sponsors/openfaas/)
-* [Join Slack](https://slack.openfaas.io/)
+* [Join the weekly Office Hours call](https://docs.openfaas.com/community/)
 
 ### Backlog, features and known issues
 
