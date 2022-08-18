@@ -136,7 +136,9 @@ install_caddy() {
   if [ ! -z "${FAASD_DOMAIN}" ]; then
     CADDY_VER=v2.4.3
     arkade get --progress=false caddy -v ${CADDY_VER}
-    $SUDO install -m 755 $HOME/.arkade/bin/caddy /usr/local/bin/
+    
+    # /usr/bin/caddy is specified in the upstream service file.
+    $SUDO install -m 755 $HOME/.arkade/bin/caddy /usr/bin/caddy
 
     $SUDO curl -fSLs https://raw.githubusercontent.com/caddyserver/dist/master/init/caddy.service --output /etc/systemd/system/caddy.service
 
