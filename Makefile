@@ -66,3 +66,7 @@ test-e2e:
 
 # Removed due to timing issue in CI on GitHub Actions
 #	/usr/local/bin/faas-cli logs figlet --since 15m --follow=false | grep Forking
+
+verify-compose:
+	@echo Verifying docker-compose.yaml images in remote registries && \
+	arkade chart verify --verbose=$(VERBOSE) -f ./docker-compose.yaml
