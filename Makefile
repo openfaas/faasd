@@ -28,7 +28,7 @@ dist:
 
 .PHONY: hashgen
 hashgen:
-	for f in bin/faasd*; do shasum -a 256 $$f > $$f.sha256; done
+	for f in bin/faasd*; do sha256sum $$f > $$f.sha256; done
 
 .PHONY: prepare-test
 prepare-test:
