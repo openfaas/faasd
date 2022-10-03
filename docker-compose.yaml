@@ -1,7 +1,7 @@
 version: "3.7"
 services:
   basic-auth-plugin:
-    image: ghcr.io/openfaas/basic-auth:0.21.4
+    image: ghcr.io/openfaas/basic-auth:0.25.2
     environment:
       - port=8080
       - secret_mount_path=/run/secrets
@@ -19,7 +19,7 @@ services:
       - CAP_NET_RAW
 
   nats:
-    image: docker.io/library/nats-streaming:0.22.0
+    image: docker.io/library/nats-streaming:0.24.6
 # nobody
     user: "65534"
     command:
@@ -38,7 +38,7 @@ services:
     #    - "127.0.0.1:8222:8222"
 
   prometheus:
-    image: docker.io/prom/prometheus:v2.14.0
+    image: docker.io/prom/prometheus:v2.38.0
 # nobody
     user: "65534"
     volumes:
@@ -56,7 +56,7 @@ services:
        - "127.0.0.1:9090:9090"
 
   gateway:
-    image: ghcr.io/openfaas/gateway:0.22.0
+    image: ghcr.io/openfaas/gateway:0.25.2
     environment:
       - basic_auth=true
       - functions_provider_url=http://faasd-provider:8081/
@@ -89,7 +89,7 @@ services:
        - "8080:8080"
 
   queue-worker:
-    image: ghcr.io/openfaas/queue-worker:0.12.2
+    image: ghcr.io/openfaas/queue-worker:0.13.1
     environment:
       - faas_nats_address=nats
       - faas_nats_port=4222
