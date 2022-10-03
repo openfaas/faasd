@@ -11,12 +11,11 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"syscall"
 
 	"golang.org/x/sys/unix"
 )
 
-// Deprecated: use syscall pkg instead (go >= 1.5 needed).
+// Deprecated: use golang.org/x/sys/unix pkg instead.
 const (
 	CLONE_NEWUTS  = 0x04000000   /* New utsname group? */
 	CLONE_NEWIPC  = 0x08000000   /* New ipcs */
@@ -27,8 +26,9 @@ const (
 	bindMountPath = "/run/netns" /* Bind mount path for named netns */
 )
 
-// Setns sets namespace using syscall. Note that this should be a method
-// in syscall but it has not been added.
+// Setns sets namespace using golang.org/x/sys/unix.Setns.
+//
+// Deprecated: Use golang.org/x/sys/unix.Setns instead.
 func Setns(ns NsHandle, nstype int) (err error) {
 	return unix.Setns(int(ns), nstype)
 }
@@ -70,8 +70,8 @@ func NewNamed(name string) (NsHandle, error) {
 	}
 	f.Close()
 
-	nsPath := fmt.Sprintf("/proc/%d/task/%d/ns/net", os.Getpid(), syscall.Gettid())
-	err = syscall.Mount(nsPath, namedPath, "bind", syscall.MS_BIND, "")
+	nsPath := fmt.Sprintf("/proc/%d/task/%d/ns/net", os.Getpid(), unix.Gettid())
+	err = unix.Mount(nsPath, namedPath, "bind", unix.MS_BIND, "")
 	if err != nil {
 		return None(), err
 	}
@@ -83,7 +83,7 @@ func NewNamed(name string) (NsHandle, error) {
 func DeleteNamed(name string) error {
 	namedPath := path.Join(bindMountPath, name)
 
-	err := syscall.Unmount(namedPath, syscall.MNT_DETACH)
+	err := unix.Unmount(namedPath, unix.MNT_DETACH)
 	if err != nil {
 		return err
 	}
