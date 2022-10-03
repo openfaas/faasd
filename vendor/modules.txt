@@ -321,7 +321,7 @@ go.opencensus.io/internal
 go.opencensus.io/trace
 go.opencensus.io/trace/internal
 go.opencensus.io/trace/tracestate
-# golang.org/x/net v0.0.0-20220225172249-27dd8689420f
+# golang.org/x/net v0.0.0-20220722155237-a158d28d115b
 ## explicit; go 1.17
 golang.org/x/net/context/ctxhttp
 golang.org/x/net/http/httpguts
@@ -435,6 +435,6 @@ gopkg.in/inf.v0
 # gopkg.in/yaml.v2 v2.4.0
 ## explicit; go 1.15
 gopkg.in/yaml.v2
-# k8s.io/apimachinery v0.24.3
-## explicit; go 1.16
+# k8s.io/apimachinery v0.25.2
+## explicit; go 1.19
 k8s.io/apimachinery/pkg/api/resource
