@@ -58,10 +58,10 @@ func ListFunctions(client *containerd.Client, namespace string) (map[string]*Fun
 		name := c.ID()
 		f, err := GetFunction(client, name, namespace)
 		if err != nil {
-			log.Printf("error getting function %s: ", name)
-			return functions, err
+			log.Printf("skipping %s, error: %s", name, err)
+		} else {
+			functions[name] = &f
 		}
-		functions[name] = &f
 	}
 
 	return functions, nil
