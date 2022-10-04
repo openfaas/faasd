@@ -77,6 +77,8 @@ You can use the standard [faas-cli](https://github.com/openfaas/faas-cli) along 
 
 faasd does not create the same maintenance burden you'll find with maintaining, upgrading, and securing a Kubernetes cluster. You can deploy it and walk away, in the worst case, just deploy a new VM and deploy your functions again.
 
+You can learn more about supported OpenFaaS features in the [ROADMAP.md](/docs/ROADMAP.md)
+
 ## Learning faasd
 
 The faasd project is MIT licensed and open source, and you will find some documentation, blog posts and videos for free.
@@ -160,11 +162,9 @@ If you are learning faasd, or want to share your use-case, you can join the Open
 * [Become an OpenFaaS GitHub Sponsor](https://github.com/sponsors/openfaas/)
 * [Join the weekly Office Hours call](https://docs.openfaas.com/community/)
 
-### Backlog, features and known issues
+### Backlog, features, design limitations and any known issues
 
-For completed features, WIP and upcoming roadmap see:
-
-See [ROADMAP.md](docs/ROADMAP.md)
+For open backlog items, shipped features, design limitations and any known issues, see [ROADMAP.md](docs/ROADMAP.md)
 
 Want to build a patch without setting up a complete development environment? See [docs/PATCHES.md](docs/PATCHES.md)
 

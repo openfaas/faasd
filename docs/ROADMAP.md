@@ -2,54 +2,74 @@
 
 ## Supported operations
 
-* `faas login`
-* `faas up`
-* `faas list`
-* `faas describe`
-* `faas deploy --update=true --replace=false`
-* `faas invoke --async`
-* `faas invoke`
-* `faas rm`
-* `faas store list/deploy/inspect`
-* `faas version`
-* `faas namespace`
-* `faas secret`
-* `faas logs`
-* `faas auth` - supported for Basic Authentication and OpenFaaS PRO with OIDC and Single-sign On.
+* `faas-cli login`
+* `faas-cli up`
+* `faas-cli list`
+* `faas-cli describe`
+* `faas-cli deploy --update=true --replace=false`
+* `faas-cli invoke --async`
+* `faas-cli invoke`
+* `faas-cli rm`
+* `faas-cli store list/deploy/inspect`
+* `faas-cli version`
+* `faas-cli namespace`
+* `faas-cli secret`
+* `faas-cli logs`
+* `faas-cli auth` - supported for Basic Authentication and OpenFaaS Pro with OIDC and Single-sign On.
 
 Scale from and to zero is also supported. On a Dell XPS with a small, pre-pulled image unpausing an existing task took 0.19s and starting a task for a killed function took 0.39s. There may be further optimizations to be gained.
 
+The OpenFaaS REST API is supported by faasd, learn more in the [manual](https://store.openfaas.com/l/serverless-for-everyone-else) under "Can I get an API with that?"
+
 ## Constraints vs OpenFaaS on Kubernetes
 
-faasd suits certain use-cases as mentioned in the README file, for those who want a solution which can scale out horizontally with minimum effort, Kubernetes or K3s is a valid option.
+faasd suits certain use-cases as mentioned in the [README.md](/README.md) file, for those who want a solution which can scale out horizontally with minimum effort, Kubernetes or K3s is a valid option.
+
+Which is right for you? [Read a comparison in the OpenFaaS docs](https://docs.openfaas.com/deployment/)
 
 ### One replica per function
 
-Functions only support one replica, so cannot scale horizontally, but can scale vertically.
+Functions only support one replica for each function, so that means horizontal scaling is not available.
 
-Workaround: deploy one uniquely named function per replica.
+It can scale vertically, and this may be a suitable alternative for many use-cases. See the [YAML reference for how to configure limits](https://docs.openfaas.com/reference/yaml/).
+
+Workaround: deploy multiple, dynamically named functions `scraper-1`, `scraper-2`, `scraper-3` and set up a reverse proxy rule to load balance i.e. `scraper.example.com => [/function/scraper-1, /function/scraper-2, /function/scraper-3]`.
 
 ### Scale from zero may give a non-200
 
-When scaling from zero there is no health check implemented, so the request may arrive before your HTTP server is ready to serve a request, and therefore give a non-200 code.
+faasd itself does not implement a health check to determine if a function is ready for traffic. Since faasd doesn't support auto-scaling, this is unlikely to affect you.
 
-Workaround: Do not scale to zero, or have your client retry HTTP calls.
+Workaround: Have your client retry HTTP calls, or don't scale to zero.
 
-### No clustering is available
+### Single node, no clustering
 
-No clustering is available in faasd, however you can still apply fault-tolerance and high availability techniques.
+faasd is operates on a single-node model. If this is an issue for you, but you have resource constraints, you will need to use OpenFaaS on Kubernetes.
 
-Workaround: deploy multiple faasd instances and use a hardware or software load-balancer. Take regular VM/host snapshots or backups.
+There are no plans to add any form of clustering or multi-node support to faasd. See also: [HA / resilience in faasd #225](https://github.com/openfaas/faasd/issues/225)
 
-### No rolling updates
+What about HA and fault tolerance?
 
-When running `faas-cli deploy`, your old function is removed before the new one is started. This may cause a small amount of downtime, depending on the timeouts and grace periods you set.
+To achieve fault tolerance, you could put two faasd instances behind a load balancer or proxy, but you will need to deploy the same set of functions to each.
 
-Workaround: deploy uniquely named functions per version, and switch an Ingress or Reverse Proxy record to point at a new version once it is ready.
+An alternative would be to take regular VM backups or snapshots.
+
+### No rolling updates are available today
+
+When running `faas-cli deploy`, your old function is removed before the new one is started. This may cause a period of downtime, depending on the timeouts and grace periods you set.
+
+Workaround: deploy uniquely named functions i.e. `scraper-1` and `scraper-2` with a reverse proxy rule that maps `/function/scraper` to the active version.
 
 ## Known issues
 
-### Non 200 HTTP status from the gateway upon first use
+### Troubleshooting
+
+There is a very detailed chapter on troubleshooting in the eBook [Serverless For Everyone Else](https://store.openfaas.com/l/serverless-for-everyone-else)
+
+### Your function timed-out at 60 seconds
+
+This is no longer an issue, see the manual for how to configure a longer timeout, updated 3rd October 2022.
+
+### Non 200 HTTP status from the gateway upon reboot
 
 This issue appears to happen sporadically and only for some users.
 
@@ -75,16 +95,19 @@ sudo systemctl restart faasd
 
 Should have:
 
-* [ ] Offer a recommendation or implement a strategy for faasd replication/HA
 * [ ] Monitor and restart any of the core components at runtime if the container stops
 * [ ] Asynchronous function deletion instead of synchronous
 * [ ] Asynchronous function start-up instead of synchronous
 
 Nice to Have:
 
-* [ ] Terraform for AWS (in-progress)
-* [ ] Total memory limits - if a node has 1GB of RAM, don't allow more than 1000MB of RAM to be reserved via limits
-* [ ] Offer live rolling-updates, with zero downtime - requires moving to IDs vs. names for function containers
+* [ ] Live rolling-updates, with zero downtime - requires moving to IDs vs. names for function containers
+* [ ] Total memory limits for a node - if a node has 1GB of RAM, don't allow more than 1000MB of RAM to be reserved via limits
+* [ ] Terraform for AWS EC2
+
+Won't have:
+
+* [ ] Clustering
 * [ ] Multiple replicas per function
 
 ### Completed
@@ -115,4 +138,5 @@ Nice to Have:
 * [x] Terraform for DigitalOcean
 * [x] [Store and retrieve annotations in function spec](https://github.com/openfaas/faasd/pull/86) - in progress
 * [x] An installer for faasd and dependencies - runc, containerd
+* [x] Offer a recommendation or implement a strategy for faasd replication/HA
 
