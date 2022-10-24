@@ -8,6 +8,10 @@ Before you ask for help or support, make sure that you've [consulted the manual 
 <!-- How is this affecting you? What task are you trying to accomplish? -->
 ## Why do you need this?
 
+<!-- Attempts to mask or hide this may result in the issue being closed -->
+## Who is this for?
+
+What company is this for? Are you listed in the [ADOPTERS.md](https://github.com/openfaas/faas/blob/master/ADOPTERS.md) file?
 
 <!--- Provide a general summary of the issue in the Title above -->
 ## Expected Behaviour
