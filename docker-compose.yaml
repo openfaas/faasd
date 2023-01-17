@@ -1,5 +1,9 @@
 version: "3.7"
 services:
+
+  # AE: The basic-auth-plugin is deprecated for OpenFaaS CE
+  # and will be removed in a future release. The behaviour is 
+  # now part of the gateway itself.
   basic-auth-plugin:
     image: ghcr.io/openfaas/basic-auth:0.25.5
     environment:
@@ -19,7 +23,7 @@ services:
       - CAP_NET_RAW
 
   nats:
-    image: docker.io/library/nats-streaming:0.25.2
+    image: docker.io/library/nats-streaming:0.25.3
 # nobody
     user: "65534"
     command:
@@ -56,7 +60,7 @@ services:
        - "127.0.0.1:9090:9090"
 
   gateway:
-    image: ghcr.io/openfaas/gateway:0.25.5
+    image: ghcr.io/openfaas/gateway:0.26.2
     environment:
       - basic_auth=true
       - functions_provider_url=http://faasd-provider:8081/
@@ -89,7 +93,7 @@ services:
        - "8080:8080"
 
   queue-worker:
-    image: ghcr.io/openfaas/queue-worker:0.13.2
+    image: ghcr.io/openfaas/queue-worker:0.13.3
     environment:
       - faas_nats_address=nats
       - faas_nats_port=4222
