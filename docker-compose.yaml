@@ -1,27 +1,6 @@
 version: "3.7"
 services:
 
-  # AE: The basic-auth-plugin is deprecated for OpenFaaS CE
-  # and will be removed in a future release. The behaviour is 
-  # now part of the gateway itself.
-  basic-auth-plugin:
-    image: ghcr.io/openfaas/basic-auth:0.25.5
-    environment:
-      - port=8080
-      - secret_mount_path=/run/secrets
-      - user_filename=basic-auth-user
-      - pass_filename=basic-auth-password
-    volumes:
-      # we assume cwd == /var/lib/faasd
-      - type: bind
-        source: ./secrets/basic-auth-password
-        target: /run/secrets/basic-auth-password
-      - type: bind
-        source: ./secrets/basic-auth-user
-        target: /run/secrets/basic-auth-user
-    cap_add:
-      - CAP_NET_RAW
-
   nats:
     image: docker.io/library/nats-streaming:0.25.3
 # nobody
@@ -70,8 +49,6 @@ services:
       - upstream_timeout=65s
       - faas_nats_address=nats
       - faas_nats_port=4222
-      - auth_proxy_url=http://basic-auth-plugin:8080/validate
-      - auth_proxy_pass_body=false
       - secret_mount_path=/run/secrets
       - scale_from_zero=true
       - function_namespace=openfaas-fn
@@ -86,7 +63,6 @@ services:
     cap_add:
       - CAP_NET_RAW
     depends_on:
-      - basic-auth-plugin
       - nats
       - prometheus
     ports:
