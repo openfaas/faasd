@@ -1,5 +1,15 @@
 # faasd backlog and features
 
+It's important to understand the vision for faasd vs OpenFaaS CE/Pro.
+
+faasd is a single-node implementation of OpenFaaS.
+
+It is supposed to be a lightweight, low-overhead, way to deploy OpenFaaS functions for functions which do not need planet-scale.
+
+It is not supposed to have multiple replicas, clustering, HA, or auto-scaling.
+
+[Learn when to use faasd](https://docs.openfaas.com/deployment/)
+
 ## Supported operations
 
 * `faas-cli login`
