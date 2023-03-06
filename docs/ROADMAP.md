@@ -17,8 +17,6 @@
 * `faas-cli logs`
 * `faas-cli auth` - supported for Basic Authentication and OpenFaaS Pro with OIDC and Single-sign On.
 
-Scale from and to zero is also supported. On a Dell XPS with a small, pre-pulled image unpausing an existing task took 0.19s and starting a task for a killed function took 0.39s. There may be further optimizations to be gained.
-
 The OpenFaaS REST API is supported by faasd, learn more in the [manual](https://store.openfaas.com/l/serverless-for-everyone-else) under "Can I get an API with that?"
 
 ## Constraints vs OpenFaaS on Kubernetes
@@ -41,11 +39,13 @@ faasd itself does not implement a health check to determine if a function is rea
 
 Workaround: Have your client retry HTTP calls, or don't scale to zero.
 
-### Single node, no clustering
+### Leaf-node only - no clustering
 
-faasd is operates on a single-node model. If this is an issue for you, but you have resource constraints, you will need to use OpenFaaS on Kubernetes.
+faasd is operates on a leaf-node/single-node model. If this is an issue for you, but you have resource constraints, you will need to use [OpenFaaS CE or Pro on Kubernetes](https://docs.openfaas.com/deployment/).
 
-There are no plans to add any form of clustering or multi-node support to faasd. See also: [HA / resilience in faasd #225](https://github.com/openfaas/faasd/issues/225)
+There are no plans to add any form of clustering or multi-node support to faasd.
+
+See past discussion at: [HA / resilience in faasd #225](https://github.com/openfaas/faasd/issues/225)
 
 What about HA and fault tolerance?
 
@@ -95,14 +95,13 @@ sudo systemctl restart faasd
 
 Should have:
 
-* [ ] Monitor and restart any of the core components at runtime if the container stops
-* [ ] Asynchronous function deletion instead of synchronous
-* [ ] Asynchronous function start-up instead of synchronous
+* [ ] Restart any of the containers in docker-compose.yaml if they crash.
+* [ ] Asynchronous function deployment and deletion (currently synchronous/blocking)
 
 Nice to Have:
 
-* [ ] Live rolling-updates, with zero downtime - requires moving to IDs vs. names for function containers
-* [ ] Total memory limits for a node - if a node has 1GB of RAM, don't allow more than 1000MB of RAM to be reserved via limits
+* [ ] Live rolling-updates, with zero downtime (may require using IDs instead of names for function containers)
+* [ ] Apply a total memory limit for the host (if a node has 1GB of RAM, don't allow more than 1GB of RAM to be specified in the limits field)
 * [ ] Terraform for AWS EC2
 
 Won't have:
