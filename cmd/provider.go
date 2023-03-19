@@ -93,21 +93,21 @@ func makeProviderCmd() *cobra.Command {
 		}
 
 		bootstrapHandlers := types.FaaSHandlers{
-			FunctionProxy:        proxy.NewHandlerFunc(*config, invokeResolver),
-			DeleteHandler:        handlers.MakeDeleteHandler(client, cni),
-			DeployHandler:        handlers.MakeDeployHandler(client, cni, baseUserSecretsPath, alwaysPull),
-			FunctionReader:       handlers.MakeReadHandler(client),
-			ReplicaReader:        handlers.MakeReplicaReaderHandler(client),
-			ReplicaUpdater:       handlers.MakeReplicaUpdateHandler(client, cni),
-			UpdateHandler:        handlers.MakeUpdateHandler(client, cni, baseUserSecretsPath, alwaysPull),
-			HealthHandler:        func(w http.ResponseWriter, r *http.Request) {},
-			InfoHandler:          handlers.MakeInfoHandler(Version, GitCommit),
-			ListNamespaceHandler: handlers.MakeNamespacesLister(client),
-			SecretHandler:        handlers.MakeSecretHandler(client.NamespaceService(), baseUserSecretsPath),
-			LogHandler:           logs.NewLogHandlerFunc(faasdlogs.New(), config.ReadTimeout),
+			FunctionProxy:  proxy.NewHandlerFunc(*config, invokeResolver),
+			DeleteFunction: handlers.MakeDeleteHandler(client, cni),
+			DeployFunction: handlers.MakeDeployHandler(client, cni, baseUserSecretsPath, alwaysPull),
+			FunctionLister: handlers.MakeReadHandler(client),
+			FunctionStatus: handlers.MakeReplicaReaderHandler(client),
+			ScaleFunction:  handlers.MakeReplicaUpdateHandler(client, cni),
+			UpdateFunction: handlers.MakeUpdateHandler(client, cni, baseUserSecretsPath, alwaysPull),
+			Health:         func(w http.ResponseWriter, r *http.Request) {},
+			Info:           handlers.MakeInfoHandler(Version, GitCommit),
+			ListNamespaces: handlers.MakeNamespacesLister(client),
+			Secrets:        handlers.MakeSecretHandler(client.NamespaceService(), baseUserSecretsPath),
+			Logs:           logs.NewLogHandlerFunc(faasdlogs.New(), config.ReadTimeout),
 		}
 
-		log.Printf("Listening on TCP port: %d\n", *config.TCPPort)
+		log.Printf("Listening on: 0.0.0.0:%d\n", *config.TCPPort)
 		bootstrap.Serve(&bootstrapHandlers, config)
 		return nil
 	}
