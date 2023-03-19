@@ -1,6 +1,6 @@
 module github.com/openfaas/faasd
 
-go 1.18
+go 1.19
 
 require (
 	github.com/alexellis/arkade v0.0.0-20230317160202-4d8f80c5b033
