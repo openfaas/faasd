@@ -43,39 +43,40 @@ func Serve(handlers *types.FaaSHandlers, config *types.FaaSConfig) {
 			log.Fatal(err)
 		}
 
-		handlers.FunctionReader = auth.DecorateWithBasicAuth(handlers.FunctionReader, credentials)
-		handlers.DeployHandler = auth.DecorateWithBasicAuth(handlers.DeployHandler, credentials)
-		handlers.DeleteHandler = auth.DecorateWithBasicAuth(handlers.DeleteHandler, credentials)
-		handlers.UpdateHandler = auth.DecorateWithBasicAuth(handlers.UpdateHandler, credentials)
-		handlers.ReplicaReader = auth.DecorateWithBasicAuth(handlers.ReplicaReader, credentials)
-		handlers.ReplicaUpdater = auth.DecorateWithBasicAuth(handlers.ReplicaUpdater, credentials)
-		handlers.InfoHandler = auth.DecorateWithBasicAuth(handlers.InfoHandler, credentials)
-		handlers.SecretHandler = auth.DecorateWithBasicAuth(handlers.SecretHandler, credentials)
-		handlers.LogHandler = auth.DecorateWithBasicAuth(handlers.LogHandler, credentials)
+		handlers.FunctionLister = auth.DecorateWithBasicAuth(handlers.FunctionLister, credentials)
+		handlers.DeployFunction = auth.DecorateWithBasicAuth(handlers.DeployFunction, credentials)
+		handlers.DeleteFunction = auth.DecorateWithBasicAuth(handlers.DeleteFunction, credentials)
+		handlers.UpdateFunction = auth.DecorateWithBasicAuth(handlers.UpdateFunction, credentials)
+		handlers.FunctionStatus = auth.DecorateWithBasicAuth(handlers.FunctionStatus, credentials)
+		handlers.ScaleFunction = auth.DecorateWithBasicAuth(handlers.ScaleFunction, credentials)
+		handlers.Info = auth.DecorateWithBasicAuth(handlers.Info, credentials)
+		handlers.Secrets = auth.DecorateWithBasicAuth(handlers.Secrets, credentials)
+		handlers.Logs = auth.DecorateWithBasicAuth(handlers.Logs, credentials)
 	}
 
 	hm := newHttpMetrics()
 
 	// System (auth) endpoints
-	r.HandleFunc("/system/functions", hm.InstrumentHandler(handlers.FunctionReader, "")).Methods(http.MethodGet)
-	r.HandleFunc("/system/functions", hm.InstrumentHandler(handlers.DeployHandler, "")).Methods(http.MethodPost)
-	r.HandleFunc("/system/functions", hm.InstrumentHandler(handlers.DeleteHandler, "")).Methods(http.MethodDelete)
-	r.HandleFunc("/system/functions", hm.InstrumentHandler(handlers.UpdateHandler, "")).Methods(http.MethodPut)
+	r.HandleFunc("/system/functions", hm.InstrumentHandler(handlers.FunctionLister, "")).Methods(http.MethodGet)
+	r.HandleFunc("/system/functions", hm.InstrumentHandler(handlers.DeployFunction, "")).Methods(http.MethodPost)
+	r.HandleFunc("/system/functions", hm.InstrumentHandler(handlers.DeleteFunction, "")).Methods(http.MethodDelete)
+	r.HandleFunc("/system/functions", hm.InstrumentHandler(handlers.UpdateFunction, "")).Methods(http.MethodPut)
 
 	r.HandleFunc("/system/function/{name:["+NameExpression+"]+}",
-		hm.InstrumentHandler(handlers.ReplicaReader, "/system/function")).Methods(http.MethodGet)
+		hm.InstrumentHandler(handlers.FunctionStatus, "/system/function")).Methods(http.MethodGet)
 	r.HandleFunc("/system/scale-function/{name:["+NameExpression+"]+}",
+		hm.InstrumentHandler(handlers.ScaleFunction, "/system/scale-function")).Methods(http.MethodPost)
 
-		hm.InstrumentHandler(handlers.ReplicaUpdater, "/system/scale-function")).Methods(http.MethodPost)
 	r.HandleFunc("/system/info",
-		hm.InstrumentHandler(handlers.InfoHandler, "")).Methods(http.MethodGet)
+		hm.InstrumentHandler(handlers.Info, "")).Methods(http.MethodGet)
 
 	r.HandleFunc("/system/secrets",
-		hm.InstrumentHandler(handlers.SecretHandler, "")).Methods(http.MethodGet, http.MethodPut, http.MethodPost, http.MethodDelete)
-	r.HandleFunc("/system/logs",
-		hm.InstrumentHandler(handlers.LogHandler, "")).Methods(http.MethodGet)
+		hm.InstrumentHandler(handlers.Secrets, "")).Methods(http.MethodGet, http.MethodPut, http.MethodPost, http.MethodDelete)
 
-	r.HandleFunc("/system/namespaces", hm.InstrumentHandler(handlers.ListNamespaceHandler, "")).Methods(http.MethodGet)
+	r.HandleFunc("/system/logs",
+		hm.InstrumentHandler(handlers.Logs, "")).Methods(http.MethodGet)
+
+	r.HandleFunc("/system/namespaces", hm.InstrumentHandler(handlers.ListNamespaces, "")).Methods(http.MethodGet)
 
 	proxyHandler := handlers.FunctionProxy
 
@@ -84,8 +85,8 @@ func Serve(handlers *types.FaaSHandlers, config *types.FaaSConfig) {
 	r.HandleFunc("/function/{name:["+NameExpression+"]+}/", proxyHandler)
 	r.HandleFunc("/function/{name:["+NameExpression+"]+}/{params:.*}", proxyHandler)
 
-	if handlers.HealthHandler != nil {
-		r.HandleFunc("/healthz", handlers.HealthHandler).Methods(http.MethodGet)
+	if handlers.Health != nil {
+		r.HandleFunc("/healthz", handlers.Health).Methods(http.MethodGet)
 	}
 
 	r.HandleFunc("/metrics", promhttp.Handler().ServeHTTP)

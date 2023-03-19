@@ -89,6 +89,18 @@ func WithImage(is images.Store, name string) ExportOpt {
 	}
 }
 
+// WithImages adds multiples images to the exported archive.
+func WithImages(imgs []images.Image) ExportOpt {
+	return func(ctx context.Context, o *exportOptions) error {
+		for _, img := range imgs {
+			img.Target.Annotations = addNameAnnotation(img.Name, img.Target.Annotations)
+			o.manifests = append(o.manifests, img.Target)
+		}
+
+		return nil
+	}
+}
+
 // WithManifest adds a manifest to the exported archive.
 // When names are given they will be set on the manifest in the
 // exported archive, creating an index record for each name.
@@ -182,6 +194,9 @@ func Export(ctx context.Context, store content.Provider, writer io.Writer, opts 
 		case images.MediaTypeDockerSchema2ManifestList, ocispec.MediaTypeImageIndex:
 			d, ok := resolvedIndex[desc.Digest]
 			if !ok {
+				if err := desc.Digest.Validate(); err != nil {
+					return err
+				}
 				records = append(records, blobRecord(store, desc, &eo.blobRecordOptions))
 
 				p, err := content.ReadBlob(ctx, store, desc)
@@ -271,6 +286,9 @@ func Export(ctx context.Context, store content.Provider, writer io.Writer, opts 
 func getRecords(ctx context.Context, store content.Provider, desc ocispec.Descriptor, algorithms map[string]struct{}, brOpts *blobRecordOptions) ([]tarRecord, error) {
 	var records []tarRecord
 	exportHandler := func(ctx context.Context, desc ocispec.Descriptor) ([]ocispec.Descriptor, error) {
+		if err := desc.Digest.Validate(); err != nil {
+			return nil, err
+		}
 		records = append(records, blobRecord(store, desc, brOpts))
 		algorithms[desc.Digest.Algorithm().String()] = struct{}{}
 		return nil, nil
@@ -428,6 +446,9 @@ func manifestsRecord(ctx context.Context, store content.Provider, manifests map[
 		}
 
 		dgst := manifest.Config.Digest
+		if err := dgst.Validate(); err != nil {
+			return tarRecord{}, err
+		}
 		mfsts[i].Config = path.Join("blobs", dgst.Algorithm().String(), dgst.Encoded())
 		for _, l := range manifest.Layers {
 			path := path.Join("blobs", l.Digest.Algorithm().String(), l.Digest.Encoded())

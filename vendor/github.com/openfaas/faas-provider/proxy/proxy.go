@@ -7,15 +7,16 @@
 //
 // openfaas-provider has implemented a standard HTTP HandlerFunc that will handle setting
 // timeout values, parsing the request path, and copying the request/response correctly.
-// 		bootstrapHandlers := bootTypes.FaaSHandlers{
-// 			FunctionProxy:  proxy.NewHandlerFunc(timeout, resolver),
-// 			DeleteHandler:  handlers.MakeDeleteHandler(clientset),
-// 			DeployHandler:  handlers.MakeDeployHandler(clientset),
-// 			FunctionReader: handlers.MakeFunctionReader(clientset),
-// 			ReplicaReader:  handlers.MakeReplicaReader(clientset),
-// 			ReplicaUpdater: handlers.MakeReplicaUpdater(clientset),
-// 			InfoHandler:    handlers.MakeInfoHandler(),
-// 		}
+//
+//	bootstrapHandlers := bootTypes.FaaSHandlers{
+//		FunctionProxy:  proxy.NewHandlerFunc(timeout, resolver),
+//		DeleteHandler:  handlers.MakeDeleteHandler(clientset),
+//		DeployHandler:  handlers.MakeDeployHandler(clientset),
+//		FunctionLister: handlers.MakeFunctionLister(clientset),
+//		ReplicaReader:  handlers.MakeReplicaReader(clientset),
+//		ReplicaUpdater: handlers.MakeReplicaUpdater(clientset),
+//		InfoHandler:    handlers.MakeInfoHandler(),
+//	}
 //
 // proxy.NewHandlerFunc is optional, but does simplify the logic of your provider.
 package proxy
@@ -50,11 +51,11 @@ type BaseURLResolver interface {
 // NewHandlerFunc creates a standard http.HandlerFunc to proxy function requests.
 // The returned http.HandlerFunc will ensure:
 //
-// 	- proper proxy request timeouts
-// 	- proxy requests for GET, POST, PATCH, PUT, and DELETE
-// 	- path parsing including support for extracing the function name, sub-paths, and query paremeters
-// 	- passing and setting the `X-Forwarded-Host` and `X-Forwarded-For` headers
-// 	- logging errors and proxy request timing to stdout
+//   - proper proxy request timeouts
+//   - proxy requests for GET, POST, PATCH, PUT, and DELETE
+//   - path parsing including support for extracing the function name, sub-paths, and query paremeters
+//   - passing and setting the `X-Forwarded-Host` and `X-Forwarded-For` headers
+//   - logging errors and proxy request timing to stdout
 //
 // Note that this will panic if `resolver` is nil.
 func NewHandlerFunc(config types.FaaSConfig, resolver BaseURLResolver) http.HandlerFunc {

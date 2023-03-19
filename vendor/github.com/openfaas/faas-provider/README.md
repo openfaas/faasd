@@ -7,7 +7,7 @@ This faas-provider can be used to write your own back-end for OpenFaaS. The Gola
 
 The faas-provider provides CRUD for functions and an invoke capability. If you complete the required endpoints then you will be able to use your container orchestrator or back-end system with the existing OpenFaaS ecosystem and tooling.
 
-> See also: [backends guide](https://github.com/openfaas/faas/blob/master/guide/deprecated/backends.md)
+Read more: [The power of interfaces in OpenFaaS](https://blog.alexellis.io/the-power-of-interfaces-openfaas/)
 
 ### Recommendations
 
@@ -27,14 +27,18 @@ I.e.:
 ```go
 	timeout := 8 * time.Second
 	bootstrapHandlers := bootTypes.FaaSHandlers{
-		FunctionProxy:  handlers.MakeProxy(),
-		DeleteHandler:  handlers.MakeDeleteHandler(clientset),
-		DeployHandler:  handlers.MakeDeployHandler(clientset),
-		FunctionReader: handlers.MakeFunctionReader(clientset),
-		ReplicaReader:  handlers.MakeReplicaReader(clientset),
-		ReplicaUpdater: handlers.MakeReplicaUpdater(clientset),
-		InfoHandler:    handlers.MakeInfoHandler(),
-		LogHandler: logs.NewLogHandlerFunc(requestor,timeout),
+		ListNamespaces: handlers.MakeNamespaceLister(),
+		FunctionProxy:  handlers.MakeProxyHandler(),
+		FunctionLister: handlers.MakeFunctionLister(),
+		DeployFunction: handlers.MakeDeployFunctionHandler(),
+		DeleteFunction: handlers.MakeDeleteFunctionHandler(),
+		UpdateFunction: handlers.MakeUpdateFunctionHandler(),
+		FunctionStatus: handlers.MakeFunctionStatusHandler(),
+		ScaleFunction: 	handlers.MakeScaleFunctionHandler(),
+		Secrets: 	  	handlers.MakeSecretHandler(),
+		Logs: 			handlers.MakeLogsHandler(),
+		Info: 			handlers.MakeInfoHandler(),
+		Health: 		handlers.MakeHealthHandler(),
 	}
 
 	var port int
@@ -48,6 +52,3 @@ I.e.:
 	bootstrap.Serve(&bootstrapHandlers, &bootstrapConfig)
 ```
 
-### Need help?
-
-Join `#faas-provider` on [OpenFaaS Slack](https://docs.openfaas.com/community/)
