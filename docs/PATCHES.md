@@ -12,7 +12,7 @@ Your SSH key will be used, so that you can copy a new faasd binary over to the h
 
 ```bash
 multipass launch \
-  --mem 4G \
+  --memory 4G \
   -c 2 \
   -n faasd
 

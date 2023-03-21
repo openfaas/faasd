@@ -28,7 +28,7 @@ If you're using multipass, then allocate sufficient resources:
 
 ```bash
 multipass launch \
-  --mem 4G \
+  --memory 4G \
   -c 2 \
   -n faasd
 
