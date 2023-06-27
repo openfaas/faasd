@@ -22,78 +22,84 @@ import (
 const dockerConfigDir = "/var/lib/faasd/.docker/"
 
 // Remove removes a container
-func Remove(ctx context.Context, client *containerd.Client, name string) error {
+func Remove(ctx context.Context, client *containerd.Client, name string, killTimeout time.Duration) error {
 
-	container, containerErr := client.LoadContainer(ctx, name)
-
-	if containerErr == nil {
-		taskFound := true
-		t, err := container.Task(ctx, nil)
-		if err != nil {
-			if errdefs.IsNotFound(err) {
-				taskFound = false
-			} else {
-				return fmt.Errorf("unable to get task %w: ", err)
-			}
-		}
-
-		if taskFound {
-			status, err := t.Status(ctx)
-			if err != nil {
-				log.Printf("Unable to get status for: %s, error: %s", name, err.Error())
-			} else {
-				log.Printf("Status of %s is: %s\n", name, status.Status)
-			}
-
-			log.Printf("Need to kill task: %s\n", name)
-			if err = killTask(ctx, t); err != nil {
-				return fmt.Errorf("error killing task %s, %s, %w", container.ID(), name, err)
-			}
-		}
-
-		if err := container.Delete(ctx, containerd.WithSnapshotCleanup); err != nil {
-			return fmt.Errorf("error deleting container %s, %s, %w", container.ID(), name, err)
-		}
-
-	} else {
+	container, err := client.LoadContainer(ctx, name)
+	if err != nil {
+		// Perhaps the container was already removed, but the snapshot is still there
 		service := client.SnapshotService("")
 		key := name + "snapshot"
+
+		// Don't return an error if the snapshot doesn't exist
 		if _, err := client.SnapshotService("").Stat(ctx, key); err == nil {
 			service.Remove(ctx, key)
 		}
+		return nil
 	}
+
+	taskFound := true
+	t, err := container.Task(ctx, nil)
+	if err != nil {
+		if errdefs.IsNotFound(err) {
+			taskFound = false
+		} else {
+			return fmt.Errorf("unable to get task %w: ", err)
+		}
+	}
+
+	if taskFound {
+		status, err := t.Status(ctx)
+		if err != nil {
+			log.Printf("Unable to get status for: %s, error: %s", name, err.Error())
+		} else {
+			log.Printf("Status of %s is: %s\n", name, status.Status)
+		}
+
+		if err = killTask(ctx, t, killTimeout); err != nil {
+			return fmt.Errorf("error killing task %s, %s, %w", container.ID(), name, err)
+		}
+	}
+
+	if err := container.Delete(ctx, containerd.WithSnapshotCleanup); err != nil {
+		return fmt.Errorf("error deleting container %s, %s, %w", container.ID(), name, err)
+	}
+
 	return nil
 }
 
-// Adapted from Stellar - https://github.com/stellar
-func killTask(ctx context.Context, task containerd.Task) error {
-
-	killTimeout := 30 * time.Second
+// Adapted from Stellar - https://github.com/stellarproject
+func killTask(ctx context.Context, task containerd.Task, killTimeout time.Duration) error {
 
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
 	var err error
 
 	go func() {
+		id := task.ID()
+
 		defer wg.Done()
 		if task != nil {
 			wait, err := task.Wait(ctx)
 			if err != nil {
-				log.Printf("error waiting on task: %s", err)
+				log.Printf("error waiting on task: %s: %s", id, err)
 				return
 			}
 
 			if err := task.Kill(ctx, unix.SIGTERM, containerd.WithKillAll); err != nil {
-				log.Printf("error killing container task: %s", err)
+				log.Printf("error killing task: %s with SIGTERM: %s", id, err)
 			}
 
 			select {
 			case <-wait:
-				task.Delete(ctx)
+				_, err := task.Delete(ctx)
+				if err != nil {
+					log.Printf("error deleting task: %s: %s", id, err)
+				}
+
 				return
 			case <-time.After(killTimeout):
 				if err := task.Kill(ctx, unix.SIGKILL, containerd.WithKillAll); err != nil {
-					log.Printf("error force killing container task: %s", err)
+					log.Printf("error killing task: %s with SIGTERM: %s", id, err)
 				}
 				return
 			}

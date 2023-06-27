@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/containerd/containerd"
 	"github.com/containerd/containerd/namespaces"
@@ -32,8 +33,7 @@ func MakeDeleteHandler(client *containerd.Client, cni gocni.CNI) func(w http.Res
 		log.Printf("[Delete] request: %s\n", string(body))
 
 		req := requests.DeleteFunctionRequest{}
-		err := json.Unmarshal(body, &req)
-		if err != nil {
+		if err := json.Unmarshal(body, &req); err != nil {
 			log.Printf("[Delete] error parsing input: %s\n", err)
 			http.Error(w, err.Error(), http.StatusBadRequest)
 
@@ -58,7 +58,7 @@ func MakeDeleteHandler(client *containerd.Client, cni gocni.CNI) func(w http.Res
 
 		function, err := GetFunction(client, name, lookupNamespace)
 		if err != nil {
-			msg := fmt.Sprintf("service %s not found", name)
+			msg := fmt.Sprintf("function: %s not found", name)
 			log.Printf("[Delete] %s\n", msg)
 			http.Error(w, msg, http.StatusNotFound)
 			return
@@ -70,17 +70,29 @@ func MakeDeleteHandler(client *containerd.Client, cni gocni.CNI) func(w http.Res
 		if function.replicas != 0 {
 			err = cninetwork.DeleteCNINetwork(ctx, cni, client, name)
 			if err != nil {
-				log.Printf("[Delete] error removing CNI network for %s, %s\n", name, err)
+				log.Printf("[Delete] error removing CNI network for: %s, %s\n", name, err)
 			}
 		}
 
-		containerErr := service.Remove(ctx, client, name)
-		if containerErr != nil {
-			log.Printf("[Delete] error removing %s, %s\n", name, containerErr)
-			http.Error(w, containerErr.Error(), http.StatusInternalServerError)
+		killTimeout := getKillTimeout(function.envVars)
+
+		if err := service.Remove(ctx, client, name, killTimeout); err != nil {
+			log.Printf("[Delete] error removing %s, %s\n", name, err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		log.Printf("[Delete] deleted %s\n", name)
+		log.Printf("[Delete] deleted: %s\n", name)
 	}
+}
+
+func getKillTimeout(envs map[string]string) time.Duration {
+	killTimeout := time.Second * 5
+	if v, ok := envs["healthcheck_interval"]; ok {
+		dur, err := time.ParseDuration(v)
+		if err == nil {
+			killTimeout = dur
+		}
+	}
+	return killTimeout
 }

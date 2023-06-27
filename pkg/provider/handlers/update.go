@@ -39,6 +39,7 @@ func MakeUpdateHandler(client *containerd.Client, cni gocni.CNI, secretMountPath
 
 			return
 		}
+
 		name := req.Service
 		namespace := getRequestNamespace(req.Namespace)
 
@@ -64,8 +65,7 @@ func MakeUpdateHandler(client *containerd.Client, cni gocni.CNI, secretMountPath
 			return
 		}
 
-		err = validateSecrets(namespaceSecretMountPath, req.Secrets)
-		if err != nil {
+		if err = validateSecrets(namespaceSecretMountPath, req.Secrets); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 		}
 
@@ -83,13 +83,15 @@ func MakeUpdateHandler(client *containerd.Client, cni gocni.CNI, secretMountPath
 			}
 		}
 
-		if err := service.Remove(ctx, client, name); err != nil {
+		killTimeout := getKillTimeout(function.annotations)
+
+		if err := service.Remove(ctx, client, name, killTimeout); err != nil {
 			log.Printf("[Update] error removing %s, %s\n", name, err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		// The pull has already been done in prepull, so we can force this pull to "false"
+		// The pull has already been done in pre-pull, so we can force this pull to "false"
 		pull := false
 
 		if err := deploy(ctx, req, client, cni, namespaceSecretMountPath, pull); err != nil {

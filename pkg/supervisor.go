@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/alexellis/arkade/pkg/env"
 	"github.com/compose-spec/compose-go/loader"
@@ -32,6 +33,7 @@ import (
 const (
 	// workingDirectoryPermission user read/write/execute, group and others: read-only
 	workingDirectoryPermission = 0744
+	removalGracePeriod         = time.Second * 5
 )
 
 type Service struct {
@@ -126,9 +128,11 @@ func (s *Supervisor) Start(svcs []Service) error {
 
 	for _, svc := range svcs {
 		fmt.Printf("Removing old container for: %s\n", svc.Name)
-		containerErr := service.Remove(ctx, s.client, svc.Name)
-		if containerErr != nil {
-			return containerErr
+		if err := service.Remove(ctx,
+			s.client,
+			svc.Name,
+			removalGracePeriod); err != nil {
+			return err
 		}
 	}
 
@@ -286,8 +290,7 @@ func (s *Supervisor) Remove(svcs []Service) error {
 			return err
 		}
 
-		err = service.Remove(ctx, s.client, svc.Name)
-		if err != nil {
+		if err := service.Remove(ctx, s.client, svc.Name, removalGracePeriod); err != nil {
 			return err
 		}
 	}

@@ -92,6 +92,7 @@ func runUp(cmd *cobra.Command, _ []string) error {
 		<-sig
 
 		log.Printf("Signal received.. shutting down server in %s\n", shutdownTimeout.String())
+
 		err := supervisor.Remove(services)
 		if err != nil {
 			fmt.Println(err)
