@@ -78,6 +78,17 @@ func Serve(handlers *types.FaaSHandlers, config *types.FaaSConfig) {
 
 	r.HandleFunc("/system/namespaces", hm.InstrumentHandler(handlers.ListNamespaces, "")).Methods(http.MethodGet)
 
+	// Only register the mutate namespace handler if it is defined
+	if handlers.MutateNamespace != nil {
+		r.HandleFunc("/system/namespace/{namespace:["+NameExpression+"]+}",
+			hm.InstrumentHandler(handlers.MutateNamespace, "")).Methods(http.MethodPost, http.MethodDelete, http.MethodPut, http.MethodGet)
+	} else {
+		r.HandleFunc("/system/namespace/{namespace:["+NameExpression+"]+}",
+			hm.InstrumentHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				http.Error(w, "Feature not implemented in this version of OpenFaaS", http.StatusNotImplemented)
+			}), "")).Methods(http.MethodGet)
+	}
+
 	proxyHandler := handlers.FunctionProxy
 
 	// Open endpoints

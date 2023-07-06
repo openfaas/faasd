@@ -27,3 +27,12 @@ type VersionInfo struct {
 	SHA           string `json:"sha"`
 	Release       string `json:"release"`
 }
+
+// FunctionNamespace is required for use with the /system/namespace/NAME endpoint
+// for deletions, just pass the namespace field.
+type FunctionNamespace struct {
+	Namespace string `json:"namespace"`
+
+	Annotations map[string]string `json:"annotations,omitempty"`
+	Labels      map[string]string `json:"labels,omitempty"`
+}

@@ -12,7 +12,12 @@ const (
 
 // FaaSHandlers provide handlers for OpenFaaS
 type FaaSHandlers struct {
+	// ListNamespace lists namespaces which are annotated for OpenFaaS
 	ListNamespaces http.HandlerFunc
+
+	// MutateNamespace mutates a namespace to be annotated for OpenFaaS
+	// each namespace must contain an annotation of "openfaas=1"
+	MutateNamespace http.HandlerFunc
 
 	// FunctionProxy provides the function invocation proxy logic.  Use proxy.NewHandlerFunc to
 	// use the standard OpenFaaS proxy implementation or provide completely custom proxy logic.
