@@ -2,7 +2,7 @@ version: "3.7"
 services:
 
   nats:
-    image: docker.io/library/nats-streaming:0.25.3
+    image: docker.io/library/nats-streaming:0.25.5
 # nobody
     user: "65534"
     command:
@@ -21,7 +21,7 @@ services:
     #    - "127.0.0.1:8222:8222"
 
   prometheus:
-    image: docker.io/prom/prometheus:v2.42.0
+    image: docker.io/prom/prometheus:v2.45.0
 # nobody
     user: "65534"
     volumes:
@@ -39,7 +39,7 @@ services:
        - "127.0.0.1:9090:9090"
 
   gateway:
-    image: ghcr.io/openfaas/gateway:0.26.3
+    image: ghcr.io/openfaas/gateway:0.26.4
     environment:
       - basic_auth=true
       - functions_provider_url=http://faasd-provider:8081/
