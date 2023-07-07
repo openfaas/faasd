@@ -3,15 +3,17 @@
 
 package types
 
-// ScaleServiceRequest scales the service to the requested replcia count.
+// ScaleServiceRequest scales the service to the requested replica count.
 type ScaleServiceRequest struct {
 	ServiceName string `json:"serviceName"`
 	Replicas    uint64 `json:"replicas"`
+	Namespace   string `json:"namespace,omitempty"`
 }
 
 // DeleteFunctionRequest delete a deployed function
 type DeleteFunctionRequest struct {
 	FunctionName string `json:"functionName"`
+	Namespace    string `json:"namespace,omitempty"`
 }
 
 // ProviderInfo provides information about the configured provider
@@ -28,10 +30,9 @@ type VersionInfo struct {
 	Release       string `json:"release"`
 }
 
-// FunctionNamespace is required for use with the /system/namespace/NAME endpoint
-// for deletions, just pass the namespace field.
+// FunctionNamespace is the namespace for a function
 type FunctionNamespace struct {
-	Namespace string `json:"namespace"`
+	Name string `json:"name"`
 
 	Annotations map[string]string `json:"annotations,omitempty"`
 	Labels      map[string]string `json:"labels,omitempty"`

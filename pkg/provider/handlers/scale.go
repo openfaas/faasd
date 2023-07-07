@@ -13,6 +13,7 @@ import (
 	gocni "github.com/containerd/go-cni"
 
 	"github.com/openfaas/faas-provider/types"
+	"github.com/openfaas/faasd/pkg"
 )
 
 func MakeReplicaUpdateHandler(client *containerd.Client, cni gocni.CNI) func(w http.ResponseWriter, r *http.Request) {
@@ -30,16 +31,17 @@ func MakeReplicaUpdateHandler(client *containerd.Client, cni gocni.CNI) func(w h
 		log.Printf("[Scale] request: %s\n", string(body))
 
 		req := types.ScaleServiceRequest{}
-		err := json.Unmarshal(body, &req)
-
-		if err != nil {
+		if err := json.Unmarshal(body, &req); err != nil {
 			log.Printf("[Scale] error parsing input: %s\n", err)
 			http.Error(w, err.Error(), http.StatusBadRequest)
 
 			return
 		}
 
-		namespace := getRequestNamespace(readNamespaceFromQuery(r))
+		namespace := req.Namespace
+		if namespace == "" {
+			namespace = pkg.DefaultFunctionNamespace
+		}
 
 		// Check if namespace exists, and it has the openfaas label
 		valid, err := validNamespace(client.NamespaceService(), namespace)

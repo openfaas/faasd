@@ -11,8 +11,9 @@ import (
 	"github.com/containerd/containerd"
 	"github.com/containerd/containerd/namespaces"
 	gocni "github.com/containerd/go-cni"
-	"github.com/openfaas/faas/gateway/requests"
 
+	"github.com/openfaas/faas-provider/types"
+	"github.com/openfaas/faasd/pkg"
 	cninetwork "github.com/openfaas/faasd/pkg/cninetwork"
 	"github.com/openfaas/faasd/pkg/service"
 )
@@ -31,7 +32,7 @@ func MakeDeleteHandler(client *containerd.Client, cni gocni.CNI) func(w http.Res
 		body, _ := ioutil.ReadAll(r.Body)
 		log.Printf("[Delete] request: %s\n", string(body))
 
-		req := requests.DeleteFunctionRequest{}
+		req := types.DeleteFunctionRequest{}
 		err := json.Unmarshal(body, &req)
 		if err != nil {
 			log.Printf("[Delete] error parsing input: %s\n", err)
@@ -40,10 +41,14 @@ func MakeDeleteHandler(client *containerd.Client, cni gocni.CNI) func(w http.Res
 			return
 		}
 
-		lookupNamespace := getRequestNamespace(readNamespaceFromQuery(r))
+		// namespace moved from the querystring into the body
+		namespace := req.Namespace
+		if namespace == "" {
+			namespace = pkg.DefaultFunctionNamespace
+		}
 
 		// Check if namespace exists, and it has the openfaas label
-		valid, err := validNamespace(client.NamespaceService(), lookupNamespace)
+		valid, err := validNamespace(client.NamespaceService(), namespace)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -56,7 +61,7 @@ func MakeDeleteHandler(client *containerd.Client, cni gocni.CNI) func(w http.Res
 
 		name := req.FunctionName
 
-		function, err := GetFunction(client, name, lookupNamespace)
+		function, err := GetFunction(client, name, namespace)
 		if err != nil {
 			msg := fmt.Sprintf("service %s not found", name)
 			log.Printf("[Delete] %s\n", msg)
@@ -64,7 +69,7 @@ func MakeDeleteHandler(client *containerd.Client, cni gocni.CNI) func(w http.Res
 			return
 		}
 
-		ctx := namespaces.WithNamespace(context.Background(), lookupNamespace)
+		ctx := namespaces.WithNamespace(context.Background(), namespace)
 
 		// TODO: this needs to still happen if the task is paused
 		if function.replicas != 0 {
@@ -74,10 +79,9 @@ func MakeDeleteHandler(client *containerd.Client, cni gocni.CNI) func(w http.Res
 			}
 		}
 
-		containerErr := service.Remove(ctx, client, name)
-		if containerErr != nil {
-			log.Printf("[Delete] error removing %s, %s\n", name, containerErr)
-			http.Error(w, containerErr.Error(), http.StatusInternalServerError)
+		if err := service.Remove(ctx, client, name); err != nil {
+			log.Printf("[Delete] error removing %s, %s\n", name, err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 

@@ -80,10 +80,10 @@ func Serve(handlers *types.FaaSHandlers, config *types.FaaSConfig) {
 
 	// Only register the mutate namespace handler if it is defined
 	if handlers.MutateNamespace != nil {
-		r.HandleFunc("/system/namespace/{namespace:["+NameExpression+"]+}",
+		r.HandleFunc("/system/namespace/{name:["+NameExpression+"]*}",
 			hm.InstrumentHandler(handlers.MutateNamespace, "")).Methods(http.MethodPost, http.MethodDelete, http.MethodPut, http.MethodGet)
 	} else {
-		r.HandleFunc("/system/namespace/{namespace:["+NameExpression+"]+}",
+		r.HandleFunc("/system/namespace/{name:["+NameExpression+"]*}",
 			hm.InstrumentHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "Feature not implemented in this version of OpenFaaS", http.StatusNotImplemented)
 			}), "")).Methods(http.MethodGet)
