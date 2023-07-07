@@ -257,7 +257,7 @@ sudo faasd install
 2020/02/17 17:38:06 Writing to: "/var/lib/faasd/secrets/basic-auth-password"
 2020/02/17 17:38:06 Writing to: "/var/lib/faasd/secrets/basic-auth-user"
 Login with:
-  sudo cat /var/lib/faasd/secrets/basic-auth-password | faas-cli login -s
+  sudo -E cat /var/lib/faasd/secrets/basic-auth-password | faas-cli login -s
 ```
 
 You can now log in either from this machine or a remote machine using the OpenFaaS UI, or CLI.
