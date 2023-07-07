@@ -93,18 +93,19 @@ func makeProviderCmd() *cobra.Command {
 		}
 
 		bootstrapHandlers := types.FaaSHandlers{
-			FunctionProxy:  proxy.NewHandlerFunc(*config, invokeResolver),
-			DeleteFunction: handlers.MakeDeleteHandler(client, cni),
-			DeployFunction: handlers.MakeDeployHandler(client, cni, baseUserSecretsPath, alwaysPull),
-			FunctionLister: handlers.MakeReadHandler(client),
-			FunctionStatus: handlers.MakeReplicaReaderHandler(client),
-			ScaleFunction:  handlers.MakeReplicaUpdateHandler(client, cni),
-			UpdateFunction: handlers.MakeUpdateHandler(client, cni, baseUserSecretsPath, alwaysPull),
-			Health:         func(w http.ResponseWriter, r *http.Request) {},
-			Info:           handlers.MakeInfoHandler(Version, GitCommit),
-			ListNamespaces: handlers.MakeNamespacesLister(client),
-			Secrets:        handlers.MakeSecretHandler(client.NamespaceService(), baseUserSecretsPath),
-			Logs:           logs.NewLogHandlerFunc(faasdlogs.New(), config.ReadTimeout),
+			FunctionProxy:   proxy.NewHandlerFunc(*config, invokeResolver),
+			DeleteFunction:  handlers.MakeDeleteHandler(client, cni),
+			DeployFunction:  handlers.MakeDeployHandler(client, cni, baseUserSecretsPath, alwaysPull),
+			FunctionLister:  handlers.MakeReadHandler(client),
+			FunctionStatus:  handlers.MakeReplicaReaderHandler(client),
+			ScaleFunction:   handlers.MakeReplicaUpdateHandler(client, cni),
+			UpdateFunction:  handlers.MakeUpdateHandler(client, cni, baseUserSecretsPath, alwaysPull),
+			Health:          func(w http.ResponseWriter, r *http.Request) {},
+			Info:            handlers.MakeInfoHandler(Version, GitCommit),
+			ListNamespaces:  handlers.MakeNamespacesLister(client),
+			Secrets:         handlers.MakeSecretHandler(client.NamespaceService(), baseUserSecretsPath),
+			Logs:            logs.NewLogHandlerFunc(faasdlogs.New(), config.ReadTimeout),
+			MutateNamespace: handlers.MakeMutateNamespace(client),
 		}
 
 		log.Printf("Listening on: 0.0.0.0:%d\n", *config.TCPPort)

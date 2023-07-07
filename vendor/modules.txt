@@ -339,10 +339,9 @@ github.com/openfaas/faas-provider/httputil
 github.com/openfaas/faas-provider/logs
 github.com/openfaas/faas-provider/proxy
 github.com/openfaas/faas-provider/types
-# github.com/openfaas/faas/gateway v0.0.0-20230628073303-c0d710c97ff7
-## explicit; go 1.19
-github.com/openfaas/faas/gateway/requests
-# github.com/openfaas/nats-queue-worker v0.0.0-20230117214128-3615ccb286cc
+# github.com/openfaas/faas/gateway v0.0.0-20230707085301-9e6f814f6fd8
+## explicit; go 1.20
+# github.com/openfaas/nats-queue-worker v0.0.0-20230303171817-9dfe6fa61387
 ## explicit; go 1.18
 # github.com/otiai10/copy v1.12.0
 ## explicit; go 1.18
@@ -355,8 +354,8 @@ github.com/prometheus/client_golang/prometheus
 github.com/prometheus/client_golang/prometheus/internal
 github.com/prometheus/client_golang/prometheus/promauto
 github.com/prometheus/client_golang/prometheus/promhttp
-# github.com/prometheus/client_model v0.3.0
-## explicit; go 1.9
+# github.com/prometheus/client_model v0.4.0
+## explicit; go 1.18
 github.com/prometheus/client_model/go
 # github.com/prometheus/common v0.42.0
 ## explicit; go 1.18
@@ -439,8 +438,8 @@ golang.org/x/net/http2/hpack
 golang.org/x/net/idna
 golang.org/x/net/internal/timeseries
 golang.org/x/net/trace
-# golang.org/x/sync v0.2.0
-## explicit
+# golang.org/x/sync v0.3.0
+## explicit; go 1.17
 golang.org/x/sync/errgroup
 golang.org/x/sync/semaphore
 # golang.org/x/sys v0.10.0

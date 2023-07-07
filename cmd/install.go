@@ -97,7 +97,7 @@ func runInstall(_ *cobra.Command, _ []string) error {
   sudo journalctl -u faasd --lines 100 -f
 
 Login with:
-  sudo cat /var/lib/faasd/secrets/basic-auth-password | faas-cli login -s`)
+  sudo -E cat /var/lib/faasd/secrets/basic-auth-password | faas-cli login -s`)
 
 	return nil
 }
