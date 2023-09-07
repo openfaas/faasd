@@ -4,8 +4,6 @@ github.com/AdaLogics/go-fuzz-headers
 # github.com/AdamKorcz/go-118-fuzz-build v0.0.0-20230306123547-8075edf89bb0
 ## explicit; go 1.18
 github.com/AdamKorcz/go-118-fuzz-build/testing
-# github.com/Masterminds/semver v1.5.0
-## explicit
 # github.com/Microsoft/go-winio v0.6.1
 ## explicit; go 1.17
 github.com/Microsoft/go-winio
@@ -44,8 +42,6 @@ github.com/Microsoft/hcsshim/internal/wclayer
 github.com/Microsoft/hcsshim/internal/winapi
 github.com/Microsoft/hcsshim/osversion
 github.com/Microsoft/hcsshim/pkg/ociwclayer
-# github.com/VividCortex/ewma v1.2.0
-## explicit; go 1.12
 # github.com/alexellis/arkade v0.0.0-20230705083451-a4dd6013ddcd
 ## explicit; go 1.19
 github.com/alexellis/arkade/pkg/env
@@ -58,8 +54,6 @@ github.com/beorn7/perks/quantile
 # github.com/cespare/xxhash/v2 v2.2.0
 ## explicit; go 1.11
 github.com/cespare/xxhash/v2
-# github.com/cheggaaa/pb/v3 v3.1.2
-## explicit; go 1.17
 # github.com/compose-spec/compose-go v0.0.0-20200528042322-36d8ce368e05
 ## explicit; go 1.12
 github.com/compose-spec/compose-go/envfile
@@ -163,8 +157,6 @@ github.com/containerd/fifo
 # github.com/containerd/go-cni v1.1.9
 ## explicit; go 1.19
 github.com/containerd/go-cni
-# github.com/containerd/stargz-snapshotter/estargz v0.14.3
-## explicit; go 1.19
 # github.com/containerd/ttrpc v1.2.1
 ## explicit; go 1.13
 github.com/containerd/ttrpc
@@ -186,7 +178,7 @@ github.com/containernetworking/cni/pkg/version
 # github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf
 ## explicit
 github.com/coreos/go-systemd/journal
-# github.com/cyphar/filepath-securejoin v0.2.3
+# github.com/cyphar/filepath-securejoin v0.2.4
 ## explicit; go 1.13
 github.com/cyphar/filepath-securejoin
 # github.com/docker/cli v24.0.2+incompatible
@@ -215,8 +207,6 @@ github.com/docker/go-events
 # github.com/docker/go-units v0.5.0
 ## explicit
 github.com/docker/go-units
-# github.com/fatih/color v1.14.1
-## explicit; go 1.17
 # github.com/go-logr/logr v1.2.3
 ## explicit; go 1.16
 github.com/go-logr/logr
@@ -247,8 +237,6 @@ github.com/google/go-cmp/cmp/internal/diff
 github.com/google/go-cmp/cmp/internal/flags
 github.com/google/go-cmp/cmp/internal/function
 github.com/google/go-cmp/cmp/internal/value
-# github.com/google/go-containerregistry v0.15.2
-## explicit; go 1.18
 # github.com/google/uuid v1.3.0
 ## explicit
 github.com/google/uuid
@@ -270,20 +258,12 @@ github.com/klauspost/compress/internal/cpuinfo
 github.com/klauspost/compress/internal/snapref
 github.com/klauspost/compress/zstd
 github.com/klauspost/compress/zstd/internal/xxhash
-# github.com/mattn/go-colorable v0.1.13
-## explicit; go 1.15
-# github.com/mattn/go-isatty v0.0.17
-## explicit; go 1.15
-# github.com/mattn/go-runewidth v0.0.13
-## explicit; go 1.9
 # github.com/mattn/go-shellwords v1.0.12
 ## explicit; go 1.13
 github.com/mattn/go-shellwords
 # github.com/matttproud/golang_protobuf_extensions v1.0.4
 ## explicit; go 1.9
 github.com/matttproud/golang_protobuf_extensions/pbutil
-# github.com/mitchellh/go-homedir v1.1.0
-## explicit
 # github.com/mitchellh/mapstructure v1.5.0
 ## explicit; go 1.14
 github.com/mitchellh/mapstructure
@@ -302,16 +282,6 @@ github.com/moby/sys/signal
 # github.com/morikuni/aec v1.0.0
 ## explicit
 github.com/morikuni/aec
-# github.com/nats-io/nats.go v1.22.1
-## explicit; go 1.16
-# github.com/nats-io/nkeys v0.3.0
-## explicit; go 1.16
-# github.com/nats-io/nuid v1.0.1
-## explicit
-# github.com/nats-io/stan.go v0.10.4
-## explicit; go 1.14
-# github.com/olekukonko/tablewriter v0.0.5
-## explicit; go 1.12
 # github.com/opencontainers/go-digest v1.0.0
 ## explicit; go 1.13
 github.com/opencontainers/go-digest
@@ -339,12 +309,6 @@ github.com/openfaas/faas-provider/httputil
 github.com/openfaas/faas-provider/logs
 github.com/openfaas/faas-provider/proxy
 github.com/openfaas/faas-provider/types
-# github.com/openfaas/faas/gateway v0.0.0-20230707085301-9e6f814f6fd8
-## explicit; go 1.20
-# github.com/openfaas/nats-queue-worker v0.0.0-20230303171817-9dfe6fa61387
-## explicit; go 1.18
-# github.com/otiai10/copy v1.12.0
-## explicit; go 1.18
 # github.com/pkg/errors v0.9.1
 ## explicit
 github.com/pkg/errors
@@ -367,8 +331,6 @@ github.com/prometheus/common/model
 github.com/prometheus/procfs
 github.com/prometheus/procfs/internal/fs
 github.com/prometheus/procfs/internal/util
-# github.com/rivo/uniseg v0.2.0
-## explicit; go 1.12
 # github.com/rogpeppe/go-internal v1.6.1
 ## explicit; go 1.11
 # github.com/sethvargo/go-password v0.2.0
@@ -383,8 +345,6 @@ github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.5
 ## explicit; go 1.12
 github.com/spf13/pflag
-# github.com/vbatts/tar-split v0.11.3
-## explicit; go 1.15
 # github.com/vishvananda/netlink v1.2.1-beta.2
 ## explicit; go 1.12
 github.com/vishvananda/netlink
@@ -425,8 +385,6 @@ go.opentelemetry.io/otel/semconv/v1.17.0/httpconv
 # go.opentelemetry.io/otel/trace v1.14.0
 ## explicit; go 1.18
 go.opentelemetry.io/otel/trace
-# golang.org/x/crypto v0.10.0
-## explicit; go 1.17
 # golang.org/x/mod v0.12.0
 ## explicit; go 1.17
 golang.org/x/mod/semver
