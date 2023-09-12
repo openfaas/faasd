@@ -57,8 +57,14 @@ type ServicePort struct {
 }
 
 type Mount struct {
-	Src  string
+	// Src relative to the working directory for faasd
+	Src string
+
+	// Dest is the absolute path within the container
 	Dest string
+
+	// ReadOnly when set to true indicates the mount will be set to "ro" instead of "rw"
+	ReadOnly bool
 }
 
 type Supervisor struct {
@@ -151,11 +157,18 @@ func (s *Supervisor) Start(svcs []Service) error {
 		mounts := []specs.Mount{}
 		if len(svc.Mounts) > 0 {
 			for _, mnt := range svc.Mounts {
+				var options = []string{"rbind"}
+				if mnt.ReadOnly {
+					options = append(options, "ro")
+				} else {
+					options = append(options, "rw")
+				}
+
 				mounts = append(mounts, specs.Mount{
 					Source:      mnt.Src,
 					Destination: mnt.Dest,
 					Type:        "bind",
-					Options:     []string{"rbind", "rw"},
+					Options:     options,
 				})
 
 				// Only create directories, not files.
@@ -342,8 +355,9 @@ func ParseCompose(config *compose.Config) ([]Service, error) {
 				return nil, errors.Errorf("unsupported volume mount type '%s' when parsing service '%s'", v.Type, s.Name)
 			}
 			mounts = append(mounts, Mount{
-				Src:  v.Source,
-				Dest: v.Target,
+				Src:      v.Source,
+				Dest:     v.Target,
+				ReadOnly: v.ReadOnly,
 			})
 		}
 
