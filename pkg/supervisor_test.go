@@ -180,7 +180,7 @@ func equalMountSlice(t *testing.T, want, found []Mount) {
 
 	for i := range want {
 		if !reflect.DeepEqual(want[i], found[i]) {
-			t.Fatalf("unexpected value at postition %d: want %s, got %s", i, want[i], found[i])
+			t.Fatalf("unexpected value at postition %d: want %v, got %v", i, want[i], found[i])
 		}
 	}
 }
