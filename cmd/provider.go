@@ -93,7 +93,7 @@ func makeProviderCmd() *cobra.Command {
 		}
 
 		bootstrapHandlers := types.FaaSHandlers{
-			FunctionProxy:   proxy.NewHandlerFunc(*config, invokeResolver),
+			FunctionProxy:   proxy.NewHandlerFunc(*config, invokeResolver, false),
 			DeleteFunction:  handlers.MakeDeleteHandler(client, cni),
 			DeployFunction:  handlers.MakeDeployHandler(client, cni, baseUserSecretsPath, alwaysPull),
 			FunctionLister:  handlers.MakeReadHandler(client),

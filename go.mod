@@ -16,7 +16,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/morikuni/aec v1.0.0
 	github.com/opencontainers/runtime-spec v1.1.0-rc.3
-	github.com/openfaas/faas-provider v0.24.0
+	github.com/openfaas/faas-provider v0.24.4
 	github.com/pkg/errors v0.9.1
 	github.com/sethvargo/go-password v0.2.0
 	github.com/spf13/cobra v1.7.0
