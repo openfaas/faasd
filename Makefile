@@ -74,3 +74,7 @@ test-e2e:
 verify-compose:
 	@echo Verifying docker-compose.yaml images in remote registries && \
 	arkade chart verify --verbose=$(VERBOSE) -f ./docker-compose.yaml
+
+upgrade-compose:
+	@echo Checking for newer images in remote registries && \
+	arkade chart upgrade -f ./docker-compose.yaml --write
