@@ -4,26 +4,32 @@
 package env
 
 import (
+	"context"
 	"log"
 	"os"
 	"path"
 	"strings"
 
-	execute "github.com/alexellis/go-execute/pkg/v1"
+	execute "github.com/alexellis/go-execute/v2"
 )
 
 // GetClientArch returns a pair of arch and os
 func GetClientArch() (arch string, os string) {
-	task := execute.ExecTask{Command: "uname", Args: []string{"-m"}, StreamStdio: false}
-	res, err := task.Execute()
+	task := execute.ExecTask{
+		Command:     "uname",
+		Args:        []string{"-m"},
+		StreamStdio: false}
+	res, err := task.Execute(context.Background())
 	if err != nil {
 		log.Println(err)
 	}
 
 	archResult := strings.TrimSpace(res.Stdout)
 
-	taskOS := execute.ExecTask{Command: "uname", Args: []string{"-s"}, StreamStdio: false}
-	resOS, errOS := taskOS.Execute()
+	taskOS := execute.ExecTask{Command: "uname",
+		Args:        []string{"-s"},
+		StreamStdio: false}
+	resOS, errOS := taskOS.Execute(context.Background())
 	if errOS != nil {
 		log.Println(errOS)
 	}
