@@ -39,7 +39,8 @@ func validNamespace(store provider.Labeller, namespace string) (bool, error) {
 		return false, err
 	}
 
-	if value, found := labels[pkg.NamespaceLabel]; found && value == "true" {
+	// check for true to keep it backward compatible
+	if value, found := labels[pkg.NamespaceLabel]; found && (value == "true" || value == "1") {
 		return true, nil
 	}
 
