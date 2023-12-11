@@ -35,8 +35,9 @@ import (
 )
 
 const (
-	watchdogPort       = "8080"
-	defaultContentType = "text/plain"
+	watchdogPort           = "8080"
+	defaultContentType     = "text/plain"
+	openFaaSInternalHeader = "X-OpenFaaS-Internal"
 )
 
 // BaseURLResolver URL resolver for proxy requests
@@ -139,7 +140,7 @@ func proxyRequest(w http.ResponseWriter, originalReq *http.Request, proxyClient 
 	pathVars := mux.Vars(originalReq)
 	functionName := pathVars["name"]
 	if functionName == "" {
-		w.Header().Add("X-OpenFaaS-Internal", "proxy")
+		w.Header().Add(openFaaSInternalHeader, "proxy")
 
 		httputil.Errorf(w, http.StatusBadRequest, "Provide function name in the request path")
 		return
@@ -147,7 +148,7 @@ func proxyRequest(w http.ResponseWriter, originalReq *http.Request, proxyClient 
 
 	functionAddr, err := resolver.Resolve(functionName)
 	if err != nil {
-		w.Header().Add("X-OpenFaaS-Internal", "proxy")
+		w.Header().Add(openFaaSInternalHeader, "proxy")
 
 		// TODO: Should record the 404/not found error in Prometheus.
 		log.Printf("resolver error: no endpoints for %s: %s\n", functionName, err.Error())
@@ -158,7 +159,7 @@ func proxyRequest(w http.ResponseWriter, originalReq *http.Request, proxyClient 
 	proxyReq, err := buildProxyRequest(originalReq, functionAddr, pathVars["params"])
 	if err != nil {
 
-		w.Header().Add("X-OpenFaaS-Internal", "proxy")
+		w.Header().Add(openFaaSInternalHeader, "proxy")
 
 		httputil.Errorf(w, http.StatusInternalServerError, "Failed to resolve service: %s.", functionName)
 		return
@@ -175,7 +176,7 @@ func proxyRequest(w http.ResponseWriter, originalReq *http.Request, proxyClient 
 	if err != nil {
 		log.Printf("error with proxy request to: %s, %s\n", proxyReq.URL.String(), err.Error())
 
-		w.Header().Add("X-OpenFaaS-Internal", "proxy")
+		w.Header().Add(openFaaSInternalHeader, "proxy")
 
 		httputil.Errorf(w, http.StatusInternalServerError, "Can't reach service for: %s.", functionName)
 		return

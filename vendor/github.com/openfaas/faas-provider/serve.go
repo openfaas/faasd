@@ -4,6 +4,8 @@
 package bootstrap
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -31,7 +33,7 @@ func Router() *mux.Router {
 }
 
 // Serve load your handlers into the correct OpenFaaS route spec. This function is blocking.
-func Serve(handlers *types.FaaSHandlers, config *types.FaaSConfig) {
+func Serve(ctx context.Context, handlers *types.FaaSHandlers, config *types.FaaSConfig) {
 
 	if config.EnableBasicAuth {
 		reader := auth.ReadBasicAuthFromDisk{
@@ -118,5 +120,16 @@ func Serve(handlers *types.FaaSHandlers, config *types.FaaSConfig) {
 		Handler:        r,
 	}
 
-	log.Fatal(s.ListenAndServe())
+	// Start server in a goroutine
+	go func() {
+		if err := s.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+			log.Fatal(err)
+		}
+	}()
+
+	// Shutdown server when context is done.
+	<-ctx.Done()
+	if err := s.Shutdown(context.Background()); err != nil {
+		log.Printf("Failed to shut down provider gracefully: %s", err)
+	}
 }

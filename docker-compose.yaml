@@ -21,7 +21,7 @@ services:
     #    - "127.0.0.1:8222:8222"
 
   prometheus:
-    image: docker.io/prom/prometheus:v2.48.0
+    image: docker.io/prom/prometheus:v2.48.1
 # nobody
     user: "65534"
     volumes:
