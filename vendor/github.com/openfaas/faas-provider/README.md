@@ -20,7 +20,15 @@ The following is used in OpenFaaS and recommended for those seeking to build the
 
 All the required HTTP routes are configured automatically including a HTTP server on port 8080. Your task is to implement the supplied HTTP handler functions.
 
-For an example see the [main.go](https://github.com/openfaas/faas-netes/blob/master/main.go) file in the [faas-netes](https://github.com/openfaas/faas-netes) Kubernetes backend.
+Examples:
+
+**OpenFaaS for Kubernetes**
+
+See the [main.go](https://github.com/openfaas/faas-netes/blob/master/main.go) file in the [faas-netes](https://github.com/openfaas/faas-netes) Kubernetes backend.
+
+**OpenFaaS for containerd (faasd)**
+
+See [provider.go](https://github.com/openfaas/faasd/blob/master/cmd/provider.go#L100) for the [faasd backend](https://github.com/openfaas/faasd/)
 
 I.e.:
 
