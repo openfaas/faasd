@@ -75,7 +75,7 @@ func (p *Proxy) Start() error {
 		// Wait for a connection.
 		conn, err := l.Accept()
 		if err != nil {
-			acceptErr := fmt.Errorf("Unable to accept on %d, error: %s",
+			acceptErr := fmt.Errorf("unable to accept on %d, error: %s",
 				p.Port,
 				err.Error())
 			log.Printf("%s", acceptErr.Error())
@@ -83,7 +83,6 @@ func (p *Proxy) Start() error {
 		}
 
 		upstream, err := net.Dial("tcp", upstreamAddr)
-
 		if err != nil {
 			log.Printf("unable to dial to %s, error: %s", upstreamAddr, err.Error())
 			return err
