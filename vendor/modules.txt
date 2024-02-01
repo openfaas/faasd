@@ -42,7 +42,7 @@ github.com/Microsoft/hcsshim/internal/wclayer
 github.com/Microsoft/hcsshim/internal/winapi
 github.com/Microsoft/hcsshim/osversion
 github.com/Microsoft/hcsshim/pkg/ociwclayer
-# github.com/alexellis/arkade v0.0.0-20240110152347-3c1c94f17d11
+# github.com/alexellis/arkade v0.0.0-20240124171646-67314ef9f9c3
 ## explicit; go 1.21
 github.com/alexellis/arkade/pkg/env
 # github.com/alexellis/go-execute/v2 v2.2.1
@@ -260,6 +260,8 @@ github.com/klauspost/compress/internal/cpuinfo
 github.com/klauspost/compress/internal/snapref
 github.com/klauspost/compress/zstd
 github.com/klauspost/compress/zstd/internal/xxhash
+# github.com/kr/text v0.2.0
+## explicit
 # github.com/mattn/go-shellwords v1.0.12
 ## explicit; go 1.13
 github.com/mattn/go-shellwords
@@ -293,8 +295,8 @@ github.com/opencontainers/go-digest/digestset
 github.com/opencontainers/image-spec/identity
 github.com/opencontainers/image-spec/specs-go
 github.com/opencontainers/image-spec/specs-go/v1
-# github.com/opencontainers/runc v1.1.5
-## explicit; go 1.16
+# github.com/opencontainers/runc v1.1.12
+## explicit; go 1.17
 github.com/opencontainers/runc/libcontainer/user
 # github.com/opencontainers/runtime-spec v1.1.0
 ## explicit
@@ -412,7 +414,7 @@ golang.org/x/text/secure/bidirule
 golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
-# golang.org/x/tools v0.16.1
+# golang.org/x/tools v0.17.0
 ## explicit; go 1.18
 golang.org/x/tools/cmd/stringer
 golang.org/x/tools/go/gcexportdata
@@ -532,6 +534,6 @@ gopkg.in/inf.v0
 gopkg.in/yaml.v2
 # gotest.tools/v3 v3.0.3
 ## explicit; go 1.11
-# k8s.io/apimachinery v0.29.0
+# k8s.io/apimachinery v0.29.1
 ## explicit; go 1.21
 k8s.io/apimachinery/pkg/api/resource

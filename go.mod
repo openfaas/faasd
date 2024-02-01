@@ -3,7 +3,7 @@ module github.com/openfaas/faasd
 go 1.21
 
 require (
-	github.com/alexellis/arkade v0.0.0-20240110152347-3c1c94f17d11
+	github.com/alexellis/arkade v0.0.0-20240124171646-67314ef9f9c3
 	github.com/compose-spec/compose-go v0.0.0-20200528042322-36d8ce368e05
 	github.com/containerd/containerd v1.7.0
 	github.com/containerd/go-cni v1.1.9
@@ -23,7 +23,7 @@ require (
 	github.com/vishvananda/netlink v1.2.1-beta.2
 	github.com/vishvananda/netns v0.0.4
 	golang.org/x/sys v0.16.0
-	k8s.io/apimachinery v0.29.0
+	k8s.io/apimachinery v0.29.1
 )
 
 require github.com/alexellis/go-execute/v2 v2.2.1
@@ -56,6 +56,7 @@ require (
 	github.com/imdario/mergo v0.3.14 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/klauspost/compress v1.17.4 // indirect
+	github.com/kr/text v0.2.0 // indirect
 	github.com/mattn/go-shellwords v1.0.12 // indirect
 	github.com/matttproud/golang_protobuf_extensions/v2 v2.0.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
@@ -65,7 +66,7 @@ require (
 	github.com/moby/sys/signal v0.7.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0-rc5 // indirect
-	github.com/opencontainers/runc v1.1.5 // indirect
+	github.com/opencontainers/runc v1.1.12 // indirect
 	github.com/opencontainers/selinux v1.11.0 // indirect
 	github.com/prometheus/client_golang v1.18.0 // indirect
 	github.com/prometheus/client_model v0.5.0 // indirect
@@ -82,7 +83,7 @@ require (
 	golang.org/x/net v0.20.0 // indirect
 	golang.org/x/sync v0.6.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
-	golang.org/x/tools v0.16.1 // indirect
+	golang.org/x/tools v0.17.0 // indirect
 	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1 // indirect
 	google.golang.org/grpc v1.56.3 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
