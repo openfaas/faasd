@@ -57,7 +57,7 @@ func Remove(ctx context.Context, client *containerd.Client, name string) error {
 
 	} else {
 		service := client.SnapshotService("")
-		key := name + "snapshot"
+		key := name + "-snapshot"
 		if _, err := client.SnapshotService("").Stat(ctx, key); err == nil {
 			service.Remove(ctx, key)
 		}
