@@ -10,6 +10,9 @@ const (
 	// FaasdNamespace is the containerd namespace services are created
 	FaasdNamespace = "openfaas"
 
+	// DefaultSnapshotNameSuffix is the default suffix for snapshot names
+	DefaultSnapshotNameSuffix = "-snapshot"
+
 	faasServicesPullAlways = false
 
 	defaultSnapshotter = "overlayfs"

@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"github.com/openfaas/faasd/pkg"
 	"log"
 	"os"
 	"path/filepath"
@@ -57,7 +58,7 @@ func Remove(ctx context.Context, client *containerd.Client, name string) error {
 
 	} else {
 		service := client.SnapshotService("")
-		key := name + "snapshot"
+		key := name + pkg.DefaultSnapshotNameSuffix
 		if _, err := client.SnapshotService("").Stat(ctx, key); err == nil {
 			service.Remove(ctx, key)
 		}

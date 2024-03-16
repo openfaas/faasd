@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/openfaas/faasd/pkg"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -161,7 +162,7 @@ func deploy(ctx context.Context, req types.FunctionDeployment, client *container
 		name,
 		containerd.WithImage(image),
 		containerd.WithSnapshotter(snapshotter),
-		containerd.WithNewSnapshot(name+"-snapshot", image),
+		containerd.WithNewSnapshot(name+pkg.DefaultSnapshotNameSuffix, image),
 		containerd.WithNewSpec(oci.WithImageConfig(image),
 			oci.WithHostname(name),
 			oci.WithCapabilities([]string{"CAP_NET_RAW"}),
