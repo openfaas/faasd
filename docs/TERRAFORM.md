@@ -12,3 +12,6 @@
 | [faasd on Linode](https://github.com/itTrident/terraform-linode-faasd) | itTrident | Community | Active |
 | [faasd on Vultr](https://github.com/itTrident/terraform-vultr-faasd) | itTrident | Community | Active |
 | [faasd on Exoscale](https://github.com/itTrident/terraform-exoscale-faasd) | itTrident | Community | Active |
+| [faasd on Upcloud](https://github.com/itTrident/terraform-upcloud-faasd) | itTrident | Community | Active |
+| [faasd on Hetzner](https://github.com/itTrident/terraform-hetzner-faasd) | itTrident | Community | Active |
+| [faasd on Cloudscale](https://github.com/itTrident/terraform-cloudscale-faasd) | itTrident | Community | Active |
