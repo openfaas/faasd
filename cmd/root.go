@@ -51,7 +51,7 @@ faasd - Serverless For Everyone Else
 Learn how to build, secure, and monitor functions with faasd with 
 the eBook:
 
-https://gumroad.com/l/serverless-for-everyone-else
+https://openfaas.gumroad.com/l/serverless-for-everyone-else
 `,
 	RunE:         runRootCommand,
 	SilenceUsage: true,

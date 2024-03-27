@@ -11,7 +11,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@master
-      - uses: alexellis/setup-arkade@v2
+      - uses: alexellis/setup-arkade@v3
       - name: Verify chart images
         id: verify_images
         run: |

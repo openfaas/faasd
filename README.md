@@ -29,18 +29,18 @@ Use-cases and tutorials:
 
 Additional resources:
 
-* The official handbook - [Serverless For Everyone Else](https://gumroad.com/l/serverless-for-everyone-else)
+* The official handbook - [Serverless For Everyone Else](https://openfaas.gumroad.com/l/serverless-for-everyone-else)
 * For reference: [OpenFaaS docs](https://docs.openfaas.com)
 * For use-cases and tutorials: [OpenFaaS blog](https://openfaas.com/blog/)
 * For self-paced learning: [OpenFaaS workshop](https://github.com/openfaas/workshop/)
 
 ### About faasd
 
-* faasd is a static Golang binary
+* faasd is a single static Golang binary, which runs on Linux with systemd
 * uses the same core components and ecosystem of OpenFaaS
 * uses containerd for its runtime and CNI for networking
-* is multi-arch, so works on Intel `x86_64` and ARM out the box
-* can run almost any other stateful container through its `docker-compose.yaml` file
+* is multi-arch, so works on Intel `x86_64` and Arm out the box
+* runs stateful containers through its `docker-compose.yaml` file like Grafana, MongoDB, InfluxDB, or Postgres, etc
 
 Most importantly, it's easy to manage so you can set it up and leave it alone to run your functions.
 
@@ -54,9 +54,11 @@ Watch the video: [faasd walk-through with cloud-init and Multipass](https://www.
 
 * faasd - itself, and its [faas-provider](https://github.com/openfaas/faas-provider) for containerd - CRUD for functions and services, implements the OpenFaaS REST API
 * [Prometheus](https://github.com/prometheus/prometheus) - for monitoring of services, metrics, scaling and dashboards
-* [OpenFaaS Gateway](https://github.com/openfaas/faas/tree/master/gateway) - the UI portal, CLI, and other OpenFaaS tooling can talk to this.
-* [OpenFaaS queue-worker for NATS](https://github.com/openfaas/nats-queue-worker) - run your invocations in the background without adding any code. See also: [asynchronous invocations](https://docs.openfaas.com/reference/triggers/#async-nats-streaming)
+* [OpenFaaS CE Gateway](https://github.com/openfaas/faas/tree/master/gateway) - the UI portal, CLI, and other OpenFaaS tooling can talk to this.
+* [OpenFaaS CE queue-worker for NATS Streaming](https://github.com/openfaas/nats-queue-worker) - run your invocations in the background without adding any code. See also: [asynchronous invocations](https://docs.openfaas.com/reference/triggers/#async-nats-streaming)
 * [NATS](https://nats.io) for asynchronous processing and queues
+
+> By default faasd comes with the Community Edition (CE) components, but if you like, you can purchase a license to upgrade to OpenFaaS Standard with scale to zero and rich support for async use-cases through the JetStream queue worker.
 
 faasd relies on industry-standard tools for running containers:
 
@@ -83,11 +85,11 @@ You can learn more about supported OpenFaaS features in the [ROADMAP.md](/docs/R
 
 The faasd project is MIT licensed and open source, and you will find some documentation, blog posts and videos for free.
 
-However, "Serverless For Everyone Else" is the official handbook and was written to contribute funds towards the upkeep and maintenance of the project.
+["Serverless For Everyone Else"](https://openfaas.gumroad.com/l/serverless-for-everyone-else) is the official handbook and was written to contribute funds towards the upkeep and maintenance of the project.
 
 ### The official handbook and docs for faasd
 
-<a href="https://gumroad.com/l/serverless-for-everyone-else">
+<a href="https://openfaas.gumroad.com/l/serverless-for-everyone-else">
 <img src="https://www.alexellis.io/serverless.png" width="40%"></a>
 
 You'll learn how to deploy code in any language, lift and shift Dockerfiles, run requests in queues, write background jobs and to integrate with databases. faasd packages the same code as OpenFaaS, so you get built-in metrics for your HTTP endpoints, a user-friendly CLI, pre-packaged functions and templates from the store and a UI.
@@ -114,7 +116,7 @@ Topics include:
 
 View sample pages, reviews and testimonials on Gumroad:
 
-["Serverless For Everyone Else"](https://gumroad.com/l/serverless-for-everyone-else)
+["Serverless For Everyone Else"](https://openfaas.gumroad.com/l/serverless-for-everyone-else)
 
 ### Deploy faasd
 

@@ -84,5 +84,5 @@ See the testing instructions on the PR and run through those steps.
 
 Post your results on GitHub to assist the creator of the pull request.
 
-You can see how to get the logs for various components using the [eBook Serverless For Everyone Else](https://gumroad.com/l/serverless-for-everyone-else), or by consulting the [DEV.md](/docs/DEV.md) guide.
+You can see how to get the logs for various components using the [eBook Serverless For Everyone Else](https://openfaas.gumroad.com/l/serverless-for-everyone-else), or by consulting the [DEV.md](/docs/DEV.md) guide.
 
