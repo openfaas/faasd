@@ -37,7 +37,8 @@ fi
 
 verify_system() {
 
-  if [ $arch == "armv7l" ]; then
+  arch=$(uname -m)
+  if [ "$arch" == "armv7l" ]; then
     fatal 'faasd requires a 64-bit Operating System, see: https://github.com/openfaas/faasd/issues/364'
   fi
 
