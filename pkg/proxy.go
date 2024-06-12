@@ -84,6 +84,8 @@ func (p *Proxy) Start() error {
 
 		upstream, err := net.Dial("tcp", upstreamAddr)
 		if err != nil {
+			conn.Close()
+
 			log.Printf("unable to dial to %s, error: %s", upstreamAddr, err.Error())
 			return err
 		}
