@@ -27,8 +27,8 @@ import (
 	"time"
 
 	transferapi "github.com/containerd/containerd/api/types/transfer"
-	"github.com/containerd/containerd/log"
 	"github.com/containerd/containerd/pkg/streaming"
+	"github.com/containerd/log"
 	"github.com/containerd/typeurl/v2"
 )
 
@@ -164,7 +164,7 @@ func ReceiveStream(ctx context.Context, stream streaming.Stream) io.Reader {
 			}
 			any, err := stream.Recv()
 			if err != nil {
-				if errors.Is(err, io.EOF) {
+				if errors.Is(err, io.EOF) || errors.Is(err, context.Canceled) {
 					err = nil
 				} else {
 					err = fmt.Errorf("received failed: %w", err)

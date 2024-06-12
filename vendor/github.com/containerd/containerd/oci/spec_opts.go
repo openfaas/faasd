@@ -35,8 +35,8 @@ import (
 	"github.com/containerd/containerd/namespaces"
 	"github.com/containerd/containerd/platforms"
 	"github.com/containerd/continuity/fs"
+	"github.com/moby/sys/user"
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
-	"github.com/opencontainers/runc/libcontainer/user"
 	"github.com/opencontainers/runtime-spec/specs-go"
 )
 
@@ -183,13 +183,6 @@ func WithEnv(environmentVariables []string) SpecOpts {
 		}
 		return nil
 	}
-}
-
-// WithDefaultPathEnv sets the $PATH environment variable to the
-// default PATH defined in this package.
-func WithDefaultPathEnv(_ context.Context, _ Client, _ *containers.Container, s *Spec) error {
-	s.Process.Env = replaceOrAppendEnvValues(s.Process.Env, defaultUnixEnv)
-	return nil
 }
 
 // replaceOrAppendEnvValues returns the defaults with the overrides either
@@ -464,6 +457,7 @@ func WithImageConfigArgs(image Image, args []string) SpecOpts {
 				return errors.New("no arguments specified")
 			}
 
+			//nolint:staticcheck // ArgsEscaped is deprecated
 			if config.ArgsEscaped && (len(config.Entrypoint) > 0 || cmdFromImage) {
 				s.Process.Args = nil
 				s.Process.CommandLine = cmd[0]
@@ -607,7 +601,9 @@ func WithUser(userstr string) SpecOpts {
 		// The `Username` field on the runtime spec is marked by Platform as only for Windows, and in this case it
 		// *is* being set on a Windows host at least, but will be used as a temporary holding spot until the guest
 		// can use the string to perform these same operations to grab the uid:gid inside.
-		if s.Windows != nil && s.Linux != nil {
+		//
+		// Mounts are not supported on Darwin, so using the same workaround.
+		if (s.Windows != nil && s.Linux != nil) || runtime.GOOS == "darwin" {
 			s.Process.User.Username = userstr
 			return nil
 		}
@@ -681,8 +677,11 @@ func WithUser(userstr string) SpecOpts {
 				return err
 			}
 
-			mounts = tryReadonlyMounts(mounts)
-			return mount.WithTempMount(ctx, mounts, f)
+			// Use a read-only mount when trying to get user/group information
+			// from the container's rootfs. Since the option does read operation
+			// only, we append ReadOnly mount option to prevent the Linux kernel
+			// from syncing whole filesystem in umount syscall.
+			return mount.WithReadonlyTempMount(ctx, mounts, f)
 		default:
 			return fmt.Errorf("invalid USER value %s", userstr)
 		}
@@ -742,8 +741,11 @@ func WithUserID(uid uint32) SpecOpts {
 			return err
 		}
 
-		mounts = tryReadonlyMounts(mounts)
-		return mount.WithTempMount(ctx, mounts, setUser)
+		// Use a read-only mount when trying to get user/group information
+		// from the container's rootfs. Since the option does read operation
+		// only, we append ReadOnly mount option to prevent the Linux kernel
+		// from syncing whole filesystem in umount syscall.
+		return mount.WithReadonlyTempMount(ctx, mounts, setUser)
 	}
 }
 
@@ -787,8 +789,11 @@ func WithUsername(username string) SpecOpts {
 				return err
 			}
 
-			mounts = tryReadonlyMounts(mounts)
-			return mount.WithTempMount(ctx, mounts, setUser)
+			// Use a read-only mount when trying to get user/group information
+			// from the container's rootfs. Since the option does read operation
+			// only, we append ReadOnly mount option to prevent the Linux kernel
+			// from syncing whole filesystem in umount syscall.
+			return mount.WithReadonlyTempMount(ctx, mounts, setUser)
 		} else if s.Windows != nil {
 			s.Process.User.Username = username
 		} else {
@@ -866,8 +871,11 @@ func WithAdditionalGIDs(userstr string) SpecOpts {
 			return err
 		}
 
-		mounts = tryReadonlyMounts(mounts)
-		return mount.WithTempMount(ctx, mounts, setAdditionalGids)
+		// Use a read-only mount when trying to get user/group information
+		// from the container's rootfs. Since the option does read operation
+		// only, we append ReadOnly mount option to prevent the Linux kernel
+		// from syncing whole filesystem in umount syscall.
+		return mount.WithReadonlyTempMount(ctx, mounts, setAdditionalGids)
 	}
 }
 
@@ -886,9 +894,9 @@ func WithAppendAdditionalGroups(groups ...string) SpecOpts {
 			if err != nil {
 				return err
 			}
-			ugroups, err := user.ParseGroupFile(gpath)
-			if err != nil {
-				return err
+			ugroups, groupErr := user.ParseGroupFile(gpath)
+			if groupErr != nil && !os.IsNotExist(groupErr) {
+				return groupErr
 			}
 			groupMap := make(map[string]user.Group)
 			for _, group := range ugroups {
@@ -902,6 +910,9 @@ func WithAppendAdditionalGroups(groups ...string) SpecOpts {
 				} else {
 					g, ok := groupMap[group]
 					if !ok {
+						if groupErr != nil {
+							return fmt.Errorf("unable to find group %s: %w", group, groupErr)
+						}
 						return fmt.Errorf("unable to find group %s", group)
 					}
 					gids = append(gids, uint32(g.Gid))
@@ -928,8 +939,11 @@ func WithAppendAdditionalGroups(groups ...string) SpecOpts {
 			return err
 		}
 
-		mounts = tryReadonlyMounts(mounts)
-		return mount.WithTempMount(ctx, mounts, setAdditionalGids)
+		// Use a read-only mount when trying to get user/group information
+		// from the container's rootfs. Since the option does read operation
+		// only, we append ReadOnly mount option to prevent the Linux kernel
+		// from syncing whole filesystem in umount syscall.
+		return mount.WithReadonlyTempMount(ctx, mounts, setAdditionalGids)
 	}
 }
 
@@ -1422,24 +1436,6 @@ func WithDevShmSize(kb int64) SpecOpts {
 		}
 		return ErrNoShmMount
 	}
-}
-
-// tryReadonlyMounts is used by the options which are trying to get user/group
-// information from container's rootfs. Since the option does read operation
-// only, this helper will append ReadOnly mount option to prevent linux kernel
-// from syncing whole filesystem in umount syscall.
-//
-// TODO(fuweid):
-//
-// Currently, it only works for overlayfs. I think we can apply it to other
-// kinds of filesystem. Maybe we can return `ro` option by `snapshotter.Mount`
-// API, when the caller passes that experimental annotation
-// `containerd.io/snapshot/readonly.mount` something like that.
-func tryReadonlyMounts(mounts []mount.Mount) []mount.Mount {
-	if len(mounts) == 1 && mounts[0].Type == "overlay" {
-		mounts[0].Options = append(mounts[0].Options, "ro")
-	}
-	return mounts
 }
 
 // WithWindowsDevice adds a device exposed to a Windows (WCOW or LCOW) Container

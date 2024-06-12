@@ -36,6 +36,11 @@ if [ "$(id -u)" -eq 0 ]; then
 fi
 
 verify_system() {
+
+  if [ $arch == "armv7l" ]; then
+    fatal 'faasd requires a 64-bit Operating System, see: https://github.com/openfaas/faasd/issues/364'
+  fi
+
   if ! [ -d /run/systemd ]; then
     fatal 'Can not find systemd to use as a process supervisor for faasd'
   fi
@@ -84,19 +89,12 @@ install_cni_plugins() {
 }
 
 install_containerd() {
-  CONTAINERD_VER=1.7.0
+  CONTAINERD_VER=1.7.18
   $SUDO systemctl unmask containerd || :
 
   arch=$(uname -m)
-  if [ $arch == "armv7l" ]; then
-    $SUDO curl -fSLs "https://github.com/alexellis/containerd-arm/releases/download/v${CONTAINERD_VER}/containerd-${CONTAINERD_VER}-linux-armhf.tar.gz" --output "/tmp/containerd.tar.gz"
-    $SUDO tar -xvf /tmp/containerd.tar.gz -C /usr/local/bin/
-    $SUDO curl -fSLs https://raw.githubusercontent.com/containerd/containerd/v${CONTAINERD_VER}/containerd.service --output "/etc/systemd/system/containerd.service"
-    $SUDO systemctl enable containerd
-    $SUDO systemctl start containerd
-  else
-    $SUDO $ARKADE system install containerd --systemd --version v${CONTAINERD_VER}  --progress=false
-  fi
+
+  $SUDO $ARKADE system install containerd --systemd --version v${CONTAINERD_VER}  --progress=false
   
   sleep 5
 }
@@ -109,9 +107,6 @@ install_faasd() {
     ;;
   aarch64)
     suffix=-arm64
-    ;;
-  armv7l)
-    suffix=-armhf
     ;;
   *)
     echo "Unsupported architecture $arch"

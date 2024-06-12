@@ -57,7 +57,6 @@ curl -sLS https://cli.openfaas.com | sudo sh
 #### Install the CNI plugins:
 
 * For PC run `export ARCH=amd64`
-* For RPi/armhf run `export ARCH=arm`
 * For arm64 run `export ARCH=arm64`
 
 Then run:
@@ -83,29 +82,16 @@ EOF'
 
 ### Get containerd
 
-You have three options - binaries for PC, binaries for armhf, or build from source.
 
 * Install containerd `x86_64` only
 
-
-
 ```bash
-export VER=1.7.0
+export VER=1.7.18
 curl -sSL https://github.com/containerd/containerd/releases/download/v$VER/containerd-$VER-linux-amd64.tar.gz -o /tmp/containerd.tar.gz \
   && sudo tar -xvf /tmp/containerd.tar.gz -C /usr/local/bin/ --strip-components=1
 
 containerd -version
 ```
-
-* Or get my containerd binaries for Raspberry Pi (armhf)
-
-    Building `containerd` on armhf is extremely slow, so I've provided binaries for you.
-
-    ```bash
-    export VER=1.7.0
-    curl -sSL https://github.com/alexellis/containerd-armhf/releases/download/v$VER/containerd-$VER-linux-armhf.tar.gz
- | sudo tar -xvz --strip-components=2 -C /usr/local/bin/
-    ```
 
 * Or clone / build / install [containerd](https://github.com/containerd/containerd) from source:
 
@@ -116,7 +102,7 @@ containerd -version
     git clone https://github.com/containerd/containerd
     cd containerd
     git fetch origin --tags
-    git checkout v1.7.0
+    git checkout v1.7.18
 
     make
     sudo make install
@@ -127,7 +113,7 @@ containerd -version
 #### Ensure containerd is running
 
 ```bash
-curl -sLS https://raw.githubusercontent.com/containerd/containerd/v1.7.0/containerd.service > /tmp/containerd.service
+curl -sLS https://raw.githubusercontent.com/containerd/containerd/v1.7.18/containerd.service > /tmp/containerd.service
 
 # Extend the timeouts for low-performance VMs
 echo "[Manager]" | tee -a /tmp/containerd.service
@@ -233,9 +219,6 @@ sudo cp bin/faasd /usr/local/bin
 ```bash
 # For x86_64
 export SUFFIX=""
-
-# armhf
-export SUFFIX="-armhf"
 
 # arm64
 export SUFFIX="-arm64"

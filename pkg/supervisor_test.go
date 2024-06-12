@@ -211,18 +211,6 @@ func Test_GetArchSuffix(t *testing.T) {
 			want:      "",
 		},
 		{
-			name:      "armhf has armhf suffix",
-			foundOS:   "Linux",
-			foundArch: "armhf",
-			want:      "-armhf",
-		},
-		{
-			name:      "armv7l has armhf suffix",
-			foundOS:   "Linux",
-			foundArch: "armv7l",
-			want:      "-armhf",
-		},
-		{
 			name:      "arm64 has arm64 suffix",
 			foundOS:   "Linux",
 			foundArch: "arm64",

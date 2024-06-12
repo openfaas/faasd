@@ -29,11 +29,11 @@ import (
 	tasktypes "github.com/containerd/containerd/api/types/task"
 	"github.com/containerd/containerd/cio"
 	"github.com/containerd/containerd/containers"
-	"github.com/containerd/containerd/errdefs"
 	"github.com/containerd/containerd/images"
 	"github.com/containerd/containerd/oci"
 	"github.com/containerd/containerd/protobuf"
 	"github.com/containerd/containerd/runtime/v2/runc/options"
+	"github.com/containerd/errdefs"
 	"github.com/containerd/fifo"
 	"github.com/containerd/typeurl/v2"
 	ver "github.com/opencontainers/image-spec/specs-go"
@@ -281,6 +281,7 @@ func (c *container) NewTask(ctx context.Context, ioCreate cio.Creator, opts ...N
 			})
 		}
 	}
+	request.RuntimePath = info.RuntimePath
 	if info.Options != nil {
 		any, err := typeurl.MarshalAny(info.Options)
 		if err != nil {

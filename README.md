@@ -133,7 +133,7 @@ cd faasd
 ./hack/install.sh
 ```
 
-> This approach also works for Raspberry Pi
+> This approach also works for Raspberry Pi when using the 64-bit OS or Ubuntu 22.04 or higher.
 
 It's recommended that you do not install Docker on the same host as faasd, since 1) they may both use different versions of containerd and 2) docker's networking rules can disrupt faasd's networking. When using faasd - make your faasd server a faasd server, and build container image on your laptop or in a CI pipeline.
 

@@ -452,8 +452,6 @@ func GetArchSuffix(getClientArch ArchGetter) (suffix string, err error) {
 	case "x86_64":
 		// no suffix needed
 		return "", nil
-	case "armhf", "armv7l":
-		return "-armhf", nil
 	case "arm64", "aarch64":
 		return "-arm64", nil
 	default:
