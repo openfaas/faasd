@@ -2,7 +2,6 @@
 
 [![Sponsor faasd](https://img.shields.io/static/v1?label=Sponsor&message=%E2%9D%A4&logo=GitHub&link=https://github.com/sponsors/openfaas)](https://github.com/sponsors/openfaas)
 [![Build Status](https://github.com/openfaas/faasd/workflows/build/badge.svg?branch=master)](https://github.com/openfaas/faasd/actions)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 ![Downloads](https://img.shields.io/github/downloads/openfaas/faasd/total)
 
 faasd is [OpenFaaS](https://github.com/openfaas/) reimagined, but without the cost and complexity of Kubernetes. It runs on a single host with very modest requirements, making it fast and easy to manage. Under the hood it uses [containerd](https://containerd.io/) and [Container Networking Interface (CNI)](https://github.com/containernetworking/cni) along with the same core OpenFaaS components from the main project.
@@ -58,7 +57,13 @@ Watch the video: [faasd walk-through with cloud-init and Multipass](https://www.
 * [OpenFaaS CE queue-worker for NATS Streaming](https://github.com/openfaas/nats-queue-worker) - run your invocations in the background without adding any code. See also: [asynchronous invocations](https://docs.openfaas.com/reference/triggers/#async-nats-streaming)
 * [NATS](https://nats.io) for asynchronous processing and queues
 
-> By default faasd comes with the Community Edition (CE) components, but if you like, you can purchase a license to upgrade to OpenFaaS Standard with scale to zero and rich support for async use-cases through the JetStream queue worker.
+## Licensing & EULA for OpenFaaS (faasd)
+
+faasd (which is a distribution of OpenFaaS) is licensed under the [OpenFaaS Community Edition (CE) EULA](https://github.com/openfaas/faas/blob/master/EULA.md), [additional clauses apply](EULA.md) to enable faasd to be used for Personal Use and within Small Business Environments.
+
+A separate OpenFaaS Standard license is available for commercial use-cases, which is required for certain commercial use.
+
+### When should you use faasd over OpenFaaS on Kubernetes?
 
 faasd relies on industry-standard tools for running containers:
 
@@ -67,8 +72,6 @@ faasd relies on industry-standard tools for running containers:
 * [runc](https://github.com/opencontainers/runc)
 
 You can use the standard [faas-cli](https://github.com/openfaas/faas-cli) along with pre-packaged functions from *the Function Store*, or build your own using any OpenFaaS template.
-
-### When should you use faasd over OpenFaaS on Kubernetes?
 
 * To deploy microservices and functions that you can update and monitor remotely
 * When you don't have the bandwidth to learn or manage Kubernetes
@@ -83,7 +86,7 @@ You can learn more about supported OpenFaaS features in the [ROADMAP.md](/docs/R
 
 ## Learning faasd
 
-The faasd project is MIT licensed and open source, and you will find some documentation, blog posts and videos for free.
+You can find various resources to learn about faasd for free, however the official handbook is the most comprehensive guide to getting started with faasd and OpenFaaS.
 
 ["Serverless For Everyone Else"](https://openfaas.gumroad.com/l/serverless-for-everyone-else) is the official handbook and was written to contribute funds towards the upkeep and maintenance of the project.
 
