@@ -13,7 +13,6 @@ import (
 	"github.com/openfaas/faas-provider/logs"
 	"github.com/openfaas/faas-provider/proxy"
 	"github.com/openfaas/faas-provider/types"
-	"github.com/openfaas/faasd/pkg"
 	faasd "github.com/openfaas/faasd/pkg"
 	"github.com/openfaas/faasd/pkg/cninetwork"
 	faasdlogs "github.com/openfaas/faasd/pkg/logs"
@@ -30,8 +29,6 @@ func makeProviderCmd() *cobra.Command {
 		Short: "Run the faasd-provider",
 	}
 
-	command.Flags().String("pull-policy", "Always", `Set to "Always" to force a pull of images upon deployment, or "IfNotPresent" to try to use a cached image.`)
-
 	command.RunE = runProviderE
 	command.PreRunE = preRunE
 
@@ -39,16 +36,6 @@ func makeProviderCmd() *cobra.Command {
 }
 
 func runProviderE(cmd *cobra.Command, _ []string) error {
-
-	pullPolicy, flagErr := cmd.Flags().GetString("pull-policy")
-	if flagErr != nil {
-		return flagErr
-	}
-
-	alwaysPull := false
-	if pullPolicy == "Always" {
-		alwaysPull = true
-	}
 
 	config, providerConfig, err := config.ReadFromEnv(types.OsEnv{})
 	if err != nil {
@@ -95,6 +82,7 @@ nameserver 8.8.4.4`), workingDirectoryPermission); err != nil {
 		return err
 	}
 
+	alwaysPull := true
 	bootstrapHandlers := types.FaaSHandlers{
 		FunctionProxy:   httpHeaderMiddleware(proxy.NewHandlerFunc(*config, invokeResolver, false)),
 		DeleteFunction:  httpHeaderMiddleware(handlers.MakeDeleteHandler(client, cni)),
@@ -104,14 +92,14 @@ nameserver 8.8.4.4`), workingDirectoryPermission); err != nil {
 		ScaleFunction:   httpHeaderMiddleware(handlers.MakeReplicaUpdateHandler(client, cni)),
 		UpdateFunction:  httpHeaderMiddleware(handlers.MakeUpdateHandler(client, cni, baseUserSecretsPath, alwaysPull)),
 		Health:          httpHeaderMiddleware(func(w http.ResponseWriter, r *http.Request) {}),
-		Info:            httpHeaderMiddleware(handlers.MakeInfoHandler(pkg.Version, pkg.GitCommit)),
+		Info:            httpHeaderMiddleware(handlers.MakeInfoHandler(faasd.Version, faasd.GitCommit)),
 		ListNamespaces:  httpHeaderMiddleware(handlers.MakeNamespacesLister(client)),
 		Secrets:         httpHeaderMiddleware(handlers.MakeSecretHandler(client.NamespaceService(), baseUserSecretsPath)),
 		Logs:            httpHeaderMiddleware(logs.NewLogHandlerFunc(faasdlogs.New(), config.ReadTimeout)),
 		MutateNamespace: httpHeaderMiddleware(handlers.MakeMutateNamespace(client)),
 	}
 
-	log.Printf("Listening on: 0.0.0.0:%d\n", *config.TCPPort)
+	log.Printf("Listening on: 0.0.0.0:%d", *config.TCPPort)
 	bootstrap.Serve(cmd.Context(), &bootstrapHandlers, config)
 	return nil
 }
