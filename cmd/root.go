@@ -36,12 +36,16 @@ var rootCommand = &cobra.Command{
 	Use:   "faasd",
 	Short: "Start faasd",
 	Long: `
-faasd - Serverless For Everyone Else
+faasd Community Edition (CE):
 
 Learn how to build, secure, and monitor functions with faasd with 
 the eBook:
 
 https://openfaas.gumroad.com/l/serverless-for-everyone-else
+
+License: OpenFaaS CE EULA with faasd addendum:
+
+https://github.com/openfaas/faasd/blob/master/EULA.md
 `,
 	RunE:         runRootCommand,
 	SilenceUsage: true,
@@ -68,7 +72,7 @@ func parseBaseCommand(_ *cobra.Command, _ []string) {
 }
 
 func printVersion() {
-	fmt.Printf("faasd version: %s\tcommit: %s\n", pkg.GetVersion(), pkg.GitCommit)
+	fmt.Printf("faasd Community Edition (CE) version: %s\tcommit: %s\n", pkg.GetVersion(), pkg.GitCommit)
 }
 
 func printLogo() {

@@ -44,7 +44,7 @@ func MakeDeployHandler(client *containerd.Client, cni gocni.CNI, secretMountPath
 		req := types.FunctionDeployment{}
 		err := json.Unmarshal(body, &req)
 		if err != nil {
-			log.Printf("[Deploy] - error parsing input: %s\n", err)
+			log.Printf("[Deploy] - error parsing input: %s", err)
 			http.Error(w, err.Error(), http.StatusBadRequest)
 
 			return

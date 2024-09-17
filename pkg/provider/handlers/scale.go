@@ -31,7 +31,7 @@ func MakeReplicaUpdateHandler(client *containerd.Client, cni gocni.CNI) func(w h
 
 		req := types.ScaleServiceRequest{}
 		if err := json.Unmarshal(body, &req); err != nil {
-			log.Printf("[Scale] error parsing input: %s\n", err)
+			log.Printf("[Scale] error parsing input: %s", err)
 			http.Error(w, err.Error(), http.StatusBadRequest)
 
 			return

@@ -33,7 +33,7 @@ func MakeDeleteHandler(client *containerd.Client, cni gocni.CNI) func(w http.Res
 
 		req := types.DeleteFunctionRequest{}
 		if err := json.Unmarshal(body, &req); err != nil {
-			log.Printf("[Delete] error parsing input: %s\n", err)
+			log.Printf("[Delete] error parsing input: %s", err)
 			http.Error(w, err.Error(), http.StatusBadRequest)
 
 			return

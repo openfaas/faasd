@@ -227,7 +227,7 @@ func (s *Supervisor) Start(svcs []Service) error {
 		)
 
 		if err != nil {
-			log.Printf("Error creating container: %s\n", err)
+			log.Printf("Error creating container: %s", err)
 			return err
 		}
 
@@ -235,7 +235,7 @@ func (s *Supervisor) Start(svcs []Service) error {
 
 		task, err := newContainer.NewTask(ctx, cio.BinaryIO("/usr/local/bin/faasd", nil))
 		if err != nil {
-			log.Printf("Error creating task: %s\n", err)
+			log.Printf("Error creating task: %s", err)
 			return err
 		}
 
@@ -268,7 +268,7 @@ func (s *Supervisor) Start(svcs []Service) error {
 		}
 
 		if _, err := task.Wait(ctx); err != nil {
-			log.Printf("Task wait error: %s\n", err)
+			log.Printf("Task wait error: %s", err)
 			return err
 		}
 
@@ -276,7 +276,7 @@ func (s *Supervisor) Start(svcs []Service) error {
 		// log.Println("Exited: ", exitStatusC)
 
 		if err = task.Start(ctx); err != nil {
-			log.Printf("Task start error: %s\n", err)
+			log.Printf("Task start error: %s", err)
 			return err
 		}
 	}

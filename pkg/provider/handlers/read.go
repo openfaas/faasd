@@ -31,7 +31,7 @@ func MakeReadHandler(client *containerd.Client) func(w http.ResponseWriter, r *h
 		res := []types.FunctionStatus{}
 		fns, err := ListFunctions(client, lookupNamespace)
 		if err != nil {
-			log.Printf("[Read] error listing functions. Error: %s\n", err)
+			log.Printf("[Read] error listing functions. Error: %s", err)
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}

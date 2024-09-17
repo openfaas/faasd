@@ -71,7 +71,7 @@ func listSecrets(store provider.Labeller, w http.ResponseWriter, r *http.Request
 	}
 
 	if err != nil {
-		fmt.Printf("Error Occured: %s \n", err)
+		log.Printf("[Secret] Error listing secrets: %s ", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
