@@ -3,7 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -116,7 +116,7 @@ func createSecret(w http.ResponseWriter, r *http.Request, mountPath string) {
 		data = []byte(secret.Value)
 	}
 
-	err = ioutil.WriteFile(path.Join(mountPath, secret.Name), data, secretFilePermission)
+	err = os.WriteFile(path.Join(mountPath, secret.Name), data, secretFilePermission)
 
 	if err != nil {
 		log.Printf("[secret] error %s", err.Error())
@@ -147,7 +147,7 @@ func deleteSecret(w http.ResponseWriter, r *http.Request, mountPath string) {
 
 func parseSecret(r *http.Request) (types.Secret, error) {
 	secret := types.Secret{}
-	bytesOut, err := ioutil.ReadAll(r.Body)
+	bytesOut, err := io.ReadAll(r.Body)
 	if err != nil {
 		return secret, err
 	}

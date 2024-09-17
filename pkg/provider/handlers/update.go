@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 
@@ -28,8 +28,7 @@ func MakeUpdateHandler(client *containerd.Client, cni gocni.CNI, secretMountPath
 
 		defer r.Body.Close()
 
-		body, _ := ioutil.ReadAll(r.Body)
-		log.Printf("[Update] request: %s\n", string(body))
+		body, _ := io.ReadAll(r.Body)
 
 		req := types.FunctionDeployment{}
 		err := json.Unmarshal(body, &req)
@@ -39,6 +38,7 @@ func MakeUpdateHandler(client *containerd.Client, cni gocni.CNI, secretMountPath
 
 			return
 		}
+
 		name := req.Service
 		namespace := getRequestNamespace(req.Namespace)
 
@@ -54,11 +54,17 @@ func MakeUpdateHandler(client *containerd.Client, cni gocni.CNI, secretMountPath
 			return
 		}
 
+		if err := preDeploy(client, int64(0)); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			log.Printf("[Deploy] error deploying %s, error: %s\n", name, err)
+			return
+		}
+
 		namespaceSecretMountPath := getNamespaceSecretMountPath(secretMountPath, namespace)
 
 		function, err := GetFunction(client, name, namespace)
 		if err != nil {
-			msg := fmt.Sprintf("service %s not found", name)
+			msg := fmt.Sprintf("function: %s.%s not found", name, namespace)
 			log.Printf("[Update] %s\n", msg)
 			http.Error(w, msg, http.StatusNotFound)
 			return

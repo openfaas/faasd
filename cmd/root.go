@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/morikuni/aec"
+	"github.com/openfaas/faasd/pkg"
 	"github.com/spf13/cobra"
 )
 
@@ -22,19 +23,8 @@ func RootCommand() *cobra.Command {
 	return rootCommand
 }
 
-var (
-	// GitCommit Git Commit SHA
-	GitCommit string
-	// Version version of the CLI
-	Version string
-)
-
 // Execute faasd
-func Execute(version, gitCommit string) error {
-
-	// Get Version and GitCommit values from main.go.
-	Version = version
-	GitCommit = gitCommit
+func Execute() error {
 
 	if err := rootCommand.Execute(); err != nil {
 		return err
@@ -78,20 +68,12 @@ func parseBaseCommand(_ *cobra.Command, _ []string) {
 }
 
 func printVersion() {
-	fmt.Printf("faasd version: %s\tcommit: %s\n", GetVersion(), GitCommit)
+	fmt.Printf("faasd version: %s\tcommit: %s\n", pkg.GetVersion(), pkg.GitCommit)
 }
 
 func printLogo() {
 	logoText := aec.WhiteF.Apply(Logo)
 	fmt.Println(logoText)
-}
-
-// GetVersion get latest version
-func GetVersion() string {
-	if len(Version) == 0 {
-		return "dev"
-	}
-	return Version
 }
 
 // Logo for version and root command

@@ -2,7 +2,7 @@ package pkg
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -61,7 +61,7 @@ func Test_Proxy_ToPrivateServer(t *testing.T) {
 			time.Sleep(time.Millisecond * 100)
 		} else {
 
-			resBody, _ := ioutil.ReadAll(res.Body)
+			resBody, _ := io.ReadAll(res.Body)
 			if string(resBody) != string(wantBody) {
 				t.Errorf("want %s, but got %s in body", string(wantBody), string(resBody))
 			}

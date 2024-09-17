@@ -1,7 +1,6 @@
 package pkg
 
 import (
-	"io/ioutil"
 	"log"
 	"os"
 	"strings"
@@ -54,7 +53,7 @@ func (l *LocalResolver) rebuild() {
 	l.Mutex.Lock()
 	defer l.Mutex.Unlock()
 
-	fileData, fileErr := ioutil.ReadFile(l.Path)
+	fileData, fileErr := os.ReadFile(l.Path)
 	if fileErr != nil {
 		log.Printf("resolver rebuild error: %s", fileErr.Error())
 		return

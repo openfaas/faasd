@@ -3,7 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -232,7 +232,7 @@ func TestListSecrets(t *testing.T) {
 				t.Fatalf("want error message: %q, but got %q", tc.err, w.Body.String())
 			}
 
-			body, err := ioutil.ReadAll(resp.Body)
+			body, err := io.ReadAll(resp.Body)
 			if err != nil {
 				t.Fatalf("can't read response of list %v", err)
 			}

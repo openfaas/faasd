@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -14,6 +13,7 @@ import (
 	"github.com/openfaas/faas-provider/logs"
 	"github.com/openfaas/faas-provider/proxy"
 	"github.com/openfaas/faas-provider/types"
+	"github.com/openfaas/faasd/pkg"
 	faasd "github.com/openfaas/faasd/pkg"
 	"github.com/openfaas/faasd/pkg/cninetwork"
 	faasdlogs "github.com/openfaas/faasd/pkg/logs"
@@ -33,6 +33,7 @@ func makeProviderCmd() *cobra.Command {
 	command.Flags().String("pull-policy", "Always", `Set to "Always" to force a pull of images upon deployment, or "IfNotPresent" to try to use a cached image.`)
 
 	command.RunE = runProviderE
+	command.PreRunE = preRunE
 
 	return command
 }
@@ -62,18 +63,15 @@ func runProviderE(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	writeHostsErr := ioutil.WriteFile(path.Join(wd, "hosts"),
-		[]byte(`127.0.0.1	localhost`), workingDirectoryPermission)
-
-	if writeHostsErr != nil {
-		return fmt.Errorf("cannot write hosts file: %s", writeHostsErr)
+	if err := os.WriteFile(path.Join(wd, "hosts"),
+		[]byte(`127.0.0.1	localhost`), workingDirectoryPermission); err != nil {
+		return fmt.Errorf("cannot write hosts file: %s", err)
 	}
 
-	writeResolvErr := ioutil.WriteFile(path.Join(wd, "resolv.conf"),
-		[]byte(`nameserver 8.8.8.8`), workingDirectoryPermission)
-
-	if writeResolvErr != nil {
-		return fmt.Errorf("cannot write resolv.conf file: %s", writeResolvErr)
+	if err := os.WriteFile(path.Join(wd, "resolv.conf"),
+		[]byte(`nameserver 8.8.8.8
+nameserver 8.8.4.4`), workingDirectoryPermission); err != nil {
+		return fmt.Errorf("cannot write resolv.conf file: %s", err)
 	}
 
 	cni, err := cninetwork.InitNetwork()
@@ -98,25 +96,24 @@ func runProviderE(cmd *cobra.Command, _ []string) error {
 	}
 
 	bootstrapHandlers := types.FaaSHandlers{
-		FunctionProxy:   proxy.NewHandlerFunc(*config, invokeResolver, false),
-		DeleteFunction:  handlers.MakeDeleteHandler(client, cni),
-		DeployFunction:  handlers.MakeDeployHandler(client, cni, baseUserSecretsPath, alwaysPull),
-		FunctionLister:  handlers.MakeReadHandler(client),
-		FunctionStatus:  handlers.MakeReplicaReaderHandler(client),
-		ScaleFunction:   handlers.MakeReplicaUpdateHandler(client, cni),
-		UpdateFunction:  handlers.MakeUpdateHandler(client, cni, baseUserSecretsPath, alwaysPull),
-		Health:          func(w http.ResponseWriter, r *http.Request) {},
-		Info:            handlers.MakeInfoHandler(Version, GitCommit),
-		ListNamespaces:  handlers.MakeNamespacesLister(client),
-		Secrets:         handlers.MakeSecretHandler(client.NamespaceService(), baseUserSecretsPath),
-		Logs:            logs.NewLogHandlerFunc(faasdlogs.New(), config.ReadTimeout),
-		MutateNamespace: handlers.MakeMutateNamespace(client),
+		FunctionProxy:   httpHeaderMiddleware(proxy.NewHandlerFunc(*config, invokeResolver, false)),
+		DeleteFunction:  httpHeaderMiddleware(handlers.MakeDeleteHandler(client, cni)),
+		DeployFunction:  httpHeaderMiddleware(handlers.MakeDeployHandler(client, cni, baseUserSecretsPath, alwaysPull)),
+		FunctionLister:  httpHeaderMiddleware(handlers.MakeReadHandler(client)),
+		FunctionStatus:  httpHeaderMiddleware(handlers.MakeReplicaReaderHandler(client)),
+		ScaleFunction:   httpHeaderMiddleware(handlers.MakeReplicaUpdateHandler(client, cni)),
+		UpdateFunction:  httpHeaderMiddleware(handlers.MakeUpdateHandler(client, cni, baseUserSecretsPath, alwaysPull)),
+		Health:          httpHeaderMiddleware(func(w http.ResponseWriter, r *http.Request) {}),
+		Info:            httpHeaderMiddleware(handlers.MakeInfoHandler(pkg.Version, pkg.GitCommit)),
+		ListNamespaces:  httpHeaderMiddleware(handlers.MakeNamespacesLister(client)),
+		Secrets:         httpHeaderMiddleware(handlers.MakeSecretHandler(client.NamespaceService(), baseUserSecretsPath)),
+		Logs:            httpHeaderMiddleware(logs.NewLogHandlerFunc(faasdlogs.New(), config.ReadTimeout)),
+		MutateNamespace: httpHeaderMiddleware(handlers.MakeMutateNamespace(client)),
 	}
 
 	log.Printf("Listening on: 0.0.0.0:%d\n", *config.TCPPort)
 	bootstrap.Serve(cmd.Context(), &bootstrapHandlers, config)
 	return nil
-
 }
 
 /*
@@ -131,7 +128,7 @@ func moveSecretsToDefaultNamespaceSecrets(baseSecretPath string, defaultNamespac
 		return err
 	}
 
-	files, err := ioutil.ReadDir(baseSecretPath)
+	files, err := os.ReadDir(baseSecretPath)
 	if err != nil {
 		return err
 	}
@@ -177,4 +174,11 @@ func copyFile(src, dst string) error {
 	}
 
 	return nil
+}
+
+func httpHeaderMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-OpenFaaS-EULA", "openfaas-ce")
+		next.ServeHTTP(w, r)
+	}
 }

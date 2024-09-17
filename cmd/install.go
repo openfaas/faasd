@@ -50,46 +50,37 @@ func runInstall(_ *cobra.Command, _ []string) error {
 		return err
 	}
 
-	err := binExists("/usr/local/bin/", "faasd")
-	if err != nil {
+	if err := binExists("/usr/local/bin/", "faasd"); err != nil {
 		return err
 	}
 
-	err = systemd.InstallUnit("faasd-provider", map[string]string{
+	if err := systemd.InstallUnit("faasd-provider", map[string]string{
 		"Cwd":             faasdProviderWd,
-		"SecretMountPath": path.Join(faasdwd, "secrets")})
-
-	if err != nil {
+		"SecretMountPath": path.Join(faasdwd, "secrets")}); err != nil {
 		return err
 	}
 
-	err = systemd.InstallUnit("faasd", map[string]string{"Cwd": faasdwd})
-	if err != nil {
+	if err := systemd.InstallUnit("faasd", map[string]string{"Cwd": faasdwd}); err != nil {
 		return err
 	}
 
-	err = systemd.DaemonReload()
-	if err != nil {
+	if err := systemd.DaemonReload(); err != nil {
 		return err
 	}
 
-	err = systemd.Enable("faasd-provider")
-	if err != nil {
+	if err := systemd.Enable("faasd-provider"); err != nil {
 		return err
 	}
 
-	err = systemd.Enable("faasd")
-	if err != nil {
+	if err := systemd.Enable("faasd"); err != nil {
 		return err
 	}
 
-	err = systemd.Start("faasd-provider")
-	if err != nil {
+	if err := systemd.Start("faasd-provider"); err != nil {
 		return err
 	}
 
-	err = systemd.Start("faasd")
-	if err != nil {
+	if err := systemd.Start("faasd"); err != nil {
 		return err
 	}
 

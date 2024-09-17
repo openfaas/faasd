@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net"
 	"os"
@@ -86,7 +85,7 @@ func InitNetwork() (gocni.CNI, error) {
 	}
 
 	netConfig := path.Join(CNIConfDir, defaultCNIConfFilename)
-	if err := ioutil.WriteFile(netConfig, []byte(defaultCNIConf), 644); err != nil {
+	if err := os.WriteFile(netConfig, []byte(defaultCNIConf), 644); err != nil {
 		return nil, fmt.Errorf("cannot write network config: %s", defaultCNIConfFilename)
 	}
 
@@ -151,7 +150,7 @@ func DeleteCNINetwork(ctx context.Context, cni gocni.CNI, client *containerd.Cli
 func GetIPAddress(container string, PID uint32) (string, error) {
 	CNIDir := path.Join(CNIDataDir, defaultNetworkName)
 
-	files, err := ioutil.ReadDir(CNIDir)
+	files, err := os.ReadDir(CNIDir)
 	if err != nil {
 		return "", fmt.Errorf("failed to read CNI dir for container %s: %v", container, err)
 	}

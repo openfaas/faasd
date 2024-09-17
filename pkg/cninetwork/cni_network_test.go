@@ -1,7 +1,6 @@
 package cninetwork
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -15,7 +14,7 @@ eth1`
 	PID := uint32(621)
 	fullPath := filepath.Join(os.TempDir(), fileName)
 
-	err := ioutil.WriteFile(fullPath, []byte(body), 0700)
+	err := os.WriteFile(fullPath, []byte(body), 0700)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -24,7 +23,6 @@ eth1`
 	}()
 
 	got, err := isCNIResultForPID(fullPath, container, PID)
-
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -43,7 +41,7 @@ eth1`
 	PID := uint32(621)
 	fullPath := filepath.Join(os.TempDir(), fileName)
 
-	err := ioutil.WriteFile(fullPath, []byte(body), 0700)
+	err := os.WriteFile(fullPath, []byte(body), 0700)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -52,10 +50,10 @@ eth1`
 	}()
 
 	got, err := isCNIResultForPID(fullPath, container, PID)
-
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
+
 	want := false
 	if got != want {
 		t.Fatalf("want %v, but got %v", want, got)

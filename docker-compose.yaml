@@ -39,7 +39,7 @@ services:
        - "127.0.0.1:9090:9090"
 
   gateway:
-    image: ghcr.io/openfaas/gateway:0.27.5
+    image: ghcr.io/openfaas/gateway:0.27.9
     environment:
       - basic_auth=true
       - functions_provider_url=http://faasd-provider:8081/

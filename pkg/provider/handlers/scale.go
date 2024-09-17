@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 
@@ -27,8 +27,7 @@ func MakeReplicaUpdateHandler(client *containerd.Client, cni gocni.CNI) func(w h
 
 		defer r.Body.Close()
 
-		body, _ := ioutil.ReadAll(r.Body)
-		log.Printf("[Scale] request: %s\n", string(body))
+		body, _ := io.ReadAll(r.Body)
 
 		req := types.ScaleServiceRequest{}
 		if err := json.Unmarshal(body, &req); err != nil {
@@ -58,7 +57,7 @@ func MakeReplicaUpdateHandler(client *containerd.Client, cni gocni.CNI) func(w h
 		name := req.ServiceName
 
 		if _, err := GetFunction(client, name, namespace); err != nil {
-			msg := fmt.Sprintf("service %s not found", name)
+			msg := fmt.Sprintf("function: %s.%s not found", name, namespace)
 			log.Printf("[Scale] %s\n", msg)
 			http.Error(w, msg, http.StatusNotFound)
 			return

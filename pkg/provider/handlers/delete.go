@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 
@@ -29,12 +29,10 @@ func MakeDeleteHandler(client *containerd.Client, cni gocni.CNI) func(w http.Res
 
 		defer r.Body.Close()
 
-		body, _ := ioutil.ReadAll(r.Body)
-		log.Printf("[Delete] request: %s\n", string(body))
+		body, _ := io.ReadAll(r.Body)
 
 		req := types.DeleteFunctionRequest{}
-		err := json.Unmarshal(body, &req)
-		if err != nil {
+		if err := json.Unmarshal(body, &req); err != nil {
 			log.Printf("[Delete] error parsing input: %s\n", err)
 			http.Error(w, err.Error(), http.StatusBadRequest)
 
@@ -63,7 +61,7 @@ func MakeDeleteHandler(client *containerd.Client, cni gocni.CNI) func(w http.Res
 
 		function, err := GetFunction(client, name, namespace)
 		if err != nil {
-			msg := fmt.Sprintf("service %s not found", name)
+			msg := fmt.Sprintf("function %s.%s not found", name, namespace)
 			log.Printf("[Delete] %s\n", msg)
 			http.Error(w, msg, http.StatusNotFound)
 			return
@@ -85,6 +83,6 @@ func MakeDeleteHandler(client *containerd.Client, cni gocni.CNI) func(w http.Res
 			return
 		}
 
-		log.Printf("[Delete] deleted %s\n", name)
+		log.Printf("[Delete] Removed: %s.%s\n", name, namespace)
 	}
 }

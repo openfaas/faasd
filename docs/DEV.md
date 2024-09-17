@@ -86,7 +86,7 @@ EOF'
 * Install containerd `x86_64` only
 
 ```bash
-export VER=1.7.18
+export VER=1.7.22
 curl -sSL https://github.com/containerd/containerd/releases/download/v$VER/containerd-$VER-linux-amd64.tar.gz -o /tmp/containerd.tar.gz \
   && sudo tar -xvf /tmp/containerd.tar.gz -C /usr/local/bin/ --strip-components=1
 
@@ -102,7 +102,7 @@ containerd -version
     git clone https://github.com/containerd/containerd
     cd containerd
     git fetch origin --tags
-    git checkout v1.7.18
+    git checkout v1.7.22
 
     make
     sudo make install
@@ -113,7 +113,7 @@ containerd -version
 #### Ensure containerd is running
 
 ```bash
-curl -sLS https://raw.githubusercontent.com/containerd/containerd/v1.7.18/containerd.service > /tmp/containerd.service
+curl -sLS https://raw.githubusercontent.com/containerd/containerd/v1.7.22/containerd.service > /tmp/containerd.service
 
 # Extend the timeouts for low-performance VMs
 echo "[Manager]" | tee -a /tmp/containerd.service

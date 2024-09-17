@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/signal"
@@ -39,9 +38,10 @@ func init() {
 }
 
 var upCmd = &cobra.Command{
-	Use:   "up",
-	Short: "Start faasd",
-	RunE:  runUp,
+	Use:     "up",
+	Short:   "Start faasd",
+	RunE:    runUp,
+	PreRunE: preRunE,
 }
 
 func runUp(cmd *cobra.Command, _ []string) error {
@@ -166,7 +166,7 @@ func makeFile(filePath, fileContents string) error {
 		return nil
 	} else if os.IsNotExist(err) {
 		log.Printf("Writing to: %q\n", filePath)
-		return ioutil.WriteFile(filePath, []byte(fileContents), workingDirectoryPermission)
+		return os.WriteFile(filePath, []byte(fileContents), workingDirectoryPermission)
 	} else {
 		return err
 	}
@@ -203,4 +203,12 @@ func parseUpFlags(cmd *cobra.Command) (upConfig, error) {
 	parsed.composeFilePath = path
 	parsed.workingDir = faasdwd
 	return parsed, err
+}
+
+func preRunE(cmd *cobra.Command, _ []string) error {
+	if err := pkg.ConnectivityCheck(); err != nil {
+		return fmt.Errorf("the OpenFaaS CE EULA requires Internet access, upgrade to faasd Pro to continue")
+	}
+
+	return nil
 }

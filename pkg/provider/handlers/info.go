@@ -15,7 +15,7 @@ const (
 	ProviderName = "faasd"
 )
 
-//MakeInfoHandler creates handler for /system/info endpoint
+// MakeInfoHandler creates handler for /system/info endpoint
 func MakeInfoHandler(version, sha string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Body != nil {
@@ -31,8 +31,8 @@ func MakeInfoHandler(version, sha string) http.HandlerFunc {
 			},
 		}
 
-		jsonOut, marshalErr := json.Marshal(infoResponse)
-		if marshalErr != nil {
+		jsonOut, err := json.Marshal(infoResponse)
+		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -42,3 +42,6 @@ func MakeInfoHandler(version, sha string) http.HandlerFunc {
 		w.Write(jsonOut)
 	}
 }
+
+const faasdMaxFunctions = 15
+const faasdMaxNs = 1

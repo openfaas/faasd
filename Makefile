@@ -1,7 +1,7 @@
 Version := $(shell git describe --tags --dirty)
 GitCommit := $(shell git rev-parse HEAD)
-LDFLAGS := "-s -w -X main.Version=$(Version) -X main.GitCommit=$(GitCommit)"
-CONTAINERD_VER := 1.7.18
+LDFLAGS := "-s -w -X github.com/openfaas/faasd/pkg.Version=$(Version) -X github.com/openfaas/faasd/pkg.GitCommit=$(GitCommit)"
+CONTAINERD_VER := 1.7.22
 CNI_VERSION := v0.9.1
 ARCH := amd64
 

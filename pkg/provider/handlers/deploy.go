@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -17,7 +17,7 @@ import (
 	"github.com/containerd/containerd/namespaces"
 	"github.com/containerd/containerd/oci"
 	gocni "github.com/containerd/go-cni"
-	"github.com/docker/distribution/reference"
+	"github.com/distribution/reference"
 	"github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/openfaas/faas-provider/types"
 	cninetwork "github.com/openfaas/faasd/pkg/cninetwork"
@@ -39,8 +39,7 @@ func MakeDeployHandler(client *containerd.Client, cni gocni.CNI, secretMountPath
 
 		defer r.Body.Close()
 
-		body, _ := ioutil.ReadAll(r.Body)
-		log.Printf("[Deploy] request: %s\n", string(body))
+		body, _ := io.ReadAll(r.Body)
 
 		req := types.FunctionDeployment{}
 		err := json.Unmarshal(body, &req)
@@ -76,10 +75,15 @@ func MakeDeployHandler(client *containerd.Client, cni gocni.CNI, secretMountPath
 		name := req.Service
 		ctx := namespaces.WithNamespace(context.Background(), namespace)
 
-		deployErr := deploy(ctx, req, client, cni, namespaceSecretMountPath, alwaysPull)
-		if deployErr != nil {
-			log.Printf("[Deploy] error deploying %s, error: %s\n", name, deployErr)
-			http.Error(w, deployErr.Error(), http.StatusBadRequest)
+		if err := preDeploy(client, 1); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			log.Printf("[Deploy] error deploying %s, error: %s\n", name, err)
+			return
+		}
+
+		if err := deploy(ctx, req, client, cni, namespaceSecretMountPath, alwaysPull); err != nil {
+			log.Printf("[Deploy] error deploying %s, error: %s\n", name, err)
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 	}
@@ -179,8 +183,27 @@ func deploy(ctx context.Context, req types.FunctionDeployment, client *container
 
 }
 
+// countFunctions returns the number of functions deployed along with a map with a count
+// in each namespace
+func countFunctions(client *containerd.Client) (int64, int64, error) {
+	count := int64(0)
+	namespaceCount := int64(0)
+
+	namespaces := ListNamespaces(client)
+
+	for _, namespace := range namespaces {
+		fns, err := ListFunctions(client, namespace)
+		if err != nil {
+			return 0, 0, err
+		}
+		namespaceCount++
+		count += int64(len(fns))
+	}
+
+	return count, namespaceCount, nil
+}
+
 func buildLabels(request *types.FunctionDeployment) (map[string]string, error) {
-	// Adapted from faas-swarm/handlers/deploy.go:buildLabels
 	labels := map[string]string{}
 
 	if request.Labels != nil {
@@ -229,9 +252,8 @@ func createTask(ctx context.Context, container containerd.Container, cni gocni.C
 
 	log.Printf("%s has IP: %s.\n", name, ip)
 
-	_, waitErr := task.Wait(ctx)
-	if waitErr != nil {
-		return errors.Wrapf(waitErr, "Unable to wait for task to start: %s", name)
+	if _, err := task.Wait(ctx); err != nil {
+		return errors.Wrapf(err, "Unable to wait for task to start: %s", name)
 	}
 
 	if startErr := task.Start(ctx); startErr != nil {
@@ -314,4 +336,18 @@ func withMemory(mem *specs.LinuxMemory) oci.SpecOpts {
 		}
 		return nil
 	}
+}
+
+func preDeploy(client *containerd.Client, additional int64) error {
+	count, countNs, err := countFunctions(client)
+	log.Printf("Function count: %d, Namespace count: %d\n", count, countNs)
+
+	if err != nil {
+		return err
+	} else if count+additional > faasdMaxFunctions {
+		return fmt.Errorf("the OpenFaaS CE EULA allows %d/%d function(s), upgrade to faasd Pro to continue", faasdMaxFunctions, count+additional)
+	} else if countNs > faasdMaxNs {
+		return fmt.Errorf("the OpenFaaS CE EULA allows %d/%d namespace(s), upgrade to faasd Pro to continue", faasdMaxNs, countNs)
+	}
+	return nil
 }

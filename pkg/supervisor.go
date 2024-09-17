@@ -3,7 +3,6 @@ package pkg
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"path"
@@ -19,7 +18,7 @@ import (
 	"github.com/containerd/containerd/containers"
 	"github.com/containerd/containerd/oci"
 	gocni "github.com/containerd/go-cni"
-	"github.com/docker/distribution/reference"
+	"github.com/distribution/reference"
 	"github.com/openfaas/faasd/pkg/cninetwork"
 	"github.com/openfaas/faasd/pkg/service"
 	"github.com/pkg/errors"
@@ -102,7 +101,7 @@ func (s *Supervisor) Start(svcs []Service) error {
 127.0.0.1	localhost
 %s	faasd-provider`, gw)
 
-	writeHostsErr := ioutil.WriteFile(path.Join(wd, "hosts"),
+	writeHostsErr := os.WriteFile(path.Join(wd, "hosts"),
 		[]byte(hosts), workingDirectoryPermission)
 
 	if writeHostsErr != nil {
@@ -255,7 +254,7 @@ func (s *Supervisor) Start(svcs []Service) error {
 
 		log.Printf("%s has IP: %s\n", newContainer.ID(), ip)
 
-		hosts, err := ioutil.ReadFile("hosts")
+		hosts, err := os.ReadFile("hosts")
 		if err != nil {
 			log.Printf("Unable to read hosts file: %s\n", err.Error())
 		}
@@ -264,7 +263,7 @@ func (s *Supervisor) Start(svcs []Service) error {
 %s	%s
 `, ip, svc.Name))
 
-		if err := ioutil.WriteFile("hosts", hosts, workingDirectoryPermission); err != nil {
+		if err := os.WriteFile("hosts", hosts, workingDirectoryPermission); err != nil {
 			log.Printf("Error writing file: %s %s\n", "hosts", err)
 		}
 
@@ -400,7 +399,7 @@ func LoadComposeFile(wd string, file string) (*compose.Config, error) {
 func LoadComposeFileWithArch(wd string, file string, archGetter ArchGetter) (*compose.Config, error) {
 
 	file = path.Join(wd, file)
-	b, err := ioutil.ReadFile(file)
+	b, err := os.ReadFile(file)
 	if err != nil {
 		return nil, err
 	}

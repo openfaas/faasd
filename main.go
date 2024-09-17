@@ -7,14 +7,6 @@ import (
 	"github.com/openfaas/faasd/cmd"
 )
 
-// These values will be injected into these variables at the build time.
-var (
-	// GitCommit Git Commit SHA
-	GitCommit string
-	// Version version of the CLI
-	Version string
-)
-
 func main() {
 
 	if _, ok := os.LookupEnv("CONTAINER_ID"); ok {
@@ -31,7 +23,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	if err := cmd.Execute(Version, GitCommit); err != nil {
+	if err := cmd.Execute(); err != nil {
 		os.Exit(1)
 	}
 	return
