@@ -121,7 +121,22 @@ View sample pages, reviews and testimonials on Gumroad:
 
 ["Serverless For Everyone Else"](https://openfaas.gumroad.com/l/serverless-for-everyone-else)
 
-### Deploy faasd
+### Deploy faasd-pro
+
+faasd-pro is available for commercial licensing and for individuals to use via GitHub Sponsors on a 25USD/mo and higher tier.
+
+You get unlimited function deployments, private DNS support, airgap installations and can create multiple namespaces.
+
+```bash
+curl -sLS https://raw.githubusercontent.com/openfaas/faasd/refs/heads/master/hack/install-pro.sh -o install-pro.sh
+chmod +x install-pro.sh
+
+sudo -E ./install-pro.sh
+```
+
+### Deploy faasd CE
+
+faasd-ce supports 15 functions and needs a computer with a stable Internet connection to run. There are some restrictions on commercial use, but [individuals and certain small businesses can use it for free](EULA.md).
 
 The easiest way to deploy faasd is with cloud-init, we give several examples below, and post IaaS platforms will accept "user-data" pasted into their UI, or via their API.
 
