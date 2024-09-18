@@ -96,32 +96,24 @@ func MakeReplicaUpdateHandler(client *containerd.Client, cni gocni.CNI) func(w h
 
 		createNewTask := false
 
-		// Scale to zero
 		if req.Replicas == 0 {
-			// If a task is running, pause it
-			if taskExists && taskStatus.Status == containerd.Running {
-				if pauseErr := task.Pause(ctx); pauseErr != nil {
-					wrappedPauseErr := fmt.Errorf("error pausing task %s, error: %s", name, pauseErr)
-					log.Printf("[Scale] %s\n", wrappedPauseErr.Error())
-					http.Error(w, wrappedPauseErr.Error(), http.StatusNotFound)
-					return
-				}
-			}
+			http.Error(w, "replicas must > 0 for faasd CE", http.StatusBadRequest)
+			return
 		}
 
 		if taskExists {
 			if taskStatus != nil {
 				if taskStatus.Status == containerd.Paused {
-					if resumeErr := task.Resume(ctx); resumeErr != nil {
-						log.Printf("[Scale] error resuming task %s, error: %s\n", name, resumeErr)
-						http.Error(w, resumeErr.Error(), http.StatusBadRequest)
+					if _, err := task.Delete(ctx); err != nil {
+						log.Printf("[Scale] error deleting paused task %s, error: %s\n", name, err)
+						http.Error(w, err.Error(), http.StatusBadRequest)
 						return
 					}
 				} else if taskStatus.Status == containerd.Stopped {
 					// Stopped tasks cannot be restarted, must be removed, and created again
-					if _, delErr := task.Delete(ctx); delErr != nil {
-						log.Printf("[Scale] error deleting stopped task %s, error: %s\n", name, delErr)
-						http.Error(w, delErr.Error(), http.StatusBadRequest)
+					if _, err := task.Delete(ctx); err != nil {
+						log.Printf("[Scale] error deleting stopped task %s, error: %s\n", name, err)
+						http.Error(w, err.Error(), http.StatusBadRequest)
 						return
 					}
 					createNewTask = true
