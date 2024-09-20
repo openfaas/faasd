@@ -12,9 +12,6 @@ if [ ! -x "$(command -v arkade)" ]; then
 fi
 
 PATH=$PATH:$HOME/.arkade/bin
-if [ ! -x "$(command -v crane)" ]; then
-    arkade get crane
-fi
 
 tmpdir=$(mktemp -d)
 
@@ -35,3 +32,11 @@ echo "3. Then perform the final installation steps"
 echo ""
 echo "sudo -E sh -c \"cd ${tmpdir}/var/lib/faasd && faasd install\""
 echo ""
+echo "4. Additional OS packages are sometimes required, with one of the below:"
+echo ""
+echo "apt install -qy runc bridge-utils iptables"
+echo ""
+echo "yum install runc iptables-services"
+echo ""
+echo "pacman -Sy runc bridge-utils"
+
