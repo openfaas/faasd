@@ -121,18 +121,37 @@ View sample pages, reviews and testimonials on Gumroad:
 
 ["Serverless For Everyone Else"](https://openfaas.gumroad.com/l/serverless-for-everyone-else)
 
-### Deploy faasd-pro
+### Deploy OpenFaaS Edge (commercial distribution of faasd)
 
-faasd-pro is available for commercial licensing and for individuals to use via GitHub Sponsors on a 25USD/mo and higher tier.
+OpenFaaS Edge is a commercial distribution of faasd, with enhancements and additional features from OpenFaaS Pro. The [OpenFaaS Pro EULA applies](https://github.com/openfaas/faas/blob/master/pro/EULA.md).
 
-You get unlimited function deployments, private DNS support, airgap installations and can create multiple namespaces.
+* Upgraded Cron Connector, JetStream Queue Worker and Classic Scale to Zero from OpenFaaS Standard
+* No limit on number of functions
+* Configure private DNS servers
+* Airgap-friendly with installation bundled in an OCI image
+* Multiple namespace support
+
+This version is intended for resale as part of a wider solution, and to be deployed both into industrial and on-premises environments.
+
+Individual [GitHub Sponsors of OpenFaaS](https://github.com/sponsors/openfaas) (25 USD / mo and higher) can use OpenFaaS Edge for personal use.
+
+You can install OpenFaaS Edge with the following script:
 
 ```bash
-curl -sLS https://raw.githubusercontent.com/openfaas/faasd/refs/heads/master/hack/install-pro.sh -o install-pro.sh
-chmod +x install-pro.sh
-
-sudo -E ./install-pro.sh
+curl -sLSf \
+    https://raw.githubusercontent.com/openfaas/faasd/refs/heads/master/hack/install-edge.sh \
+    -o install-edge.sh && \
+chmod +x install-edge.sh
+sudo -E ./install-edge.sh
 ```
+
+*For an offline installation*
+
+Copy the OCI bundle and the install-edge.sh script to the remote server.
+
+Then mirror the various images from docker-compose.yaml into your private registry, and update the references from i.e. `image: ghcr.io/openfaasltd/gateway` to the equivalents in your registry.
+
+If your system is unable to install apt, yum, or pacman packages, due to limited network access, then set the `SKIP_OS` environment to 1. The list of packages is available in the `install_required_packages` section of the script.
 
 ### Deploy faasd CE
 

@@ -37,6 +37,10 @@ install_required_packages() {
   fi
 }
 
+echo "OpenFaaS Edge (based upon faasd and OpenFaaS Standard)"
+echo ""
+echo ""
+
 echo "1. Installing required OS packages, set SKIP_OS=1 to skip this step"
 echo ""
 
