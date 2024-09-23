@@ -58,6 +58,11 @@ PATH=$PATH:$HOME/.arkade/bin
 
 tmpdir=$(mktemp -d)
 
+# crane, or docker can also be used to download the OCI image and to extract it
+
+# Rather than the :latest tag, a specific tag can be given
+# Use "crane ls ghcr.io/openfaasltd/faasd-pro" to see available tags
+
 arkade oci install --path ${tmpdir} \
   ghcr.io/openfaasltd/faasd-pro:latest
 
