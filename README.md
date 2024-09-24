@@ -129,6 +129,7 @@ OpenFaaS Edge is a commercial distribution of faasd, with enhancements and addit
 * Deploy up to 250 functions per installation
 * Configure private DNS servers
 * Airgap-friendly with installation bundled in an OCI image
+* Detailed RAM/CPU metrics for stateful containers, and functions, including Out Of Memory (OOM) events
 * Multiple namespace support
 
 This version is intended for resale as part of a wider solution, and to be deployed both into industrial and on-premises environments.
