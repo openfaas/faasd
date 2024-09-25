@@ -27,7 +27,7 @@ install_required_packages() {
     apt-get install -y curl runc bridge-utils iptables
   elif $(has_yum); then
     yum check-update -y
-    yum install -y curl runc iptables-services
+    yum install -y curl runc iptables-services which
   elif $(has_pacman); then
     pacman -Syy
     pacman -Sy curl runc bridge-utils
