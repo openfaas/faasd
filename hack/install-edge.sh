@@ -70,6 +70,14 @@ PATH=$PATH:$HOME/.arkade/bin
 
 tmpdir=$(mktemp -d)
 
+# Ensure all existing services are stopped when installing over an 
+# existing faasd installation
+systemctl stop faasd || :
+systemctl stop faasd-provider || :
+systemctl stop containerd || :
+killall -9 containerd-shim-runc-v2 || :
+killall -9 faasd || :
+
 # crane, or docker can also be used to download the OCI image and to extract it
 
 # Rather than the :latest tag, a specific tag can be given
