@@ -51,6 +51,14 @@ fi
 echo "2. Downloading OCI image, and installing pre-requisites"
 echo ""
 if [ ! -x "$(command -v arkade)" ]; then
+
+    # For Centos, RHEL, Fedora, Amazon Linux, and Oracle Linux, use BINLOCATION=/usr/bin/
+    BINLOCATION=/usr/local/bin/
+
+    if [ -n "$(command -v yum)" ]; then
+      BINLOCATION=/usr/bin/
+    fi
+
     curl -sLS https://get.arkade.dev | sh
 fi
 
