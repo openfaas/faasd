@@ -3,7 +3,6 @@
 set -e # stop on error
 set -o pipefail
 
-
 if [ "$EUID" -ne 0 ]; then
     echo "Please run as root or with sudo"
     exit
@@ -55,15 +54,13 @@ fi
 echo "2. Downloading OCI image, and installing pre-requisites"
 echo ""
 if [ ! -x "$(command -v arkade)" ]; then
-
     # For Centos, RHEL, Fedora, Amazon Linux, and Oracle Linux, use BINLOCATION=/usr/bin/
-    BINLOCATION=/usr/local/bin/
 
-    if [ -n "$(command -v yum)" ]; then
+    if $(has_yum); then
       BINLOCATION=/usr/bin/
     fi
 
-    curl -sLS https://get.arkade.dev | sh
+    curl -sLS https://get.arkade.dev | BINLOCATION=${BINLOCATION} sh
 fi
 
 PATH=$PATH:$HOME/.arkade/bin
@@ -83,7 +80,7 @@ killall -9 faasd || :
 # Rather than the :latest tag, a specific tag can be given
 # Use "crane ls ghcr.io/openfaasltd/faasd-pro" to see available tags
 
-arkade oci install --path ${tmpdir} \
+${BINLOCATION}arkade oci install --path ${tmpdir} \
   ghcr.io/openfaasltd/faasd-pro:latest
 
 cd ${tmpdir}
