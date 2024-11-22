@@ -2,7 +2,7 @@
 Description=faasd-provider
 
 [Service]
-MemoryLimit=500M
+MemoryMax=500M
 Environment="secret_mount_path={{.SecretMountPath}}"
 Environment="basic_auth=true"
 Environment="hosts_dir=/var/lib/faasd"

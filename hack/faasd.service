@@ -3,7 +3,7 @@ Description=faasd
 After=faasd-provider.service
 
 [Service]
-MemoryLimit=500M
+MemoryMax=500M
 ExecStart=/usr/local/bin/faasd up
 Restart=on-failure
 RestartSec=10s
