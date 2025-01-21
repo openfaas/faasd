@@ -58,10 +58,10 @@ func (r *requester) Query(ctx context.Context, req logs.Request) (<-chan logs.Me
 
 // buildCmd reeturns the equivalent of
 //
-// 	journalctl -t <namespace>:<name>  \
-// 		--output=json \
-// 		--since=<timestamp> \
-// 		<--follow> \
+//	journalctl -t <namespace>:<name>  \
+//		--output=json \
+//		--since=<timestamp> \
+//		<--follow> \
 func buildCmd(ctx context.Context, req logs.Request) *exec.Cmd {
 	// // set the cursor position based on req, default to 5m
 	since := time.Now().Add(-5 * time.Minute)
@@ -105,12 +105,12 @@ func streamLogs(ctx context.Context, cmd *exec.Cmd, out io.ReadCloser, msgs chan
 
 	// will ensure `out` is closed and all related resources cleaned up
 	go func() {
-		err := cmd.Wait()
-		log.Println("wait result", err)
+		if err := cmd.Wait(); err != nil {
+			log.Printf("journalctl exited with error: %s", err)
+		}
 	}()
 
 	defer func() {
-		log.Println("closing journal stream")
 		close(msgs)
 	}()
 
@@ -176,7 +176,6 @@ func parseEntry(entry map[string]string) (logs.Message, error) {
 }
 
 func logErrOut(out io.ReadCloser) {
-	defer log.Println("stderr closed")
 	defer out.Close()
 
 	io.Copy(log.Writer(), out)
