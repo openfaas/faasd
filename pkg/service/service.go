@@ -104,7 +104,7 @@ func killTask(ctx context.Context, task containerd.Task) error {
 	return err
 }
 
-func getResolver(ctx context.Context, configFile *configfile.ConfigFile) (remotes.Resolver, error) {
+func getResolver(configFile *configfile.ConfigFile) (remotes.Resolver, error) {
 	// credsFunc is based on https://github.com/moby/buildkit/blob/0b130cca040246d2ddf55117eeff34f546417e40/session/auth/authprovider/authprovider.go#L35
 	credFunc := func(host string) (string, string, error) {
 		if host == "registry-1.docker.io" {
@@ -139,7 +139,7 @@ func PrepareImage(ctx context.Context, client *containerd.Client, imageName, sna
 		if err != nil {
 			return nil, err
 		}
-		resolver, err = getResolver(ctx, configFile)
+		resolver, err = getResolver(configFile)
 		if err != nil {
 			return empty, err
 		}
