@@ -86,7 +86,7 @@ func (p *Proxy) Start() error {
 			conn.Close()
 
 			log.Printf("Unable to dial: %s, error: %s", upstreamAddr, err.Error())
-			return err
+			continue
 		}
 
 		go pipe(conn, upstream)
