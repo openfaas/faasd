@@ -9,7 +9,6 @@ require (
 	github.com/containerd/go-cni v1.1.9
 	github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf
 	github.com/docker/cli v24.0.7+incompatible
-	github.com/docker/distribution v2.8.3+incompatible
 	github.com/docker/docker v24.0.7+incompatible // indirect
 	github.com/docker/go-units v0.5.0
 	github.com/gorilla/mux v1.8.1

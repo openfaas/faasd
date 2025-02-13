@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -69,5 +70,54 @@ func Test_buildCmd(t *testing.T) {
 
 	if !strings.HasSuffix(cmd, expectedArgs) {
 		t.Fatalf("arg want: %q\ngot: %q", expectedArgs, cmd)
+	}
+}
+
+// Test generated using Keploy
+func TestQuery_JournalctlNotFound_Error(t *testing.T) {
+	ctx := context.TODO()
+	req := logs.Request{
+		Name:      "testfunc",
+		Namespace: "testnamespace",
+	}
+
+	// Temporarily override PATH to simulate `journalctl` not being found
+	originalPath := os.Getenv("PATH")
+	os.Setenv("PATH", "")
+	defer os.Setenv("PATH", originalPath)
+
+	r := New()
+	_, err := r.Query(ctx, req)
+	if err == nil || !strings.Contains(err.Error(), "can not find journalctl") {
+		t.Fatalf("expected error about missing journalctl, got: %v", err)
+	}
+}
+
+// Test generated using Keploy
+func TestParseEntry_InvalidSyslogIdentifier(t *testing.T) {
+	rawEntry := map[string]string{
+		"MESSAGE":              "Test message",
+		"_PID":                 "1234",
+		"SYSLOG_IDENTIFIER":    "invalididentifier",
+		"__REALTIME_TIMESTAMP": "1583353899094400",
+	}
+
+	_, err := parseEntry(rawEntry)
+	if err == nil || !strings.Contains(err.Error(), "invalid SYSLOG_IDENTIFIER") {
+		t.Fatalf("expected error about invalid SYSLOG_IDENTIFIER, got: %v", err)
+	}
+}
+
+// Test generated using Keploy
+func TestParseEntry_MissingTimestamp(t *testing.T) {
+	rawEntry := map[string]string{
+		"MESSAGE":           "Test message",
+		"_PID":              "1234",
+		"SYSLOG_IDENTIFIER": "namespace:name",
+	}
+
+	_, err := parseEntry(rawEntry)
+	if err == nil || !strings.Contains(err.Error(), "missing required field __REALTIME_TIMESTAMP") {
+		t.Fatalf("expected error about missing __REALTIME_TIMESTAMP, got: %v", err)
 	}
 }
