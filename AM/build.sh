@@ -2,34 +2,48 @@
 
 set -e  # Exit immediately if any command fails
 
-# Define paths
-FAASD_DIR="$HOME/go/src/github.com/openfaas/faasd"
-BIN_PATH="/usr/local/bin/faasd"
+echo ">>> Stopping faasd and related services..."
+sudo systemctl stop faasd faasd-provider containerd || true
 
-echo "🚀 Starting faasd build process..."
+echo ">>> Killing any lingering faasd processes..."
+sudo pkill -9 faasd || true
 
-# Navigate to faasd source directory
-cd "$FAASD_DIR" || { echo "❌ Error: Directory $FAASD_DIR not found!"; exit 1; }
+echo ">>> Rebuilding faasd..."
+cd /users/am_CU/go/src/github.com/openfaas/faasd
+make local
+sudo cp bin/faasd /usr/local/bin/
 
-echo "📦 Building faasd..."
-go build -o faasd
+# Install faasd only if it's missing
+if [ ! -d "/var/lib/faasd" ]; then
+    echo ">>> Running faasd install (only first-time or after cleanup)..."
+    sudo faasd install
+fi
 
-# Stop faasd services before replacing the binary
-echo "🛑 Stopping faasd services..."
-sudo systemctl stop faasd || echo "⚠️ faasd service was not running."
-sudo systemctl stop faasd-provider || echo "⚠️ faasd-provider service was not running."
+echo ">>> Restarting containerd..."
+sudo systemctl restart containerd
 
-# Move the new binary into place
-echo "📁 Copying new faasd binary..."
-sudo cp faasd "$BIN_PATH"
+echo ">>> Restarting faasd services..."
+sudo systemctl restart faasd faasd-provider
+sudo systemctl enable faasd faasd-provider
 
-# Restart faasd services
-echo "🔄 Restarting faasd services..."
-sudo systemctl start faasd
-sudo systemctl start faasd-provider
+echo ">>> Installing OpenFaaS CLI..."
+# curl -sLS https://cli.openfaas.com | sudo sh
+faas-cli version
 
-# Verify the update
-echo "✅ faasd version:"
+# Add sleep to ensure faasd is ready before login
+echo ">>> Waiting for faasd to be ready..."
+sleep 10  # Give faasd time to fully start
+
+echo ">>> Logging into OpenFaaS..."
+export OPENFAAS_URL=http://127.0.0.1:8080
+PASSWORD=$(sudo cat /var/lib/faasd/secrets/basic-auth-password)
+echo $PASSWORD | faas-cli login -u admin --password-stdin
+
+echo ">>> Deploying test function..."
+faas-cli store deploy figlet
+
+echo ">>> Invoking test function..."
+echo "Hello MooMoo" | faas-cli invoke figlet
+
+echo ">>> Checking faasd version..."
 faasd version
-
-echo "🎉 Build and deployment completed successfully!"

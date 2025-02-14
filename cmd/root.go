@@ -25,7 +25,7 @@ func RootCommand() *cobra.Command {
 
 // Execute faasd
 func Execute() error {
-	fmt.Println("Hello Adi")
+	fmt.Println("God is my Guiding Light")
 	if err := rootCommand.Execute(); err != nil {
 		return err
 	}
