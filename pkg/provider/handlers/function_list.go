@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/containerd/containerd"
@@ -51,7 +52,10 @@ func ListFunctions(client *containerd.Client, namespace string) (map[string]*Fun
 		name := c.ID()
 		f, err := GetFunction(client, name, namespace)
 		if err != nil {
-			log.Printf("skipping %s, error: %s", name, err)
+			if !strings.Contains(err.Error(), "unable to get IP address for container") {
+				log.Printf("List functions, skipping: %s, error: %s", name, err)
+			}
+
 		} else {
 			functions[name] = &f
 		}

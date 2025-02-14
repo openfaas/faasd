@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -45,10 +46,24 @@ func Remove(ctx context.Context, client *containerd.Client, name string) error {
 				log.Printf("Status of %s is: %s\n", name, status.Status)
 			}
 
-			log.Printf("Need to kill task: %s\n", name)
-			if err = killTask(ctx, t); err != nil {
+			var gracePeriod = time.Second * 30
+			spec, err := t.Spec(ctx)
+			if err == nil {
+				for _, p := range spec.Process.Env {
+					k, v, ok := strings.Cut(p, "=")
+					if ok && k == "grace_period" {
+						periodVal, err := time.ParseDuration(v)
+						if err == nil {
+							gracePeriod = periodVal
+						}
+					}
+				}
+			}
+
+			if err = killTask(ctx, t, gracePeriod); err != nil {
 				return fmt.Errorf("error killing task %s, %s, %w", container.ID(), name, err)
 			}
+
 		}
 
 		if err := container.Delete(ctx, containerd.WithSnapshotCleanup); err != nil {
@@ -66,14 +81,13 @@ func Remove(ctx context.Context, client *containerd.Client, name string) error {
 }
 
 // Adapted from Stellar - https://github.com/stellar
-func killTask(ctx context.Context, task containerd.Task) error {
-
-	killTimeout := 30 * time.Second
+func killTask(ctx context.Context, task containerd.Task, gracePeriod time.Duration) error {
 
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
 	var err error
 
+	waited := false
 	go func() {
 		defer wg.Done()
 		if task != nil {
@@ -89,22 +103,39 @@ func killTask(ctx context.Context, task containerd.Task) error {
 
 			select {
 			case <-wait:
-				task.Delete(ctx)
+				waited = true
 				return
-			case <-time.After(killTimeout):
+			case <-time.After(gracePeriod):
+				log.Printf("Sending SIGKILL to: %s after: %s", task.ID(), gracePeriod.Round(time.Second).String())
 				if err := task.Kill(ctx, unix.SIGKILL, containerd.WithKillAll); err != nil {
-					log.Printf("error force killing container task: %s", err)
+					log.Printf("error sending SIGKILL to task: %s", err)
 				}
+
 				return
 			}
 		}
 	}()
 	wg.Wait()
 
+	if task != nil {
+		if !waited {
+			wait, err := task.Wait(ctx)
+			if err != nil {
+				log.Printf("error waiting on task after kill: %s", err)
+			}
+
+			<-wait
+		}
+
+		if _, err := task.Delete(ctx); err != nil {
+			return err
+		}
+	}
+
 	return err
 }
 
-func getResolver(ctx context.Context, configFile *configfile.ConfigFile) (remotes.Resolver, error) {
+func getResolver(configFile *configfile.ConfigFile) (remotes.Resolver, error) {
 	// credsFunc is based on https://github.com/moby/buildkit/blob/0b130cca040246d2ddf55117eeff34f546417e40/session/auth/authprovider/authprovider.go#L35
 	credFunc := func(host string) (string, string, error) {
 		if host == "registry-1.docker.io" {
@@ -139,7 +170,7 @@ func PrepareImage(ctx context.Context, client *containerd.Client, imageName, sna
 		if err != nil {
 			return nil, err
 		}
-		resolver, err = getResolver(ctx, configFile)
+		resolver, err = getResolver(configFile)
 		if err != nil {
 			return empty, err
 		}
