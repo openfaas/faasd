@@ -85,7 +85,7 @@ func InitNetwork() (gocni.CNI, error) {
 	}
 
 	netConfig := path.Join(CNIConfDir, defaultCNIConfFilename)
-	if err := os.WriteFile(netConfig, []byte(defaultCNIConf), 644); err != nil {
+	if err := os.WriteFile(netConfig, []byte(defaultCNIConf), 0644); err != nil {
 		return nil, fmt.Errorf("cannot write network config: %s", defaultCNIConfFilename)
 	}
 
