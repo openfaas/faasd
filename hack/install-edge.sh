@@ -22,6 +22,10 @@ has_pacman() {
 
 install_required_packages() {
   if $(has_apt_get); then
+
+    echo iptables-persistent iptables-persistent/autosave_v4 boolean false | sudo debconf-set-selections
+    echo iptables-persistent iptables-persistent/autosave_v6 boolean false | sudo debconf-set-selections
+
     # Debian bullseye is missing iptables. Added to required packages
     # to get it working in raspberry pi. No such known issues in
     # other distros. Hence, adding only to this block.
