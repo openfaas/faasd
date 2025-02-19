@@ -27,7 +27,7 @@ install_required_packages() {
     # other distros. Hence, adding only to this block.
     # reference: https://github.com/openfaas/faasd/pull/237
     apt-get update -y
-    apt-get install -y curl runc bridge-utils iptables
+    apt-get install -y curl runc bridge-utils iptables iptables-persistent
   elif $(has_yum); then
     yum check-update -y
     yum install -y curl runc iptables-services which
