@@ -2,6 +2,9 @@
 set -e # stop on error
 set -o pipefail
 
+export NEEDRESTART_MODE=a
+export DEBIAN_FRONTEND=noninteractive
+
 if [ "$EUID" -ne 0 ]; then
     echo "Please run as root or with sudo"
     exit
@@ -29,8 +32,8 @@ install_required_packages() {
     # to get it working in raspberry pi. No such known issues in
     # other distros. Hence, adding only to this block.
     # reference: https://github.com/openfaas/faasd/pull/237
-    apt-get update -y
-    apt-get install -y curl runc bridge-utils iptables iptables-persistent
+    apt-get update -yq
+    apt-get install -yq curl runc bridge-utils iptables iptables-persistent
   elif $(has_yum); then
     yum check-update -y
     yum install -y curl runc iptables-services which
