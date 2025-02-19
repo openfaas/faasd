@@ -1,4 +1,3 @@
-#!/bin/bash
 
 set -e # stop on error
 set -o pipefail
@@ -44,7 +43,7 @@ install_required_packages() {
   fi
 }
 
-echo "OpenFaaS Edge (based upon faasd and OpenFaaS Standard)"
+echo "OpenFaaS Edge combines faasd with OpenFaaS Standard"
 echo ""
 echo ""
 
@@ -91,13 +90,22 @@ cd ${tmpdir}
 ./install.sh ./
 
 echo ""
-echo "3. You now need to activate your license via GitHub"
+echo "3. For personal (non-commercial), GitHub Sponsors can activate their license with:"
 echo ""
 echo "sudo -E faasd github login"
 echo "sudo -E faasd activate"
+echo ""
+echo "3.1 Commercial users can create their license key as follows:"
+echo ""
+echo "sudo mkdir -p /var/lib/faasd/secrets"
+echo "sudo nano /var/lib/faasd/secrets/openfaas_license"
 echo ""
 echo ""
 echo "4. Then perform the final installation steps"
 echo ""
 echo "sudo -E sh -c \"cd ${tmpdir}/var/lib/faasd && faasd install\""
+echo ""
+echo "5. Refer to the complete handbook"
+echo ""
+echo "http://store.openfaas.com/l/serverless-for-everyone-else?layout=profile"
 echo ""
