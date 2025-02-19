@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Copyright OpenFaaS Ltd 2025
+
 set -e # stop on error
 set -o pipefail
 
@@ -103,7 +105,6 @@ echo "3.1 Commercial users can create their license key as follows:"
 echo ""
 echo "sudo mkdir -p /var/lib/faasd/secrets"
 echo "sudo nano /var/lib/faasd/secrets/openfaas_license"
-echo ""
 echo ""
 echo "4. Then perform the final installation steps"
 echo ""
