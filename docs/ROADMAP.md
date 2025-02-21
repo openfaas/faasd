@@ -1,12 +1,12 @@
 # faasd backlog and features
 
-It's important to understand the vision for faasd vs OpenFaaS CE/Pro.
+It's important to understand the vision and tradeoffs between OpenFaaS Edge (faasd-pro) vs. OpenFaaS on Kubernetes.
 
 faasd is a single-node implementation of OpenFaaS.
 
-It is supposed to be a lightweight, low-overhead, way to deploy OpenFaaS functions for functions which do not need planet-scale.
+It is supposed to be a lightweight, low-overhead, way to deploy OpenFaaS functions for functions which do not need to scale out.
 
-It is not supposed to have multiple replicas, clustering, HA, or auto-scaling.
+It is not supposed to have multiple replicas, clustering, High Availability (HA), or auto-scaling.
 
 [Learn when to use faasd](https://docs.openfaas.com/deployment/)
 
@@ -43,12 +43,6 @@ It can scale vertically, and this may be a suitable alternative for many use-cas
 
 Workaround: deploy multiple, dynamically named functions `scraper-1`, `scraper-2`, `scraper-3` and set up a reverse proxy rule to load balance i.e. `scraper.example.com => [/function/scraper-1, /function/scraper-2, /function/scraper-3]`.
 
-### Scale from zero may give a non-200
-
-faasd itself does not implement a health check to determine if a function is ready for traffic. Since faasd doesn't support auto-scaling, this is unlikely to affect you.
-
-Workaround: Have your client retry HTTP calls, or don't scale to zero.
-
 ### Leaf-node only - no clustering
 
 faasd is operates on a leaf-node/single-node model. If this is an issue for you, but you have resource constraints, you will need to use [OpenFaaS CE or Pro on Kubernetes](https://docs.openfaas.com/deployment/).
@@ -77,7 +71,7 @@ There is a very detailed chapter on troubleshooting in the eBook [Serverless For
 
 ### Your function timed-out at 60 seconds
 
-This is no longer an issue, see the manual for how to configure a longer timeout, updated 3rd October 2022.
+See the manual for how to configure a longer timeouts.
 
 ### Non 200 HTTP status from the gateway upon reboot
 
@@ -149,3 +143,5 @@ Won't have:
 * [x] An installer for faasd and dependencies - runc, containerd
 * [x] Offer a recommendation or implement a strategy for faasd replication/HA
 * [x] [Remove / deprecate armhf / armv7 support](https://github.com/openfaas/faasd/issues/364)
+* [x] Add support for CPU/RAM metrics in the UI, CLI and API
+* [x] Network segmentation (functions cannot talk to each other or the host)
