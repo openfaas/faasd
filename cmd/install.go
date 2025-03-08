@@ -84,11 +84,18 @@ func runInstall(_ *cobra.Command, _ []string) error {
 		return err
 	}
 
-	fmt.Println(`Check status with:
+	fmt.Println(`
+The initial setup downloads various container images, which may take a 
+minute or two depending on your connection.
+
+Check the status of the faasd service with:
+
   sudo journalctl -u faasd --lines 100 -f
 
 Login with:
   sudo -E cat /var/lib/faasd/secrets/basic-auth-password | faas-cli login -s`)
+
+	fmt.Println("")
 
 	return nil
 }
