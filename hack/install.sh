@@ -90,7 +90,7 @@ install_cni_plugins() {
 }
 
 install_containerd() {
-  CONTAINERD_VER=1.7.22
+  CONTAINERD_VER=1.7.27
   $SUDO systemctl unmask containerd || :
 
   arch=$(uname -m)

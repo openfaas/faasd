@@ -26,7 +26,7 @@ git clone https://github.com/containerd/containerd
 
 cd containerd
 git fetch origin --tags
-git checkout v1.7.22
+git checkout v1.7.27
 
 make
 sudo make install
