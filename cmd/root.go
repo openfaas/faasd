@@ -17,6 +17,7 @@ func init() {
 	rootCommand.AddCommand(installCmd)
 	rootCommand.AddCommand(makeProviderCmd())
 	rootCommand.AddCommand(collectCmd)
+	rootCommand.AddCommand(makeServiceCmd())
 }
 
 func RootCommand() *cobra.Command {
