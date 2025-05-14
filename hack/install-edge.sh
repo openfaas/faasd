@@ -13,8 +13,8 @@ if [ "$EUID" -ne 0 ]; then
     exit
 fi
 
-has_yum() {
-  [ -n "$(command -v yum)" ]
+has_dnf() {
+  [ -n "$(command -v dnf)" ]
 }
 
 has_apt_get() {
@@ -37,9 +37,8 @@ install_required_packages() {
     # reference: https://github.com/openfaas/faasd/pull/237
     apt-get update -yq
     apt-get install -yq curl runc bridge-utils iptables iptables-persistent
-  elif $(has_yum); then
-    yum check-update -y
-    yum install -y curl runc iptables-services which
+  elif $(has_dnf); then
+    dnf install -y curl runc iptables-services which
   elif $(has_pacman); then
     pacman -Syy
     pacman -Sy curl runc bridge-utils
@@ -60,6 +59,7 @@ if [ -z "$SKIP_OS" ]; then
     install_required_packages
 fi
 
+echo ""
 echo "2. Downloading OCI image, and installing pre-requisites"
 echo ""
 if [ ! -x "$(command -v arkade)" ]; then
