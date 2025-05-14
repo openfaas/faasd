@@ -95,6 +95,17 @@ ${BINLOCATION}arkade oci install --path ${tmpdir} \
 cd ${tmpdir}
 ./install.sh ./
 
+if has_dnf; then
+  isRhelLike=true
+else
+  isRhelLike=false
+fi
+
+binaryName="faasd"
+if [ "$isRhelLike" = true ]; then
+  binaryName="/usr/local/bin/faasd"
+fi
+
 echo ""
 echo "3.1 Commercial users can create their license key as follows:"
 echo ""
@@ -103,12 +114,12 @@ echo "sudo nano /var/lib/faasd/secrets/openfaas_license"
 echo ""
 echo "3.2 For personal, non-commercial use only, GitHub Sponsors of @openfaas (25USD+) can run:"
 echo ""
-echo "sudo -E faasd github login"
-echo "sudo -E faasd activate"
+echo "sudo -E ${binaryName} github login"
+echo "sudo -E ${binaryName} activate"
 echo ""
 echo "4. Then perform the final installation steps"
 echo ""
-echo "sudo -E sh -c \"cd ${tmpdir}/var/lib/faasd && faasd install\""
+echo "sudo -E sh -c \"cd ${tmpdir}/var/lib/faasd && ${binaryName} install\""
 echo ""
 echo "5. Refer to the complete handbook and supplementary documentation at:"
 echo ""
