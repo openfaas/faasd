@@ -65,7 +65,7 @@ echo ""
 if [ ! -x "$(command -v arkade)" ]; then
     # For Centos, RHEL, Fedora, Amazon Linux, and Oracle Linux, use BINLOCATION=/usr/bin/
 
-    if $(has_yum); then
+    if $(has_dnf); then
       BINLOCATION=/usr/bin/
     fi
 
