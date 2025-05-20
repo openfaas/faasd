@@ -38,7 +38,7 @@ install_required_packages() {
     apt-get update -yq
     apt-get install -yq curl runc bridge-utils iptables iptables-persistent
   elif $(has_dnf); then
-    dnf install -y curl runc iptables-services bridge-utils which
+    dnf install -y --allowerasing curl runc iptables-services bridge-utils which
   elif $(has_pacman); then
     pacman -Syy
     pacman -Sy curl runc bridge-utils
