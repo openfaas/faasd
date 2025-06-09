@@ -47,8 +47,8 @@ verify_system() {
   fi
 }
 
-has_yum() {
-  [ -n "$(command -v yum)" ]
+has_dnf() {
+  [ -n "$(command -v dnf)" ]
 }
 
 has_apt_get() {
@@ -67,14 +67,16 @@ install_required_packages() {
     # reference: https://github.com/openfaas/faasd/pull/237
     $SUDO apt-get update -y
     $SUDO apt-get install -y curl runc bridge-utils iptables
-  elif $(has_yum); then
-    $SUDO yum check-update -y
-    $SUDO yum install -y curl runc iptables-services
+  elif $(has_dnf); then
+    $SUDO dnf install -y \
+      --allowerasing \
+      --setopt=install_weak_deps=False \
+      curl runc iptables-services bridge-utils
   elif $(has_pacman); then
     $SUDO pacman -Syy
     $SUDO pacman -Sy curl runc bridge-utils
   else
-    fatal "Could not find apt-get, yum, or pacman. Cannot install dependencies on this OS."
+    fatal "Could not find apt-get, dnf, or pacman. Cannot install dependencies on this OS."
     exit 1
   fi
 }
@@ -90,7 +92,7 @@ install_cni_plugins() {
 }
 
 install_containerd() {
-  CONTAINERD_VER=1.7.22
+  CONTAINERD_VER=1.7.27
   $SUDO systemctl unmask containerd || :
 
   arch=$(uname -m)

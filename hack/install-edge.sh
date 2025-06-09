@@ -13,8 +13,8 @@ if [ "$EUID" -ne 0 ]; then
     exit
 fi
 
-has_yum() {
-  [ -n "$(command -v yum)" ]
+has_dnf() {
+  [ -n "$(command -v dnf)" ]
 }
 
 has_apt_get() {
@@ -37,9 +37,11 @@ install_required_packages() {
     # reference: https://github.com/openfaas/faasd/pull/237
     apt-get update -yq
     apt-get install -yq curl runc bridge-utils iptables iptables-persistent
-  elif $(has_yum); then
-    yum check-update -y
-    yum install -y curl runc iptables-services which
+  elif $(has_dnf); then
+    dnf install -y \
+      --allowerasing \
+      --setopt=install_weak_deps=False \
+      curl runc iptables-services bridge-utils which
   elif $(has_pacman); then
     pacman -Syy
     pacman -Sy curl runc bridge-utils
@@ -60,12 +62,13 @@ if [ -z "$SKIP_OS" ]; then
     install_required_packages
 fi
 
+echo ""
 echo "2. Downloading OCI image, and installing pre-requisites"
 echo ""
 if [ ! -x "$(command -v arkade)" ]; then
     # For Centos, RHEL, Fedora, Amazon Linux, and Oracle Linux, use BINLOCATION=/usr/bin/
 
-    if $(has_yum); then
+    if $(has_dnf); then
       BINLOCATION=/usr/bin/
     fi
 
@@ -95,22 +98,35 @@ ${BINLOCATION}arkade oci install --path ${tmpdir} \
 cd ${tmpdir}
 ./install.sh ./
 
-echo ""
-echo "3. For personal (non-commercial), GitHub Sponsors can activate their license with:"
-echo ""
-echo "sudo -E faasd github login"
-echo "sudo -E faasd activate"
+if has_dnf; then
+  isRhelLike=true
+else
+  isRhelLike=false
+fi
+
+binaryName="faasd"
+if [ "$isRhelLike" = true ]; then
+  binaryName="/usr/local/bin/faasd"
+fi
+
 echo ""
 echo "3.1 Commercial users can create their license key as follows:"
 echo ""
 echo "sudo mkdir -p /var/lib/faasd/secrets"
 echo "sudo nano /var/lib/faasd/secrets/openfaas_license"
 echo ""
+echo "3.2 For personal, non-commercial use only, GitHub Sponsors of @openfaas (25USD+) can run:"
+echo ""
+echo "sudo -E ${binaryName} github login"
+echo "sudo -E ${binaryName} activate"
+echo ""
 echo "4. Then perform the final installation steps"
 echo ""
-echo "sudo -E sh -c \"cd ${tmpdir}/var/lib/faasd && faasd install\""
+echo "sudo -E sh -c \"cd ${tmpdir}/var/lib/faasd && ${binaryName} install\""
 echo ""
-echo "5. Refer to the complete handbook"
+echo "5. Refer to the complete handbook and supplementary documentation at:"
 echo ""
 echo "http://store.openfaas.com/l/serverless-for-everyone-else?layout=profile"
+echo ""
+echo "https://docs.openfaas.com/edge/overview"
 echo ""
