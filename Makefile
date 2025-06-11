@@ -15,6 +15,17 @@ publish: dist hashgen
 
 local:
 	CGO_ENABLED=0 GOOS=linux go build -mod=vendor -o bin/faasd
+	sudo cp bin/faasd /usr/local/bin
+
+.PHONY: bfaasd
+bfaasd:	
+	sudo systemctl stop faasd
+	sudo systemctl stop faasd-provider
+	CGO_ENABLED=0 GOOS=linux go build -mod=vendor -o bin/faasd
+	sudo cp bin/faasd /usr/local/bin
+	sudo faasd install
+	sleep 5
+	sudo -E cat /var/lib/faasd/secrets/basic-auth-password | faas-cli login -s
 
 .PHONY: test
 test:

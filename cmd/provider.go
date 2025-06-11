@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"log"
@@ -22,6 +23,29 @@ import (
 )
 
 const secretDirPermission = 0755
+
+type ResponseCapture struct {
+	http.ResponseWriter
+	body   *bytes.Buffer
+	status int
+}
+
+func NewResponseCapture(w http.ResponseWriter) *ResponseCapture {
+	return &ResponseCapture{
+		ResponseWriter: w,
+		body:           &bytes.Buffer{},
+		status:         200,
+	}
+}
+
+func (rc *ResponseCapture) WriteHeader(statusCode int) {
+	rc.status = statusCode
+	rc.ResponseWriter.WriteHeader(statusCode)
+}
+
+func (rc *ResponseCapture) GetBody() []byte {
+	return rc.body.Bytes()
+}
 
 func makeProviderCmd() *cobra.Command {
 	var command = &cobra.Command{
@@ -84,7 +108,7 @@ nameserver 8.8.4.4`), workingDirectoryPermission); err != nil {
 
 	alwaysPull := true
 	bootstrapHandlers := types.FaaSHandlers{
-		FunctionProxy:   httpHeaderMiddleware(proxy.NewHandlerFunc(*config, invokeResolver, false)),
+		FunctionProxy:   httpHeaderMiddlewareWithCapture(proxy.NewHandlerFunc(*config, invokeResolver, false)),
 		DeleteFunction:  httpHeaderMiddleware(handlers.MakeDeleteHandler(client, cni)),
 		DeployFunction:  httpHeaderMiddleware(handlers.MakeDeployHandler(client, cni, baseUserSecretsPath, alwaysPull)),
 		FunctionLister:  httpHeaderMiddleware(handlers.MakeReadHandler(client)),
@@ -167,6 +191,27 @@ func copyFile(src, dst string) error {
 func httpHeaderMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-OpenFaaS-EULA", "openfaas-ce")
+		next.ServeHTTP(w, r)
+	}
+}
+
+func httpHeaderMiddlewareWithCapture(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Set the EULA header
+		w.Header().Set("X-OpenFaaS-EULA", "openfaas-ce")
+		w.Write([]byte("\nThis is the message appended by me to test the reading on CMD line....\n"))
+
+		capture := NewResponseCapture(w)
+		next.ServeHTTP(capture, r)
+		responseBody := capture.GetBody()
+		log.Printf("Response body: %s", responseBody)
+	}
+}
+
+func testMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Harsh", "true")
+		w.Write([]byte("This is a test\n"))
 		next.ServeHTTP(w, r)
 	}
 }
