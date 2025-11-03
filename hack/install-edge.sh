@@ -35,8 +35,14 @@ install_required_packages() {
     # to get it working in raspberry pi. No such known issues in
     # other distros. Hence, adding only to this block.
     # reference: https://github.com/openfaas/faasd/pull/237
-    apt-get update -yq
-    apt-get install -yq curl runc bridge-utils iptables iptables-persistent
+    apt-get update -yq && \
+    apt-get install -yq ---no-install-recommends \
+      curl \
+      runc \
+      bridge-utils \
+      iptables \
+      iptables-persistent \
+      psmisc
   elif $(has_dnf); then
     dnf install -y \
       --allowerasing \
