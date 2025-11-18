@@ -36,7 +36,7 @@ install_required_packages() {
     # other distros. Hence, adding only to this block.
     # reference: https://github.com/openfaas/faasd/pull/237
     apt-get update -yq && \
-    apt-get install -yq ---no-install-recommends \
+    apt-get install -yq --no-install-recommends \
       curl \
       runc \
       bridge-utils \
