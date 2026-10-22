@@ -369,6 +369,7 @@ func Flistxattr(fd int, dest []byte) (sz int, err error) {
  */
 
 //sys	fcntl(fd int, cmd int, arg int) (val int, err error)
+//sys	fcntlPtr(fd int, cmd int, arg unsafe.Pointer) (val int, err error) = SYS_FCNTL
 
 //sys	kill(pid int, signum int, posix int) (err error)
 
@@ -705,3 +706,7 @@ func Connectx(fd int, srcIf uint32, srcAddr, dstAddr Sockaddr, associd SaeAssocI
 //sys	write(fd int, p []byte) (n int, err error)
 //sys	mmap(addr uintptr, length uintptr, prot int, flag int, fd int, pos int64) (ret uintptr, err error)
 //sys	munmap(addr uintptr, length uintptr) (err error)
+//sys	readv(fd int, iovecs []Iovec) (n int, err error)
+//sys	preadv(fd int, iovecs []Iovec, offset int64) (n int, err error)
+//sys	writev(fd int, iovecs []Iovec) (n int, err error)
+//sys	pwritev(fd int, iovecs []Iovec, offset int64) (n int, err error)

@@ -37,27 +37,156 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"slices"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
+	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
 
+	"github.com/prometheus/client_golang/internal/github.com/golang/gddo/httputil"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp/internal"
 )
 
 const (
+	acceptHeader           = "Accept"
 	contentTypeHeader      = "Content-Type"
 	contentEncodingHeader  = "Content-Encoding"
 	acceptEncodingHeader   = "Accept-Encoding"
 	processStartTimeHeader = "Process-Start-Time-Unix"
+	varyHeader             = "Vary"
 )
 
+// Compression represents the content encodings handlers support for the HTTP
+// responses.
+type Compression string
+
+const (
+	Identity Compression = "identity"
+	Gzip     Compression = "gzip"
+	Zstd     Compression = "zstd"
+)
+
+func defaultCompressionFormats() []Compression {
+	if internal.NewZstdWriter != nil {
+		return []Compression{Identity, Gzip, Zstd}
+	}
+	return []Compression{Identity, Gzip}
+}
+
 var gzipPool = sync.Pool{
-	New: func() interface{} {
+	New: func() any {
 		return gzip.NewWriter(nil)
 	},
+}
+
+// coalescingGatherer wraps a TransactionalGatherer to deduplicate concurrent
+// Gather calls. When a Gather is already in flight, new callers join the
+// existing cycle and receive the same result once it completes. The underlying
+// done function is called exactly once, when the last joined caller releases.
+//
+// This prevents goroutine pile-up when the scrape rate is faster than the
+// time collectors need to produce metrics.
+type coalescingGatherer struct {
+	g     prometheus.TransactionalGatherer
+	mu    sync.Mutex
+	cycle *gatherCycle
+}
+
+// gatherCycle tracks a single in-flight Gather and all HTTP handlers sharing it.
+type gatherCycle struct {
+	ready chan struct{}       // closed when Gather completes; happens-before reads of mfs/err/done
+	mfs   []*dto.MetricFamily // canonical result, set before ready is closed; callers get a slices.Clone, the element values stay shared and must not be mutated
+	err   error               // set before ready is closed
+	done  func()              // underlying done callback; set before ready is closed
+	refs  int                 // number of handlers using this cycle; protected by coalescingGatherer.mu
+}
+
+var _ prometheus.TransactionalGatherer = (*coalescingGatherer)(nil) // compile-time interface check
+
+// errGatherPanicked is returned to callers that joined an in-flight coalesced
+// Gather whose underlying gatherer panicked. See the panic guard in Gather for
+// why joiners receive this error instead of the panic itself.
+var errGatherPanicked = errors.New("coalesced gather panicked")
+
+func (c *coalescingGatherer) Gather() ([]*dto.MetricFamily, func(), error) {
+	c.mu.Lock()
+	if cy := c.cycle; cy != nil {
+		// c.cycle is non-nil while Gather runs or handlers are still consuming its results.
+		cy.refs++
+		c.mu.Unlock()
+		<-cy.ready
+		// Each caller gets its own slice header so it can filter or reorder
+		// without racing other callers sharing this cycle. The *dto.MetricFamily
+		// values remain shared and must not be mutated in place.
+		return slices.Clone(cy.mfs), c.releaseFunc(cy), cy.err
+	}
+	cy := &gatherCycle{
+		ready: make(chan struct{}),
+		done:  func() {},
+		refs:  1,
+	}
+	c.cycle = cy
+	c.mu.Unlock()
+
+	// Guard against a panic in c.g.Gather. The common case, a panicking
+	// Collector, never reaches here: Registry.Gather recovers Collector panics
+	// and returns them as an error. This guard only covers the rare case where
+	// the wrapped gatherer itself panics.
+	//
+	// We deliberately do not recover: the leader's panic propagates and is
+	// handled by net/http exactly as it would be without coalescing. We only
+	// set cy.err before closing cy.ready so joiners waiting on <-cy.ready fail
+	// with that error instead of silently returning an empty, successful
+	// response, and we clear c.cycle so the next Gather starts a fresh cycle.
+	//
+	// The leader never runs its own releaseFunc on this path, so its ref is
+	// not decremented; that is harmless because the cycle is detached (c.cycle
+	// = nil) and cy.done is still the no-op set at construction (c.g.Gather
+	// panicked before assigning a real done). If cy.done is ever made non-nil
+	// before c.g.Gather runs, this path would need to release it.
+	panicked := true
+	defer func() {
+		if panicked {
+			c.mu.Lock()
+			if c.cycle == cy {
+				c.cycle = nil
+			}
+			c.mu.Unlock()
+			cy.err = errGatherPanicked // set before close: happens-before joiners' reads
+			close(cy.ready)
+		}
+	}()
+	cy.mfs, cy.done, cy.err = c.g.Gather()
+	panicked = false
+	close(cy.ready) // happens-before joiners' reads of cy.mfs/err/done
+
+	// Clone here too so cy.mfs stays the write-once canonical slice: joiners
+	// read it concurrently via slices.Clone, so the leader must not hand out
+	// (and potentially reorder) the same backing array.
+	return slices.Clone(cy.mfs), c.releaseFunc(cy), cy.err
+}
+
+// releaseFunc returns the done callback for one caller sharing cy.
+// When the last caller releases, the underlying done is invoked and the
+// cycle is cleared so the next Gather starts fresh.
+func (c *coalescingGatherer) releaseFunc(cy *gatherCycle) func() {
+	return func() {
+		c.mu.Lock()
+		cy.refs--
+		if cy.refs > 0 {
+			c.mu.Unlock()
+			return
+		}
+		// Last caller.
+		if c.cycle == cy {
+			c.cycle = nil
+		}
+		c.mu.Unlock()
+		cy.done() // called outside the lock to avoid holding it during done
+	}
 }
 
 // Handler returns an http.Handler for the prometheus.DefaultGatherer, using
@@ -69,6 +198,10 @@ var gzipPool = sync.Pool{
 // create multiple http.Handlers by separate calls of the Handler function, the
 // metrics used for instrumentation will be shared between them, providing
 // global scrape counts.
+//
+// The handler supports filtering metrics by name using the `name[]` query parameter.
+// Multiple metric names can be specified by providing the parameter multiple times.
+// When no name[] parameters are provided, all metrics are returned.
 //
 // This function is meant to cover the bulk of basic use cases. If you are doing
 // anything that requires more customization (including using a non-default
@@ -86,6 +219,10 @@ func Handler() http.Handler {
 // Gatherers, with non-default HandlerOpts, and/or with custom (or no)
 // instrumentation. Use the InstrumentMetricHandler function to apply the same
 // kind of instrumentation as it is used by the Handler function.
+//
+// The handler supports filtering metrics by name using the `name[]` query parameter.
+// Multiple metric names can be specified by providing the parameter multiple times.
+// When no name[] parameters are provided, all metrics are returned.
 func HandlerFor(reg prometheus.Gatherer, opts HandlerOpts) http.Handler {
 	return HandlerForTransactional(prometheus.ToTransactionalGatherer(reg), opts)
 }
@@ -93,7 +230,15 @@ func HandlerFor(reg prometheus.Gatherer, opts HandlerOpts) http.Handler {
 // HandlerForTransactional is like HandlerFor, but it uses transactional gather, which
 // can safely change in-place returned *dto.MetricFamily before call to `Gather` and after
 // call to `done` of that `Gather`.
+//
+// The handler supports filtering metrics by name using the `name[]` query parameter.
+// Multiple metric names can be specified by providing the parameter multiple times.
+// When no name[] parameters are provided, all metrics are returned.
 func HandlerForTransactional(reg prometheus.TransactionalGatherer, opts HandlerOpts) http.Handler {
+	if opts.CoalesceGather {
+		reg = &coalescingGatherer{g: reg}
+	}
+
 	var (
 		inFlightSem chan struct{}
 		errCnt      = prometheus.NewCounterVec(
@@ -119,6 +264,18 @@ func HandlerForTransactional(reg prometheus.TransactionalGatherer, opts HandlerO
 			} else {
 				panic(err)
 			}
+		}
+	}
+
+	// Select compression formats to offer based on default or user choice.
+	var compressions []string
+	if !opts.DisableCompression {
+		offers := defaultCompressionFormats()
+		if len(opts.OfferedCompressions) > 0 {
+			offers = opts.OfferedCompressions
+		}
+		for _, comp := range offers {
+			compressions = append(compressions, string(comp))
 		}
 	}
 
@@ -159,28 +316,47 @@ func HandlerForTransactional(reg prometheus.TransactionalGatherer, opts HandlerO
 			}
 		}
 
-		var contentType expfmt.Format
-		if opts.EnableOpenMetrics {
-			contentType = expfmt.NegotiateIncludingOpenMetrics(req.Header)
-		} else {
-			contentType = expfmt.Negotiate(req.Header)
+		var (
+			contentType     expfmt.Format
+			acceptedFormats = opts.AcceptedFormats
+		)
+		if len(acceptedFormats) == 0 {
+			acceptedFormats = expfmt.DefaultAcceptedFormats()
+			if opts.EnableOpenMetrics {
+				acceptedFormats = expfmt.DefaultOpenMetricsAcceptedFormats()
+			}
 		}
-		header := rsp.Header()
-		header.Set(contentTypeHeader, string(contentType))
+		contentType = expfmt.NegotiateAccept(req.Header, acceptedFormats...)
+		rsp.Header().Add(varyHeader, acceptHeader)
+		if len(compressions) > 0 {
+			rsp.Header().Add(varyHeader, acceptEncodingHeader)
+		}
+		rsp.Header().Set(contentTypeHeader, string(contentType))
 
-		w := io.Writer(rsp)
-		if !opts.DisableCompression && gzipAccepted(req.Header) {
-			header.Set(contentEncodingHeader, "gzip")
-			gz := gzipPool.Get().(*gzip.Writer)
-			defer gzipPool.Put(gz)
-
-			gz.Reset(w)
-			defer gz.Close()
-
-			w = gz
+		w, encodingHeader, closeWriter, err := negotiateEncodingWriter(req, rsp, compressions)
+		if err != nil {
+			if opts.ErrorLog != nil {
+				opts.ErrorLog.Println("error getting writer", err)
+			}
+			w = io.Writer(rsp)
+			encodingHeader = string(Identity)
 		}
 
-		enc := expfmt.NewEncoder(w, contentType)
+		defer closeWriter()
+
+		// Set Content-Encoding only when data is compressed
+		if encodingHeader != string(Identity) {
+			rsp.Header().Set(contentEncodingHeader, encodingHeader)
+		}
+
+		var (
+			enc     expfmt.Encoder
+			encOpts []expfmt.EncoderOption
+		)
+		if opts.EnableOpenMetricsTextCreatedSamples {
+			encOpts = append(encOpts, expfmt.WithCreatedLines())
+		}
+		enc = expfmt.NewEncoder(w, contentType, encOpts...)
 
 		// handleError handles the error according to opts.ErrorHandling
 		// and returns true if we have to abort after the handling.
@@ -206,7 +382,24 @@ func HandlerForTransactional(reg prometheus.TransactionalGatherer, opts HandlerO
 			return false
 		}
 
+		// Build metric name filter set from query params (if any). The URL
+		// can be nil on hand-constructed requests.
+		var metricFilter map[string]struct{}
+		if req.URL != nil {
+			if metricNames := req.URL.Query()["name[]"]; len(metricNames) > 0 {
+				metricFilter = make(map[string]struct{}, len(metricNames))
+				for _, name := range metricNames {
+					metricFilter[name] = struct{}{}
+				}
+			}
+		}
+
 		for _, mf := range mfs {
+			if metricFilter != nil {
+				if _, ok := metricFilter[mf.GetName()]; !ok {
+					continue
+				}
+			}
 			if handleError(enc.Encode(mf)) {
 				return
 			}
@@ -314,7 +507,7 @@ const (
 // log.Logger from the standard library implements this interface, and it is
 // easy to implement by custom loggers, if they don't do so already anyway.
 type Logger interface {
-	Println(v ...interface{})
+	Println(v ...any)
 }
 
 // HandlerOpts specifies options how to serve metrics via an http.Handler. The
@@ -343,14 +536,58 @@ type HandlerOpts struct {
 	// no effect on the HTTP status code because ErrorHandling is set to
 	// ContinueOnError.
 	Registry prometheus.Registerer
-	// If DisableCompression is true, the handler will never compress the
-	// response, even if requested by the client.
+	// DisableCompression disables the response encoding (compression) and
+	// encoding negotiation. If true, the handler will
+	// never compress the response, even if requested
+	// by the client and the OfferedCompressions field is set.
 	DisableCompression bool
+	// OfferedCompressions is a set of encodings (compressions) handler will
+	// try to offer when negotiating with the client. This defaults to identity, gzip
+	// and zstd.
+	// NOTE: If handler can't agree with the client on the encodings or
+	// unsupported or empty encodings are set in OfferedCompressions,
+	// handler always fallbacks to no compression (identity), for
+	// compatibility reasons. In such cases ErrorLog will be used if set.
+	OfferedCompressions []Compression
 	// The number of concurrent HTTP requests is limited to
 	// MaxRequestsInFlight. Additional requests are responded to with 503
 	// Service Unavailable and a suitable message in the body. If
 	// MaxRequestsInFlight is 0 or negative, no limit is applied.
 	MaxRequestsInFlight int
+	// CoalesceGather, if true, deduplicates concurrent Gather calls so that
+	// only one collection runs at a time. Additional requests that arrive
+	// while a Gather is in flight will receive the same result once it
+	// completes. This prevents goroutine pile-up when the scrape rate is
+	// faster than the time collectors need to produce metrics.
+	//
+	// When enabled, concurrent scrapers share a single metric snapshot per
+	// collection cycle. Each request receives its own copy of the returned
+	// slice, so filtering or reordering it (for example via name[] query
+	// parameters) is safe. The pointed-to MetricFamily values are still
+	// shared: the built-in handler only reads them, so this is safe in
+	// practice, but a custom TransactionalGatherer that mutates the returned
+	// families in place after Gather returns must not use this option.
+	//
+	// Because the snapshot is shared, a request that arrives while a cycle is
+	// in flight receives that cycle's result even though collection began
+	// before the request; two scrapers joined to one cycle observe the same
+	// timestamps rather than independently gathered data.
+	//
+	// Consider using CoalesceGather together with Timeout. Timeout bounds the
+	// client-facing response time and keeps at most one collection running at
+	// a time, but it does not cancel the underlying Gather: a joined request
+	// that times out still holds a MaxRequestsInFlight slot until the shared
+	// collection completes.
+	//
+	// Panic handling: a panicking Collector is already turned into an error by
+	// the registry, so joiners receive that error like any other. In the rare
+	// case where the wrapped gatherer itself panics, the panicking request's
+	// panic propagates as usual (handled by net/http), while requests that
+	// joined the same cycle receive an error rather than an empty response.
+	//
+	// NOTE: This option is experimental and may change or be removed in a
+	// future release.
+	CoalesceGather bool
 	// If handling a request takes longer than Timeout, it is responded to
 	// with 503 ServiceUnavailable and a suitable Message. No timeout is
 	// applied if Timeout is 0 or negative. Note that with the current
@@ -358,8 +595,9 @@ type HandlerOpts struct {
 	// described above (and even that only if sending of the body hasn't
 	// started yet), while the bulk work of gathering all the metrics keeps
 	// running in the background (with the eventual result to be thrown
-	// away). Until the implementation is improved, it is recommended to
-	// implement a separate timeout in potentially slow Collectors.
+	// away). When CoalesceGather is enabled, only one such background Gather
+	// can be in flight at a time. It is also recommended to implement a
+	// separate timeout in potentially slow Collectors.
 	Timeout time.Duration
 	// If true, the experimental OpenMetrics encoding is added to the
 	// possible options during content negotiation. Note that Prometheus
@@ -370,7 +608,24 @@ type HandlerOpts struct {
 	// a trailing ".0" if they would otherwise look like integer numbers
 	// (which changes the identity of the resulting series on the Prometheus
 	// server).
+	//
+	// Note that setting AcceptedFormats overrides this option.
 	EnableOpenMetrics bool
+	// EnableOpenMetricsTextCreatedSamples specifies if this handler should add, extra, synthetic
+	// Created Timestamps for counters, histograms and summaries, which for the current
+	// version of OpenMetrics are defined as extra series with the same name and "_created"
+	// suffix. See also the OpenMetrics specification for more details
+	// https://github.com/prometheus/OpenMetrics/blob/v1.0.0/specification/OpenMetrics.md#counter-1
+	//
+	// Created timestamps are used to improve the accuracy of reset detection,
+	// but the way it's designed in OpenMetrics 1.0 it also dramatically increases cardinality
+	// if the scraper does not handle those metrics correctly (converting to created timestamp
+	// instead of leaving those series as-is). New OpenMetrics versions might improve
+	// this situation.
+	//
+	// Prometheus introduced the feature flag 'created-timestamp-zero-ingestion'
+	// in version 2.50.0 to handle this situation.
+	EnableOpenMetricsTextCreatedSamples bool
 	// ProcessStartTime allows setting process start timevalue that will be exposed
 	// with "Process-Start-Time-Unix" response header along with the metrics
 	// payload. This allow callers to have efficient transformations to cumulative
@@ -379,19 +634,18 @@ type HandlerOpts struct {
 	// NOTE: This feature is experimental and not covered by OpenMetrics or Prometheus
 	// exposition format.
 	ProcessStartTime time.Time
-}
-
-// gzipAccepted returns whether the client will accept gzip-encoded content.
-func gzipAccepted(header http.Header) bool {
-	a := header.Get(acceptEncodingHeader)
-	parts := strings.Split(a, ",")
-	for _, part := range parts {
-		part = strings.TrimSpace(part)
-		if part == "gzip" || strings.HasPrefix(part, "gzip;") {
-			return true
-		}
-	}
-	return false
+	// AcceptedFormats allows customizing the formats the handler will negotiate
+	// with the client based on the request's Accept header.
+	// The client's Accept header and q-values take precedence, but the order of
+	// formats in AcceptedFormats specifies the server's preference order used as a
+	// tie-breaker (e.g. for wildcard "*/*" requests or equal q-values) and fallback.
+	// If empty, the default set is used (expfmt.DefaultAcceptedFormats()).
+	// If empty and EnableOpenMetrics is true, stable OpenMetrics formats are negotiated
+	// (expfmt.DefaultOpenMetricsAcceptedFormats()).
+	// This is useful for testing experimental formats (e.g. OpenMetrics 2.0)
+	// or restricting the formats you want to allow.
+	// Using EnableOpenMetrics with an empty AcceptedFormats is still the recommended option for the majority of cases.
+	AcceptedFormats []expfmt.Format
 }
 
 // httpError removes any content-encoding header and then calls http.Error with
@@ -405,4 +659,37 @@ func httpError(rsp http.ResponseWriter, err error) {
 		"An error has occurred while serving metrics:\n\n"+err.Error(),
 		http.StatusInternalServerError,
 	)
+}
+
+// negotiateEncodingWriter reads the Accept-Encoding header from a request and
+// selects the right compression based on an allow-list of supported
+// compressions. It returns a writer implementing the compression and the
+// correct value that the caller can set in the response header.
+func negotiateEncodingWriter(r *http.Request, rw io.Writer, compressions []string) (_ io.Writer, encodingHeaderValue string, closeWriter func(), _ error) {
+	if len(compressions) == 0 {
+		return rw, string(Identity), func() {}, nil
+	}
+
+	// TODO(mrueg): Replace internal/github.com/gddo once https://github.com/golang/go/issues/19307 is implemented.
+	selected := httputil.NegotiateContentEncoding(r, compressions)
+
+	switch selected {
+	case "zstd":
+		if internal.NewZstdWriter == nil {
+			// The content encoding was not implemented yet.
+			return nil, "", func() {}, fmt.Errorf("content compression format not recognized: %s. Valid formats are: %s", selected, defaultCompressionFormats())
+		}
+		writer, closeWriter, err := internal.NewZstdWriter(rw)
+		return writer, selected, closeWriter, err
+	case "gzip":
+		gz := gzipPool.Get().(*gzip.Writer)
+		gz.Reset(rw)
+		return gz, selected, func() { _ = gz.Close(); gzipPool.Put(gz) }, nil
+	case "identity":
+		// This means the content is not compressed.
+		return rw, selected, func() {}, nil
+	default:
+		// The content encoding was not implemented yet.
+		return nil, "", func() {}, fmt.Errorf("content compression format not recognized: %s. Valid formats are: %s", selected, defaultCompressionFormats())
+	}
 }

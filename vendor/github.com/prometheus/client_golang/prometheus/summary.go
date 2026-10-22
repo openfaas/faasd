@@ -25,7 +25,6 @@ import (
 	dto "github.com/prometheus/client_model/go"
 
 	"github.com/beorn7/perks/quantile"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -100,6 +99,9 @@ type SummaryOpts struct {
 	// Metrics with the same fully-qualified name must have the same Help
 	// string.
 	Help string
+
+	// Unit provides the unit of this Summary.
+	Unit string
 
 	// ConstLabels are used to attach fixed labels to this metric. Metrics
 	// with the same fully-qualified name must have the same label names in
@@ -181,11 +183,12 @@ type SummaryVecOpts struct {
 // NewSummary creates a new Summary based on the provided SummaryOpts.
 func NewSummary(opts SummaryOpts) Summary {
 	return newSummary(
-		NewDesc(
+		V2.NewDesc(
 			BuildFQName(opts.Namespace, opts.Subsystem, opts.Name),
 			opts.Help,
-			nil,
+			UnconstrainedLabels(nil),
 			opts.ConstLabels,
+			WithUnit(opts.Unit),
 		),
 		opts,
 	)
@@ -243,6 +246,7 @@ func newSummary(desc *Desc, opts SummaryOpts, labelValues ...string) Summary {
 
 	s := &summary{
 		desc: desc,
+		now:  opts.now,
 
 		objectives:       opts.Objectives,
 		sortedObjectives: make([]float64, 0, len(opts.Objectives)),
@@ -280,6 +284,8 @@ type summary struct {
 
 	desc *Desc
 
+	now func() time.Time
+
 	objectives       map[float64]float64
 	sortedObjectives []float64
 
@@ -307,7 +313,7 @@ func (s *summary) Observe(v float64) {
 	s.bufMtx.Lock()
 	defer s.bufMtx.Unlock()
 
-	now := time.Now()
+	now := s.now()
 	if now.After(s.hotBufExpTime) {
 		s.asyncFlush(now)
 	}
@@ -326,12 +332,12 @@ func (s *summary) Write(out *dto.Metric) error {
 	s.bufMtx.Lock()
 	s.mtx.Lock()
 	// Swap bufs even if hotBuf is empty to set new hotBufExpTime.
-	s.swapBufs(time.Now())
+	s.swapBufs(s.now())
 	s.bufMtx.Unlock()
 
 	s.flushColdBuf()
-	sum.SampleCount = proto.Uint64(s.cnt)
-	sum.SampleSum = proto.Float64(s.sum)
+	sum.SampleCount = new(s.cnt)
+	sum.SampleSum = new(s.sum)
 
 	for _, rank := range s.sortedObjectives {
 		var q float64
@@ -341,8 +347,8 @@ func (s *summary) Write(out *dto.Metric) error {
 			q = s.headStream.Query(rank)
 		}
 		qs = append(qs, &dto.Quantile{
-			Quantile: proto.Float64(rank),
-			Value:    proto.Float64(q),
+			Quantile: new(rank),
+			Value:    new(q),
 		})
 	}
 
@@ -505,8 +511,8 @@ func (s *noObjectivesSummary) Write(out *dto.Metric) error {
 	}
 
 	sum := &dto.Summary{
-		SampleCount:      proto.Uint64(count),
-		SampleSum:        proto.Float64(math.Float64frombits(atomic.LoadUint64(&coldCounts.sumBits))),
+		SampleCount:      new(count),
+		SampleSum:        new(math.Float64frombits(atomic.LoadUint64(&coldCounts.sumBits))),
 		CreatedTimestamp: s.createdTs,
 	}
 
@@ -575,6 +581,7 @@ func (v2) NewSummaryVec(opts SummaryVecOpts) *SummaryVec {
 		opts.Help,
 		opts.VariableLabels,
 		opts.ConstLabels,
+		WithUnit(opts.Unit),
 	)
 	return &SummaryVec{
 		MetricVec: NewMetricVec(desc, func(lvs ...string) Metric {
@@ -710,13 +717,13 @@ func (s *constSummary) Write(out *dto.Metric) error {
 	}
 	qs := make([]*dto.Quantile, 0, len(s.quantiles))
 
-	sum.SampleCount = proto.Uint64(s.count)
-	sum.SampleSum = proto.Float64(s.sum)
+	sum.SampleCount = new(s.count)
+	sum.SampleSum = new(s.sum)
 
 	for rank, q := range s.quantiles {
 		qs = append(qs, &dto.Quantile{
-			Quantile: proto.Float64(rank),
-			Value:    proto.Float64(q),
+			Quantile: new(rank),
+			Value:    new(q),
 		})
 	}
 
@@ -778,6 +785,48 @@ func MustNewConstSummary(
 	labelValues ...string,
 ) Metric {
 	m, err := NewConstSummary(desc, count, sum, quantiles, labelValues...)
+	if err != nil {
+		panic(err)
+	}
+	return m
+}
+
+// NewConstSummaryWithCreatedTimestamp does the same thing as NewConstSummary but sets the created timestamp.
+func NewConstSummaryWithCreatedTimestamp(
+	desc *Desc,
+	count uint64,
+	sum float64,
+	quantiles map[float64]float64,
+	ct time.Time,
+	labelValues ...string,
+) (Metric, error) {
+	if desc.err != nil {
+		return nil, desc.err
+	}
+	if err := validateLabelValues(labelValues, len(desc.variableLabels.names)); err != nil {
+		return nil, err
+	}
+	return &constSummary{
+		desc:       desc,
+		count:      count,
+		sum:        sum,
+		quantiles:  quantiles,
+		labelPairs: MakeLabelPairs(desc, labelValues),
+		createdTs:  timestamppb.New(ct),
+	}, nil
+}
+
+// MustNewConstSummaryWithCreatedTimestamp is a version of NewConstSummaryWithCreatedTimestamp that panics where
+// NewConstSummaryWithCreatedTimestamp would have returned an error.
+func MustNewConstSummaryWithCreatedTimestamp(
+	desc *Desc,
+	count uint64,
+	sum float64,
+	quantiles map[float64]float64,
+	ct time.Time,
+	labelValues ...string,
+) Metric {
+	m, err := NewConstSummaryWithCreatedTimestamp(desc, count, sum, quantiles, ct, labelValues...)
 	if err != nil {
 		panic(err)
 	}

@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"math"
 	"os"
 	"path/filepath"
@@ -596,13 +597,13 @@ func WithUser(userstr string) SpecOpts {
 		setProcess(s)
 		s.Process.User.AdditionalGids = nil
 		// While the Linux kernel allows the max UID to be MaxUint32 - 2,
-                // and the OCI Runtime Spec has no definition about the max UID,
-                // the runc implementation is known to require the UID to be <= MaxInt32.
-                //
-                // containerd follows runc's limitation here.
-                //
-                // In future we may relax this limitation to allow MaxUint32 - 2,
-                // or, amend the OCI Runtime Spec to codify the implementation limitation.
+		// and the OCI Runtime Spec has no definition about the max UID,
+		// the runc implementation is known to require the UID to be <= MaxInt32.
+		//
+		// containerd follows runc's limitation here.
+		//
+		// In future we may relax this limitation to allow MaxUint32 - 2,
+		// or, amend the OCI Runtime Spec to codify the implementation limitation.
 		const (
 			minUserID  = 0
 			maxUserID  = math.MaxInt32
@@ -623,13 +624,24 @@ func WithUser(userstr string) SpecOpts {
 			return nil
 		}
 
+		isErrRange := func(err error) bool {
+			var numErr *strconv.NumError
+			return errors.As(err, &numErr) && numErr.Err == strconv.ErrRange
+		}
+
 		parts := strings.Split(userstr, ":")
 		switch len(parts) {
 		case 1:
 			v, err := strconv.Atoi(parts[0])
-			if err != nil || v < minUserID || v > maxUserID {
-				// if we cannot parse as an int32 then try to see if it is a username
+			if err != nil {
+				if isErrRange(err) {
+					return fmt.Errorf("invalid USER value %q: uid out of range", userstr)
+				}
+				// Non-numeric user value; treat it as a username.
 				return WithUsername(userstr)(ctx, client, c, s)
+			}
+			if v < minUserID || v > maxUserID {
+				return fmt.Errorf("invalid USER value %q: uid out of range", userstr)
 			}
 			return WithUserID(uint32(v))(ctx, client, c, s)
 		case 2:
@@ -639,14 +651,24 @@ func WithUser(userstr string) SpecOpts {
 			)
 			var uid, gid uint32
 			v, err := strconv.Atoi(parts[0])
-			if err != nil || v < minUserID || v > maxUserID {
+			if err != nil {
+				if isErrRange(err) {
+					return fmt.Errorf("invalid USER value %q: uid out of range", userstr)
+				}
 				username = parts[0]
+			} else if v < minUserID || v > maxUserID {
+				return fmt.Errorf("invalid USER value %q: uid out of range", userstr)
 			} else {
 				uid = uint32(v)
 			}
 			v, err = strconv.Atoi(parts[1])
-			if err != nil || v < minGroupID || v > maxGroupID {
+			if err != nil {
+				if isErrRange(err) {
+					return fmt.Errorf("invalid USER value %q: gid out of range", userstr)
+				}
 				groupname = parts[1]
+			} else if v < minGroupID || v > maxGroupID {
+				return fmt.Errorf("invalid USER value %q: gid out of range", userstr)
 			} else {
 				gid = uint32(v)
 			}
@@ -910,7 +932,12 @@ func WithAppendAdditionalGroups(groups ...string) SpecOpts {
 			if err != nil {
 				return err
 			}
-			ugroups, groupErr := user.ParseGroupFile(gpath)
+			var ugroups []user.Group
+			f, groupErr := openBoundedUserFile(gpath)
+			if groupErr == nil {
+				ugroups, groupErr = user.ParseGroup(f)
+				f.Close()
+			}
 			if groupErr != nil && !os.IsNotExist(groupErr) {
 				return groupErr
 			}
@@ -1070,7 +1097,12 @@ func UserFromPath(root string, filter func(user.User) bool) (user.User, error) {
 	if err != nil {
 		return user.User{}, err
 	}
-	users, err := user.ParsePasswdFileFilter(ppath, filter)
+	f, err := openBoundedUserFile(ppath)
+	if err != nil {
+		return user.User{}, err
+	}
+	defer f.Close()
+	users, err := user.ParsePasswdFilter(f, filter)
 	if err != nil {
 		return user.User{}, err
 	}
@@ -1090,7 +1122,12 @@ func GIDFromPath(root string, filter func(user.Group) bool) (gid uint32, err err
 	if err != nil {
 		return 0, err
 	}
-	groups, err := user.ParseGroupFileFilter(gpath, filter)
+	f, err := openBoundedUserFile(gpath)
+	if err != nil {
+		return 0, err
+	}
+	defer f.Close()
+	groups, err := user.ParseGroupFilter(f, filter)
 	if err != nil {
 		return 0, err
 	}
@@ -1106,7 +1143,12 @@ func getSupplementalGroupsFromPath(root string, filter func(user.Group) bool) ([
 	if err != nil {
 		return []uint32{}, err
 	}
-	groups, err := user.ParseGroupFileFilter(gpath, filter)
+	f, err := openBoundedUserFile(gpath)
+	if err != nil {
+		return []uint32{}, err
+	}
+	defer f.Close()
+	groups, err := user.ParseGroupFilter(f, filter)
 	if err != nil {
 		return []uint32{}, err
 	}
@@ -1649,4 +1691,59 @@ func WithWindowsNetworkNamespace(ns string) SpecOpts {
 		s.Windows.Network.NetworkNamespace = ns
 		return nil
 	}
+}
+
+// maxUserFileBytes caps how much data is read from any user-database file
+// opened via openBoundedUserFile. Real systems keep these files well under
+// 1 MiB; 10 MiB is generous headroom while keeping peak memory during
+// user.ParsePasswd/ParseGroup bounded to single-digit MiB.
+const maxUserFileBytes = 10 << 20
+
+// openBoundedUserFile opens path and returns an io.ReadCloser that errors out
+// if more than maxUserFileBytes are read from it. Non-regular sources are
+// rejected before opening, so callers never block on FIFOs or device files
+// and parsers never consume bytes from them.
+//
+// openBoundedUserFile does NOT perform any path validation. It does not guard
+// against symlink traversal or paths that escape the container rootfs, and it
+// follows symlinks both when stat-ing and when opening. Callers are responsible
+// for confining path to the intended root beforehand (e.g. via fs.RootPath,
+// which resolves every symlink component and re-anchors absolute links to the
+// root) and must not pass attacker-controlled, unresolved paths directly.
+func openBoundedUserFile(path string) (io.ReadCloser, error) {
+	info, err := os.Stat(path)
+	if err != nil {
+		return nil, err
+	}
+	if !info.Mode().IsRegular() {
+		return nil, fmt.Errorf("%s is not a regular file", path)
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	return &limitedFile{
+		Closer: f,
+		// Allow one byte past the cap so an overflow surfaces as an
+		// error rather than a silent EOF that the parser would treat as
+		// a clean end-of-file (and miss any entries past the cap).
+		r:    &io.LimitedReader{R: f, N: maxUserFileBytes + 1},
+		name: path,
+	}, nil
+}
+
+// limitedFile is an io.ReadCloser whose Read returns an error once more than
+// maxUserFileBytes have been read.
+type limitedFile struct {
+	io.Closer
+	r    *io.LimitedReader
+	name string
+}
+
+func (l *limitedFile) Read(p []byte) (int, error) {
+	n, err := l.r.Read(p)
+	if l.r.N == 0 {
+		return n, fmt.Errorf("%q exceeds %d bytes", l.name, maxUserFileBytes)
+	}
+	return n, err
 }

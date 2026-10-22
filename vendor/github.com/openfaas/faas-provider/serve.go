@@ -42,7 +42,7 @@ func Serve(ctx context.Context, handlers *types.FaaSHandlers, config *types.FaaS
 
 		credentials, err := reader.Read()
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalf("failed to read basic auth credentials: %s", err)
 		}
 
 		handlers.FunctionLister = auth.DecorateWithBasicAuth(handlers.FunctionLister, credentials)
@@ -54,6 +54,10 @@ func Serve(ctx context.Context, handlers *types.FaaSHandlers, config *types.FaaS
 		handlers.Info = auth.DecorateWithBasicAuth(handlers.Info, credentials)
 		handlers.Secrets = auth.DecorateWithBasicAuth(handlers.Secrets, credentials)
 		handlers.Logs = auth.DecorateWithBasicAuth(handlers.Logs, credentials)
+
+		if handlers.Telemetry != nil {
+			handlers.Telemetry = auth.DecorateWithBasicAuth(handlers.Telemetry, credentials)
+		}
 	}
 
 	hm := newHttpMetrics()
@@ -99,7 +103,12 @@ func Serve(ctx context.Context, handlers *types.FaaSHandlers, config *types.FaaS
 	r.HandleFunc("/function/{name:["+NameExpression+"]+}/{params:.*}", proxyHandler)
 
 	if handlers.Health != nil {
-		r.HandleFunc("/healthz", handlers.Health).Methods(http.MethodGet)
+		r.HandleFunc("/healthz", handlers.Health).
+			Methods(http.MethodGet, http.MethodHead)
+	}
+
+	if handlers.Telemetry != nil {
+		r.HandleFunc("/system/telemetry", hm.InstrumentHandler(handlers.Telemetry, "")).Methods(http.MethodGet)
 	}
 
 	r.HandleFunc("/metrics", promhttp.Handler().ServeHTTP)

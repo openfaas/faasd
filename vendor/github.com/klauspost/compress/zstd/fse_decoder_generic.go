@@ -1,5 +1,4 @@
-//go:build !amd64 || appengine || !gc || noasm
-// +build !amd64 appengine !gc noasm
+//go:build (!amd64 && !arm64) || !gc || noasm
 
 package zstd
 
@@ -8,8 +7,8 @@ import (
 	"fmt"
 )
 
-// buildDtable will build the decoding table.
-func (s *fseDecoder) buildDtable() error {
+// fillDtable fills the decoding table; see buildDtable.
+func (s *fseDecoder) fillDtable(ext *symbolExt) error {
 	tableSize := uint32(1 << s.actualTableLog)
 	highThreshold := tableSize - 1
 	symbolNext := s.stateTable[:256]
@@ -20,10 +19,9 @@ func (s *fseDecoder) buildDtable() error {
 			if v == -1 {
 				s.dt[highThreshold].setAddBits(uint8(i))
 				highThreshold--
-				symbolNext[i] = 1
-			} else {
-				symbolNext[i] = uint16(v)
+				v = 1
 			}
+			symbolNext[i] = uint16(v)
 		}
 	}
 
@@ -35,10 +33,12 @@ func (s *fseDecoder) buildDtable() error {
 		for ss, v := range s.norm[:s.symbolLen] {
 			for i := 0; i < int(v); i++ {
 				s.dt[position].setAddBits(uint8(ss))
-				position = (position + step) & tableMask
-				for position > highThreshold {
+				for {
 					// lowprob area
 					position = (position + step) & tableMask
+					if position <= highThreshold {
+						break
+					}
 				}
 			}
 		}
@@ -56,7 +56,6 @@ func (s *fseDecoder) buildDtable() error {
 			nextState := symbolNext[symbol]
 			symbolNext[symbol] = nextState + 1
 			nBits := s.actualTableLog - byte(highBits(uint32(nextState)))
-			s.dt[u&maxTableMask].setNBits(nBits)
 			newState := (nextState << nBits) - tableSize
 			if newState > tableSize {
 				return fmt.Errorf("newState (%d) outside table size (%d)", newState, tableSize)
@@ -65,7 +64,7 @@ func (s *fseDecoder) buildDtable() error {
 				// Seems weird that this is possible with nbits > 0.
 				return fmt.Errorf("newState (%d) == oldState (%d) and no bits", newState, u)
 			}
-			s.dt[u&maxTableMask].setNewState(newState)
+			s.dt[u&maxTableMask] = ext[symbol] | decSymbol(nBits) | decSymbol(newState)<<16
 		}
 	}
 	return nil

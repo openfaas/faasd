@@ -28,6 +28,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -128,13 +129,11 @@ func NewProxyClient(timeout time.Duration, maxIdleConns int, maxIdleConnsPerHost
 		Transport: &http.Transport{
 			Proxy: http.ProxyFromEnvironment,
 			DialContext: (&net.Dialer{
-				Timeout:   timeout,
-				KeepAlive: 1 * time.Second,
-				DualStack: true,
+				Timeout: timeout,
 			}).DialContext,
 			MaxIdleConns:          maxIdleConns,
 			MaxIdleConnsPerHost:   maxIdleConnsPerHost,
-			IdleConnTimeout:       120 * time.Millisecond,
+			IdleConnTimeout:       5 * time.Second,
 			TLSHandshakeTimeout:   10 * time.Second,
 			ExpectContinueTimeout: 1500 * time.Millisecond,
 		},
@@ -189,7 +188,7 @@ func proxyRequest(w http.ResponseWriter, originalReq *http.Request, proxyClient 
 		}()
 	}
 
-	if v := originalReq.Header.Get("Accept"); v == "text/event-stream" {
+	if requiresStdlibProxy(originalReq) {
 		originalReq.URL = proxyReq.URL
 
 		reverseProxy.ServeHTTP(w, originalReq)
@@ -208,7 +207,10 @@ func proxyRequest(w http.ResponseWriter, originalReq *http.Request, proxyClient 
 	}
 
 	if response.Body != nil {
-		defer response.Body.Close()
+		defer func() {
+			_, _ = io.Copy(io.Discard, response.Body) // drain to EOF
+			_ = response.Body.Close()
+		}()
 	}
 
 	clientHeader := w.Header()
@@ -219,6 +221,16 @@ func proxyRequest(w http.ResponseWriter, originalReq *http.Request, proxyClient 
 	if response.Body != nil {
 		io.Copy(w, response.Body)
 	}
+}
+
+// requiresStdlibProxy checks if the request should be proxied using the standard library reverse proxy.
+// Support SSE, NDSJON and WebSockets through the stdlib reverse proxy
+func requiresStdlibProxy(req *http.Request) bool {
+	acceptHeader := strings.ToLower(req.Header.Get("Accept"))
+
+	return strings.Contains(acceptHeader, "text/event-stream") ||
+		strings.Contains(acceptHeader, "application/x-ndjson") ||
+		req.Header.Get("Upgrade") == "websocket"
 }
 
 // buildProxyRequest creates a request object for the proxy request, it will ensure that
