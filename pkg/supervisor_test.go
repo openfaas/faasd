@@ -2,13 +2,20 @@ package pkg
 
 import (
 	"path"
+	"path/filepath"
 	"reflect"
 	"testing"
+
+	compose "github.com/compose-spec/compose-go/types"
 )
 
 func Test_ParseCompose(t *testing.T) {
 
 	wd := "testdata"
+	mountBase, err := filepath.Abs(wd)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	want := map[string]Service{
 		"basic-auth-plugin": {
@@ -22,11 +29,11 @@ func Test_ParseCompose(t *testing.T) {
 			},
 			Mounts: []Mount{
 				{
-					Src:  path.Join(wd, "secrets", "basic-auth-password"),
+					Src:  path.Join(mountBase, "secrets", "basic-auth-password"),
 					Dest: path.Join("/run/secrets", "basic-auth-password"),
 				},
 				{
-					Src:  path.Join(wd, "secrets", "basic-auth-user"),
+					Src:  path.Join(mountBase, "secrets", "basic-auth-user"),
 					Dest: path.Join("/run/secrets", "basic-auth-user"),
 				},
 			},
@@ -42,7 +49,7 @@ func Test_ParseCompose(t *testing.T) {
 			Image: "docker.io/prom/prometheus:v2.14.0",
 			Mounts: []Mount{
 				{
-					Src:  path.Join(wd, "prometheus.yml"),
+					Src:  path.Join(mountBase, "prometheus.yml"),
 					Dest: "/etc/prometheus/prometheus.yml",
 				},
 			},
@@ -67,16 +74,17 @@ func Test_ParseCompose(t *testing.T) {
 			Image: "docker.io/openfaas/gateway:0.18.17",
 			Mounts: []Mount{
 				{
-					Src:  path.Join(wd, "secrets", "basic-auth-password"),
+					Src:  path.Join(mountBase, "secrets", "basic-auth-password"),
 					Dest: path.Join("/run/secrets", "basic-auth-password"),
 				},
 				{
-					Src:  path.Join(wd, "secrets", "basic-auth-user"),
+					Src:  path.Join(mountBase, "secrets", "basic-auth-user"),
 					Dest: path.Join("/run/secrets", "basic-auth-user"),
 				},
 			},
 			Caps:      []string{"CAP_NET_RAW"},
-			DependsOn: []string{"nats"},
+			DependsOn: []string{"basic-auth-plugin", "nats", "prometheus"},
+			Ports:     []ServicePort{{Port: 8080, TargetPort: 8080}},
 		},
 		"queue-worker": {
 			Name: "queue-worker",
@@ -94,11 +102,11 @@ func Test_ParseCompose(t *testing.T) {
 			Image: "docker.io/openfaas/queue-worker:0.11.2",
 			Mounts: []Mount{
 				{
-					Src:  path.Join(wd, "secrets", "basic-auth-password"),
+					Src:  path.Join(mountBase, "secrets", "basic-auth-password"),
 					Dest: path.Join("/run/secrets", "basic-auth-password"),
 				},
 				{
-					Src:  path.Join(wd, "secrets", "basic-auth-user"),
+					Src:  path.Join(mountBase, "secrets", "basic-auth-user"),
 					Dest: path.Join("/run/secrets", "basic-auth-user"),
 				},
 			},
@@ -124,8 +132,9 @@ func Test_ParseCompose(t *testing.T) {
 		exp, ok := want[service.Name]
 
 		if service.Name == "gateway" {
-			if len(service.DependsOn) == 0 {
-				t.Fatalf("gateway should have at least one depends_on entry")
+			equalStringSlice(t, exp.DependsOn, service.DependsOn)
+			if !reflect.DeepEqual(exp.Ports, service.Ports) {
+				t.Fatalf("want ports %+v, got %+v", exp.Ports, service.Ports)
 			}
 		}
 
@@ -246,5 +255,75 @@ func Test_GetArchSuffix(t *testing.T) {
 func testArchGetter(arch, os string) ArchGetter {
 	return func() (string, string) {
 		return arch, os
+	}
+}
+
+func Test_ConvertPorts(t *testing.T) {
+	tests := []struct {
+		name      string
+		published string
+		want      uint32
+		wantErr   bool
+	}{
+		{name: "published", published: "8080", want: 8080},
+		{name: "unpublished"},
+		{name: "invalid", published: "invalid", wantErr: true},
+		{name: "out of range", published: "65536", wantErr: true},
+		{name: "reversed range", published: "8082-8080", wantErr: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ports, err := convertPorts([]compose.ServicePortConfig{{Published: tt.published, Target: 80, HostIP: "127.0.0.1"}})
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if tt.wantErr {
+				return
+			}
+			want := []ServicePort{{Port: tt.want, TargetPort: 80, HostIP: "127.0.0.1"}}
+			if !reflect.DeepEqual(ports, want) {
+				t.Fatalf("want %+v, got %+v", want, ports)
+			}
+		})
+	}
+}
+
+func Test_LoadComposeFile_Arm64Interpolation(t *testing.T) {
+	config, err := LoadComposeFileWithArch("testdata", "docker-compose.yaml", testArchGetter("aarch64", "Linux"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, service := range config.Services {
+		if service.Name == "gateway" {
+			if service.Image != "docker.io/openfaas/gateway:0.18.17-arm64" {
+				t.Fatalf("unexpected image: %s", service.Image)
+			}
+			return
+		}
+	}
+	t.Fatal("gateway missing")
+}
+
+func Test_ParseCompose_PortRanges(t *testing.T) {
+	for _, tc := range []struct {
+		ports string
+		want  []ServicePort
+	}{
+		{"8080-8082:80-82", []ServicePort{{Port: 8080, TargetPort: 80}, {Port: 8081, TargetPort: 81}, {Port: 8082, TargetPort: 82}}},
+		{"8080-8082:80", []ServicePort{{Port: 8080, TargetPort: 80}, {Port: 8081, TargetPort: 80}, {Port: 8082, TargetPort: 80}}},
+	} {
+		t.Run(tc.ports, func(t *testing.T) {
+			ports, err := compose.ParsePortConfig(tc.ports)
+			if err != nil {
+				t.Fatal(err)
+			}
+			services, err := ParseCompose(&compose.Project{Services: compose.Services{{Name: "test", Ports: ports}}})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !reflect.DeepEqual(services[0].Ports, tc.want) {
+				t.Fatalf("want %+v, got %+v", tc.want, services[0].Ports)
+			}
+		})
 	}
 }

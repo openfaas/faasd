@@ -19,6 +19,7 @@ import (
 	"github.com/containerd/containerd/oci"
 	gocni "github.com/containerd/go-cni"
 	"github.com/distribution/reference"
+	"github.com/docker/go-connections/nat"
 	"github.com/openfaas/faasd/pkg/cninetwork"
 	"github.com/openfaas/faasd/pkg/service"
 	"github.com/pkg/errors"
@@ -329,8 +330,8 @@ func withOCIArgs(args []string) oci.SpecOpts {
 // ParseCompose converts a docker-compose Config into a service list that we can
 // pass to the supervisor client Start.
 //
-// The only anticipated error is a failure if the value mounts are not of type 	`bind`.
-func ParseCompose(config *compose.Config) ([]Service, error) {
+// Only bind mounts are supported.
+func ParseCompose(config *compose.Project) ([]Service, error) {
 	services := make([]Service, len(config.Services))
 	for idx, s := range config.Services {
 		// environment is a map[string]*string
@@ -360,6 +361,17 @@ func ParseCompose(config *compose.Config) ([]Service, error) {
 			})
 		}
 
+		var dependsOn []string
+		for name := range s.DependsOn {
+			dependsOn = append(dependsOn, name)
+		}
+		sort.Strings(dependsOn)
+
+		ports, err := convertPorts(s.Ports)
+		if err != nil {
+			return nil, errors.Wrapf(err, "invalid ports for service %q", s.Name)
+		}
+
 		services[idx] = Service{
 			Name:  s.Name,
 			Image: s.Image,
@@ -368,43 +380,48 @@ func ParseCompose(config *compose.Config) ([]Service, error) {
 			Caps:      s.CapAdd,
 			Env:       env,
 			Mounts:    mounts,
-			DependsOn: s.DependsOn,
+			DependsOn: dependsOn,
 			User:      s.User,
-			Ports:     convertPorts(s.Ports),
+			Ports:     ports,
 		}
 	}
 
 	return services, nil
 }
 
-func convertPorts(ports []compose.ServicePortConfig) []ServicePort {
+func convertPorts(ports []compose.ServicePortConfig) ([]ServicePort, error) {
 	servicePorts := []ServicePort{}
 	for _, p := range ports {
-		servicePorts = append(servicePorts, ServicePort{
-			Port:       p.Published,
-			TargetPort: p.Target,
-			HostIP:     p.HostIP,
-		})
+		var start, end uint64
+		if p.Published != "" {
+			var err error
+			start, end, err = nat.ParsePortRange(p.Published)
+			if err != nil {
+				return nil, errors.Wrapf(err, "invalid published port %q", p.Published)
+			}
+		}
+		for published := start; published <= end; published++ {
+			servicePorts = append(servicePorts, ServicePort{
+				Port:       uint32(published),
+				TargetPort: p.Target,
+				HostIP:     p.HostIP,
+			})
+		}
 	}
 
-	return servicePorts
+	return servicePorts, nil
 }
 
 // LoadComposeFile is a helper method for loading a docker-compose file
-func LoadComposeFile(wd string, file string) (*compose.Config, error) {
+func LoadComposeFile(wd string, file string) (*compose.Project, error) {
 	return LoadComposeFileWithArch(wd, file, env.GetClientArch)
 }
 
 // LoadComposeFileWithArch is a helper method for loading a docker-compose file
-func LoadComposeFileWithArch(wd string, file string, archGetter ArchGetter) (*compose.Config, error) {
+func LoadComposeFileWithArch(wd string, file string, archGetter ArchGetter) (*compose.Project, error) {
 
 	file = path.Join(wd, file)
 	b, err := os.ReadFile(file)
-	if err != nil {
-		return nil, err
-	}
-
-	config, err := loader.ParseYAML(b)
 	if err != nil {
 		return nil, err
 	}
@@ -415,7 +432,7 @@ func LoadComposeFileWithArch(wd string, file string, archGetter ArchGetter) (*co
 	}
 
 	var files []compose.ConfigFile
-	files = append(files, compose.ConfigFile{Filename: file, Config: config})
+	files = append(files, compose.ConfigFile{Filename: file, Content: b})
 
 	return loader.Load(compose.ConfigDetails{
 		WorkingDir:  wd,
@@ -423,6 +440,8 @@ func LoadComposeFileWithArch(wd string, file string, archGetter ArchGetter) (*co
 		Environment: map[string]string{
 			"ARCH_SUFFIX": archSuffix,
 		},
+	}, func(options *loader.Options) {
+		options.SetProjectName("faasd", false)
 	})
 }
 

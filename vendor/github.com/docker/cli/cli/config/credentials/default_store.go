@@ -1,21 +1,29 @@
 package credentials
 
-import (
-	exec "golang.org/x/sys/execabs"
-)
+import "os/exec"
 
-// DetectDefaultStore return the default credentials store for the platform if
-// the store executable is available.
-func DetectDefaultStore(store string) string {
+// DetectDefaultStore returns the credentials store to use if no user-defined
+// custom helper is passed.
+//
+// Some platforms define a preferred helper, in which case it attempts to look
+// up the helper binary before falling back to the platform's default.
+//
+// If no user-defined helper is passed, and no helper is found, it returns an
+// empty string, which means credentials are stored unencrypted in the CLI's
+// config-file without the use of a credentials store.
+func DetectDefaultStore(customStore string) string {
+	if customStore != "" {
+		// use user-defined
+		return customStore
+	}
+
 	platformDefault := defaultCredentialsStore()
-
-	// user defined or no default for platform
-	if store != "" || platformDefault == "" {
-		return store
+	if platformDefault == "" {
+		return ""
 	}
 
-	if _, err := exec.LookPath(remoteCredentialsPrefix + platformDefault); err == nil {
-		return platformDefault
+	if _, err := exec.LookPath(remoteCredentialsPrefix + platformDefault); err != nil {
+		return ""
 	}
-	return ""
+	return platformDefault
 }

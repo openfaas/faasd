@@ -3,22 +3,25 @@ package selinux
 import (
 	"bufio"
 	"bytes"
-	"crypto/rand"
-	"encoding/binary"
 	"errors"
 	"fmt"
 	"io"
 	"io/fs"
 	"math/big"
+	"math/rand/v2"
 	"os"
 	"os/user"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
 
-	"github.com/opencontainers/selinux/pkg/pwalkdir"
+	"github.com/cyphar/filepath-securejoin/pathrs-lite"
+	"github.com/cyphar/filepath-securejoin/pathrs-lite/procfs"
 	"golang.org/x/sys/unix"
+
+	"github.com/opencontainers/selinux/pkg/pwalkdir"
 )
 
 const (
@@ -27,6 +30,7 @@ const (
 	selinuxDir       = "/etc/selinux/"
 	selinuxUsersDir  = "contexts/users"
 	defaultContexts  = "contexts/default_contexts"
+	failsafeContext  = "contexts/failsafe_context"
 	selinuxConfig    = selinuxDir + "config"
 	selinuxfsMount   = "/sys/fs/selinux"
 	selinuxTypeTag   = "SELINUXTYPE"
@@ -35,17 +39,15 @@ const (
 )
 
 type selinuxState struct {
-	mcsList       map[string]bool
-	selinuxfs     string
-	selinuxfsOnce sync.Once
-	enabledSet    bool
-	enabled       bool
+	mcsList    map[string]struct{}
+	enabledSet bool
+	enabled    bool
 	sync.Mutex
 }
 
 type level struct {
 	cats *big.Int
-	sens uint
+	sens int
 }
 
 type mlsRange struct {
@@ -53,10 +55,19 @@ type mlsRange struct {
 	high *level
 }
 
+type openReaderCloser func() (io.ReadCloser, error)
+
+func createOpener(path string) openReaderCloser {
+	return func() (io.ReadCloser, error) {
+		return os.Open(path)
+	}
+}
+
 type defaultSECtx struct {
-	userRdr           io.Reader
+	openUserRdr       openReaderCloser
 	verifier          func(string) error
-	defaultRdr        io.Reader
+	openDefaultRdr    openReaderCloser
+	openFailsafeRdr   openReaderCloser
 	user, level, scon string
 }
 
@@ -69,30 +80,15 @@ const (
 
 var (
 	readOnlyFileLabel string
-	state             = selinuxState{
-		mcsList: make(map[string]bool),
+
+	state = selinuxState{
+		mcsList: make(map[string]struct{}),
 	}
-
-	// for attrPath()
-	attrPathOnce   sync.Once
-	haveThreadSelf bool
-
-	// for policyRoot()
-	policyRootOnce sync.Once
-	policyRootVal  string
-
-	// for label()
-	loadLabelsOnce sync.Once
-	labels         map[string]string
 )
 
-func policyRoot() string {
-	policyRootOnce.Do(func() {
-		policyRootVal = filepath.Join(selinuxDir, readConfig(selinuxTypeTag))
-	})
-
-	return policyRootVal
-}
+var policyRoot = sync.OnceValue(func() string {
+	return filepath.Join(selinuxDir, readConfig(selinuxTypeTag))
+})
 
 func (s *selinuxState) setEnable(enabled bool) bool {
 	s.Lock()
@@ -132,12 +128,13 @@ func verifySELinuxfsMount(mnt string) bool {
 		if err == nil {
 			break
 		}
-		if err == unix.EAGAIN || err == unix.EINTR { //nolint:errorlint // unix errors are bare
+		if err == unix.EAGAIN || err == unix.EINTR {
 			continue
 		}
 		return false
 	}
 
+	//#nosec G115 -- there is no overflow here.
 	if uint32(buf.Type) != uint32(unix.SELINUX_MAGIC) {
 		return false
 	}
@@ -148,7 +145,12 @@ func verifySELinuxfsMount(mnt string) bool {
 	return true
 }
 
-func findSELinuxfs() string {
+// getSelinuxMountPoint returns the path to the mountpoint of an selinuxfs
+// filesystem or an empty string if no mountpoint is found.  Selinuxfs is
+// a proc-like pseudo-filesystem that exposes the SELinux policy API to
+// processes.  The existence of an selinuxfs mount is used to determine
+// whether SELinux is currently enabled or not.
+var getSelinuxMountPoint = sync.OnceValue(func() string {
 	// fast path: check the default mount first
 	if verifySELinuxfsMount(selinuxfsMount) {
 		return selinuxfsMount
@@ -180,7 +182,7 @@ func findSELinuxfs() string {
 			return mnt
 		}
 	}
-}
+})
 
 // findSELinuxfsMount returns a next selinuxfs mount point found,
 // if there is one, or an empty string in case of EOF or error.
@@ -201,23 +203,6 @@ func findSELinuxfsMount(s *bufio.Scanner) string {
 	}
 
 	return ""
-}
-
-func (s *selinuxState) getSELinuxfs() string {
-	s.selinuxfsOnce.Do(func() {
-		s.selinuxfs = findSELinuxfs()
-	})
-
-	return s.selinuxfs
-}
-
-// getSelinuxMountPoint returns the path to the mountpoint of an selinuxfs
-// filesystem or an empty string if no mountpoint is found.  Selinuxfs is
-// a proc-like pseudo-filesystem that exposes the SELinux policy API to
-// processes.  The existence of an selinuxfs mount is used to determine
-// whether SELinux is currently enabled or not.
-func getSelinuxMountPoint() string {
-	return state.getSELinuxfs()
 }
 
 // getEnabled returns whether SELinux is currently enabled.
@@ -244,51 +229,12 @@ func readConfig(target string) string {
 			// Skip comments
 			continue
 		}
-		fields := bytes.SplitN(line, []byte{'='}, 2)
-		if len(fields) != 2 {
-			continue
-		}
-		if bytes.Equal(fields[0], []byte(target)) {
-			return string(bytes.Trim(fields[1], `"`))
+		key, val, ok := bytes.Cut(line, []byte{'='})
+		if ok && string(key) == target {
+			return string(bytes.Trim(val, `"`))
 		}
 	}
 	return ""
-}
-
-func isProcHandle(fh *os.File) error {
-	var buf unix.Statfs_t
-
-	for {
-		err := unix.Fstatfs(int(fh.Fd()), &buf)
-		if err == nil {
-			break
-		}
-		if err != unix.EINTR { //nolint:errorlint // unix errors are bare
-			return &os.PathError{Op: "fstatfs", Path: fh.Name(), Err: err}
-		}
-	}
-	if buf.Type != unix.PROC_SUPER_MAGIC {
-		return fmt.Errorf("file %q is not on procfs", fh.Name())
-	}
-
-	return nil
-}
-
-func readCon(fpath string) (string, error) {
-	if fpath == "" {
-		return "", ErrEmptyPath
-	}
-
-	in, err := os.Open(fpath)
-	if err != nil {
-		return "", err
-	}
-	defer in.Close()
-
-	if err := isProcHandle(in); err != nil {
-		return "", err
-	}
-	return readConFd(in)
 }
 
 func readConFd(in *os.File) (string, error) {
@@ -297,6 +243,177 @@ func readConFd(in *os.File) (string, error) {
 		return "", err
 	}
 	return string(bytes.TrimSuffix(data, []byte{0})), nil
+}
+
+func writeConFd(out *os.File, val string) error {
+	var err error
+	if val != "" {
+		_, err = out.Write([]byte(val))
+	} else {
+		_, err = out.Write(nil)
+	}
+	return err
+}
+
+// openProcThreadSelf is a small wrapper around [procfs.Handle.OpenThreadSelf]
+// and [pathrs.Reopen] to make "one-shot opens" slightly more ergonomic. The
+// provided mode must be os.O_* flags to indicate what mode the returned file
+// should be opened with (flags like os.O_CREAT and os.O_EXCL are not
+// supported).
+//
+// If no error occurred, the returned handle is guaranteed to be exactly
+// /proc/thread-self/<subpath> with no tricky mounts or symlinks causing you to
+// operate on an unexpected path (with some caveats on pre-openat2 or
+// pre-fsopen kernels).
+func openProcThreadSelf(subpath string, mode int) (*os.File, procfs.ProcThreadSelfCloser, error) {
+	if subpath == "" {
+		return nil, nil, ErrEmptyPath
+	}
+
+	proc, err := procfs.OpenProcRoot()
+	if err != nil {
+		return nil, nil, err
+	}
+	defer proc.Close()
+
+	handle, closer, err := proc.OpenThreadSelf(subpath)
+	if err != nil {
+		return nil, nil, fmt.Errorf("open /proc/thread-self/%s handle: %w", subpath, err)
+	}
+	defer handle.Close() // we will return a re-opened handle
+
+	file, err := pathrs.Reopen(handle, mode)
+	if err != nil {
+		closer()
+		return nil, nil, fmt.Errorf("reopen /proc/thread-self/%s handle (%#x): %w", subpath, mode, err)
+	}
+	return file, closer, nil
+}
+
+// Read the contents of /proc/thread-self/<fpath>.
+func readConThreadSelf(fpath string) (string, error) {
+	in, closer, err := openProcThreadSelf(fpath, os.O_RDONLY|unix.O_CLOEXEC)
+	if err != nil {
+		return "", err
+	}
+	defer closer()
+	defer in.Close()
+
+	return readConFd(in)
+}
+
+// Write <val> to /proc/thread-self/<fpath>.
+func writeConThreadSelf(fpath, val string) error {
+	if val == "" {
+		if !getEnabled() {
+			return nil
+		}
+	}
+
+	out, closer, err := openProcThreadSelf(fpath, os.O_WRONLY|unix.O_CLOEXEC)
+	if err != nil {
+		return err
+	}
+	defer closer()
+	defer out.Close()
+
+	return writeConFd(out, val)
+}
+
+// openProcSelf is a small wrapper around [procfs.Handle.OpenSelf] and
+// [pathrs.Reopen] to make "one-shot opens" slightly more ergonomic. The
+// provided mode must be os.O_* flags to indicate what mode the returned file
+// should be opened with (flags like os.O_CREAT and os.O_EXCL are not
+// supported).
+//
+// If no error occurred, the returned handle is guaranteed to be exactly
+// /proc/self/<subpath> with no tricky mounts or symlinks causing you to
+// operate on an unexpected path (with some caveats on pre-openat2 or
+// pre-fsopen kernels).
+func openProcSelf(subpath string, mode int) (*os.File, error) {
+	if subpath == "" {
+		return nil, ErrEmptyPath
+	}
+
+	proc, err := procfs.OpenProcRoot()
+	if err != nil {
+		return nil, err
+	}
+	defer proc.Close()
+
+	handle, err := proc.OpenSelf(subpath)
+	if err != nil {
+		return nil, fmt.Errorf("open /proc/self/%s handle: %w", subpath, err)
+	}
+	defer handle.Close() // we will return a re-opened handle
+
+	file, err := pathrs.Reopen(handle, mode)
+	if err != nil {
+		return nil, fmt.Errorf("reopen /proc/self/%s handle (%#x): %w", subpath, mode, err)
+	}
+	return file, nil
+}
+
+// Read the contents of /proc/self/<fpath>.
+func readConSelf(fpath string) (string, error) {
+	in, err := openProcSelf(fpath, os.O_RDONLY|unix.O_CLOEXEC)
+	if err != nil {
+		return "", err
+	}
+	defer in.Close()
+
+	return readConFd(in)
+}
+
+// Write <val> to /proc/self/<fpath>.
+func writeConSelf(fpath, val string) error {
+	if val == "" {
+		if !getEnabled() {
+			return nil
+		}
+	}
+
+	out, err := openProcSelf(fpath, os.O_WRONLY|unix.O_CLOEXEC)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	return writeConFd(out, val)
+}
+
+// openProcPid is a small wrapper around [procfs.Handle.OpenPid] and
+// [pathrs.Reopen] to make "one-shot opens" slightly more ergonomic. The
+// provided mode must be os.O_* flags to indicate what mode the returned file
+// should be opened with (flags like os.O_CREAT and os.O_EXCL are not
+// supported).
+//
+// If no error occurred, the returned handle is guaranteed to be exactly
+// /proc/self/<subpath> with no tricky mounts or symlinks causing you to
+// operate on an unexpected path (with some caveats on pre-openat2 or
+// pre-fsopen kernels).
+func openProcPid(pid int, subpath string, mode int) (*os.File, error) {
+	if subpath == "" {
+		return nil, ErrEmptyPath
+	}
+
+	proc, err := procfs.OpenProcRoot()
+	if err != nil {
+		return nil, err
+	}
+	defer proc.Close()
+
+	handle, err := proc.OpenPid(pid, subpath)
+	if err != nil {
+		return nil, fmt.Errorf("open /proc/%d/%s handle: %w", pid, subpath, err)
+	}
+	defer handle.Close() // we will return a re-opened handle
+
+	file, err := pathrs.Reopen(handle, mode)
+	if err != nil {
+		return nil, fmt.Errorf("reopen /proc/%d/%s handle (%#x): %w", pid, subpath, mode, err)
+	}
+	return file, nil
 }
 
 // classIndex returns the int index for an object class in the loaded policy,
@@ -328,8 +445,8 @@ func lSetFileLabel(fpath string, label string) error {
 		if err == nil {
 			break
 		}
-		if err != unix.EINTR { //nolint:errorlint // unix errors are bare
-			return &os.PathError{Op: "lsetxattr", Path: fpath, Err: err}
+		if err != unix.EINTR {
+			return &os.PathError{Op: fmt.Sprintf("lsetxattr(label=%s)", label), Path: fpath, Err: err}
 		}
 	}
 
@@ -347,8 +464,8 @@ func setFileLabel(fpath string, label string) error {
 		if err == nil {
 			break
 		}
-		if err != unix.EINTR { //nolint:errorlint // unix errors are bare
-			return &os.PathError{Op: "setxattr", Path: fpath, Err: err}
+		if err != unix.EINTR {
+			return &os.PathError{Op: fmt.Sprintf("setxattr(label=%s)", label), Path: fpath, Err: err}
 		}
 	}
 
@@ -392,78 +509,17 @@ func lFileLabel(fpath string) (string, error) {
 }
 
 func setFSCreateLabel(label string) error {
-	return writeCon(attrPath("fscreate"), label)
-}
-
-// fsCreateLabel returns the default label the kernel which the kernel is using
-// for file system objects created by this task. "" indicates default.
-func fsCreateLabel() (string, error) {
-	return readCon(attrPath("fscreate"))
-}
-
-// currentLabel returns the SELinux label of the current process thread, or an error.
-func currentLabel() (string, error) {
-	return readCon(attrPath("current"))
+	return writeConThreadSelf("attr/fscreate", label)
 }
 
 // pidLabel returns the SELinux label of the given pid, or an error.
 func pidLabel(pid int) (string, error) {
-	return readCon(fmt.Sprintf("/proc/%d/attr/current", pid))
-}
-
-// ExecLabel returns the SELinux label that the kernel will use for any programs
-// that are executed by the current process thread, or an error.
-func execLabel() (string, error) {
-	return readCon(attrPath("exec"))
-}
-
-func writeCon(fpath, val string) error {
-	if fpath == "" {
-		return ErrEmptyPath
-	}
-	if val == "" {
-		if !getEnabled() {
-			return nil
-		}
-	}
-
-	out, err := os.OpenFile(fpath, os.O_WRONLY, 0)
+	it, err := openProcPid(pid, "attr/current", os.O_RDONLY|unix.O_CLOEXEC)
 	if err != nil {
-		return err
+		return "", nil
 	}
-	defer out.Close()
-
-	if err := isProcHandle(out); err != nil {
-		return err
-	}
-
-	if val != "" {
-		_, err = out.Write([]byte(val))
-	} else {
-		_, err = out.Write(nil)
-	}
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func attrPath(attr string) string {
-	// Linux >= 3.17 provides this
-	const threadSelfPrefix = "/proc/thread-self/attr"
-
-	attrPathOnce.Do(func() {
-		st, err := os.Stat(threadSelfPrefix)
-		if err == nil && st.Mode().IsDir() {
-			haveThreadSelf = true
-		}
-	})
-
-	if haveThreadSelf {
-		return filepath.Join(threadSelfPrefix, attr)
-	}
-
-	return filepath.Join("/proc/self/task", strconv.Itoa(unix.Gettid()), "attr", attr)
+	defer it.Close()
+	return readConFd(it)
 }
 
 // canonicalizeContext takes a context string and writes it to the kernel
@@ -490,25 +546,24 @@ func catsToBitset(cats string) (*big.Int, error) {
 
 	catlist := strings.Split(cats, ",")
 	for _, r := range catlist {
-		ranges := strings.SplitN(r, ".", 2)
-		if len(ranges) > 1 {
-			catstart, err := parseLevelItem(ranges[0], category)
+		if s, e, ok := strings.Cut(r, "."); ok {
+			catstart, err := parseLevelItem(s, category)
 			if err != nil {
 				return nil, err
 			}
-			catend, err := parseLevelItem(ranges[1], category)
+			catend, err := parseLevelItem(e, category)
 			if err != nil {
 				return nil, err
 			}
 			for i := catstart; i <= catend; i++ {
-				bitset.SetBit(bitset, int(i), 1)
+				bitset.SetBit(bitset, i, 1)
 			}
 		} else {
-			cat, err := parseLevelItem(ranges[0], category)
+			cat, err := parseLevelItem(r, category)
 			if err != nil {
 				return nil, err
 			}
-			bitset.SetBit(bitset, int(cat), 1)
+			bitset.SetBit(bitset, cat, 1)
 		}
 	}
 
@@ -516,29 +571,30 @@ func catsToBitset(cats string) (*big.Int, error) {
 }
 
 // parseLevelItem parses and verifies that a sensitivity or category are valid
-func parseLevelItem(s string, sep levelItem) (uint, error) {
+func parseLevelItem(s string, sep levelItem) (int, error) {
 	if len(s) < minSensLen || levelItem(s[0]) != sep {
 		return 0, ErrLevelSyntax
 	}
-	val, err := strconv.ParseUint(s[1:], 10, 32)
+	const bitSize = 31 // Make sure the result fits into signed int32.
+	val, err := strconv.ParseUint(s[1:], 10, bitSize)
 	if err != nil {
 		return 0, err
 	}
 
-	return uint(val), nil
+	return int(val), nil
 }
 
 // parseLevel fills a level from a string that contains
 // a sensitivity and categories
 func (l *level) parseLevel(levelStr string) error {
-	lvl := strings.SplitN(levelStr, ":", 2)
-	sens, err := parseLevelItem(lvl[0], sensitivity)
+	s, c, ok := strings.Cut(levelStr, ":")
+	sens, err := parseLevelItem(s, sensitivity)
 	if err != nil {
 		return fmt.Errorf("failed to parse sensitivity: %w", err)
 	}
 	l.sens = sens
-	if len(lvl) > 1 {
-		cats, err := catsToBitset(lvl[1])
+	if ok {
+		cats, err := catsToBitset(c)
 		if err != nil {
 			return fmt.Errorf("failed to parse categories: %w", err)
 		}
@@ -551,25 +607,19 @@ func (l *level) parseLevel(levelStr string) error {
 // rangeStrToMLSRange marshals a string representation of a range.
 func rangeStrToMLSRange(rangeStr string) (*mlsRange, error) {
 	r := &mlsRange{}
-	l := strings.SplitN(rangeStr, "-", 2)
-
-	switch len(l) {
-	// rangeStr that has a low and a high level, e.g. s4:c0.c1023-s6:c0.c1023
-	case 2:
-		r.high = &level{}
-		if err := r.high.parseLevel(l[1]); err != nil {
-			return nil, fmt.Errorf("failed to parse high level %q: %w", l[1], err)
-		}
-		fallthrough
-	// rangeStr that is single level, e.g. s6:c0,c3,c5,c30.c1023
-	case 1:
-		r.low = &level{}
-		if err := r.low.parseLevel(l[0]); err != nil {
-			return nil, fmt.Errorf("failed to parse low level %q: %w", l[0], err)
-		}
+	lo, hi, ok := strings.Cut(rangeStr, "-")
+	r.low = &level{}
+	if err := r.low.parseLevel(lo); err != nil {
+		return nil, fmt.Errorf("failed to parse low level %q: %w", lo, err)
 	}
-
-	if r.high == nil {
+	if ok {
+		// rangeStr that has a low and a high level, e.g. s4:c0.c1023-s6:c0.c1023.
+		r.high = &level{}
+		if err := r.high.parseLevel(hi); err != nil {
+			return nil, fmt.Errorf("failed to parse high level %q: %w", hi, err)
+		}
+	} else {
+		// rangeStr that is single level, e.g. s6:c0,c3,c5,c30.c1023.
 		r.high = r.low
 	}
 
@@ -582,7 +632,8 @@ func bitsetToStr(c *big.Int) string {
 	var str string
 
 	length := 0
-	for i := int(c.TrailingZeroBits()); i < c.BitLen(); i++ {
+	i0 := int(c.TrailingZeroBits()) //#nosec G115 -- don't expect TralingZeroBits to return values with highest bit set.
+	for i := i0; i < c.BitLen(); i++ {
 		if c.Bit(i) == 0 {
 			continue
 		}
@@ -622,7 +673,7 @@ func (l *level) equal(l2 *level) bool {
 
 // String returns an mlsRange as a string.
 func (m mlsRange) String() string {
-	low := "s" + strconv.Itoa(int(m.low.sens))
+	low := "s" + strconv.Itoa(m.low.sens)
 	if m.low.cats != nil && m.low.cats.BitLen() > 0 {
 		low += ":" + bitsetToStr(m.low.cats)
 	}
@@ -631,26 +682,12 @@ func (m mlsRange) String() string {
 		return low
 	}
 
-	high := "s" + strconv.Itoa(int(m.high.sens))
+	high := "s" + strconv.Itoa(m.high.sens)
 	if m.high.cats != nil && m.high.cats.BitLen() > 0 {
 		high += ":" + bitsetToStr(m.high.cats)
 	}
 
 	return low + "-" + high
-}
-
-func max(a, b uint) uint {
-	if a > b {
-		return a
-	}
-	return b
-}
-
-func min(a, b uint) uint {
-	if a < b {
-		return a
-	}
-	return b
 }
 
 // calculateGlbLub computes the glb (greatest lower bound) and lub (least upper bound)
@@ -712,10 +749,10 @@ func readWriteCon(fpath string, val string) (string, error) {
 }
 
 // peerLabel retrieves the label of the client on the other side of a socket
-func peerLabel(fd uintptr) (string, error) {
-	l, err := unix.GetsockoptString(int(fd), unix.SOL_SOCKET, unix.SO_PEERSEC)
+func peerLabel(fd int) (string, error) {
+	l, err := unix.GetsockoptString(fd, unix.SOL_SOCKET, unix.SO_PEERSEC)
 	if err != nil {
-		return "", &os.PathError{Op: "getsockopt", Path: "fd " + strconv.Itoa(int(fd)), Err: err}
+		return "", &os.PathError{Op: "getsockopt", Path: "fd " + strconv.Itoa(fd), Err: err}
 	}
 	return l, nil
 }
@@ -723,14 +760,27 @@ func peerLabel(fd uintptr) (string, error) {
 // setKeyLabel takes a process label and tells the kernel to assign the
 // label to the next kernel keyring that gets created
 func setKeyLabel(label string) error {
-	err := writeCon("/proc/self/attr/keycreate", label)
+	// Rather than using /proc/thread-self, we want to use /proc/self to
+	// operate on the thread-group leader.
+	err := writeConSelf("attr/keycreate", label)
 	if errors.Is(err, os.ErrNotExist) {
 		return nil
 	}
 	if label == "" && errors.Is(err, os.ErrPermission) {
 		return nil
 	}
+	if errors.Is(err, unix.EACCES) && unix.Getpid() != unix.Gettid() {
+		return ErrNotTGLeader
+	}
 	return err
+}
+
+// KeyLabel retrieves the current kernel keyring label setting for this
+// thread-group.
+func keyLabel() (string, error) {
+	// Rather than using /proc/thread-self, we want to use /proc/self to
+	// operate on the thread-group leader.
+	return readConSelf("attr/keycreate")
 }
 
 // get returns the Context as a string
@@ -763,18 +813,34 @@ func newContext(label string) (Context, error) {
 // clearLabels clears all reserved labels
 func clearLabels() {
 	state.Lock()
-	state.mcsList = make(map[string]bool)
+	state.mcsList = make(map[string]struct{})
 	state.Unlock()
 }
 
-// reserveLabel reserves the MLS/MCS level component of the specified label
-func reserveLabel(label string) {
+// reserveLabel reserves the MLS/MCS level component of the specified label.
+func reserveLabel(label string) error {
 	if len(label) != 0 {
 		con := strings.SplitN(label, ":", 4)
 		if len(con) > 3 {
-			_ = mcsAdd(con[3])
+			return mcsAdd(con[3])
 		}
 	}
+
+	return nil
+}
+
+func checkLabel(label string) error {
+	if len(label) != 0 {
+		con := strings.SplitN(label, ":", 4)
+		if len(con) > 3 {
+			state.Lock()
+			defer state.Unlock()
+			if _, exist := state.mcsList[con[3]]; exist {
+				return ErrMCSAlreadyExists
+			}
+		}
+	}
+	return nil
 }
 
 func selinuxEnforcePath() string {
@@ -808,8 +874,7 @@ func enforceMode() int {
 // setEnforceMode sets the current SELinux mode Enforcing, Permissive.
 // Disabled is not valid, since this needs to be set at boot time.
 func setEnforceMode(mode int) error {
-	//nolint:gosec // ignore G306: permissions to be 0600 or less.
-	return os.WriteFile(selinuxEnforcePath(), []byte(strconv.Itoa(mode)), 0o644)
+	return os.WriteFile(selinuxEnforcePath(), []byte(strconv.Itoa(mode)), 0)
 }
 
 // defaultEnforceMode returns the systems default SELinux mode Enforcing,
@@ -825,16 +890,18 @@ func defaultEnforceMode() int {
 	return Disabled
 }
 
+// mcsAdd reserves a level. If the argument is empty or does not contain
+// MCS/MLS category component (no ":c"), it is ignored.
 func mcsAdd(mcs string) error {
-	if mcs == "" {
+	if !strings.Contains(mcs, ":c") {
 		return nil
 	}
 	state.Lock()
 	defer state.Unlock()
-	if state.mcsList[mcs] {
+	if _, exist := state.mcsList[mcs]; exist {
 		return ErrMCSAlreadyExists
 	}
-	state.mcsList[mcs] = true
+	state.mcsList[mcs] = struct{}{}
 	return nil
 }
 
@@ -844,41 +911,21 @@ func mcsDelete(mcs string) {
 	}
 	state.Lock()
 	defer state.Unlock()
-	state.mcsList[mcs] = false
-}
-
-func intToMcs(id int, catRange uint32) string {
-	var (
-		SETSIZE = int(catRange)
-		TIER    = SETSIZE
-		ORD     = id
-	)
-
-	if id < 1 || id > 523776 {
-		return ""
-	}
-
-	for ORD > TIER {
-		ORD -= TIER
-		TIER--
-	}
-	TIER = SETSIZE - TIER
-	ORD += TIER
-	return fmt.Sprintf("s0:c%d,c%d", TIER, ORD)
+	delete(state.mcsList, mcs)
 }
 
 func uniqMcs(catRange uint32) string {
 	var (
-		n      uint32
 		c1, c2 uint32
 		mcs    string
 	)
 
 	for {
-		_ = binary.Read(rand.Reader, binary.LittleEndian, &n)
-		c1 = n % catRange
-		_ = binary.Read(rand.Reader, binary.LittleEndian, &n)
-		c2 = n % catRange
+		//#nosec G404 -- using slightly more predictable MCS labels won't affect security, so it's fine to use math/rand/v2 here.
+		{
+			c1 = rand.Uint32N(catRange)
+			c2 = rand.Uint32N(catRange)
+		}
 		if c1 == c2 {
 			continue
 		} else if c1 > c2 {
@@ -916,11 +963,11 @@ func openContextFile() (*os.File, error) {
 	return os.Open(filepath.Join(policyRoot(), "contexts", "lxc_contexts"))
 }
 
-func loadLabels() {
-	labels = make(map[string]string)
+var loadLabels = sync.OnceValue(func() map[string]string {
+	labels := make(map[string]string)
 	in, err := openContextFile()
 	if err != nil {
-		return
+		return labels
 	}
 	defer in.Close()
 
@@ -936,25 +983,21 @@ func loadLabels() {
 			// Skip comments
 			continue
 		}
-		fields := bytes.SplitN(line, []byte{'='}, 2)
-		if len(fields) != 2 {
-			continue
+		if key, val, ok := bytes.Cut(line, []byte{'='}); ok {
+			key, val = bytes.TrimSpace(key), bytes.TrimSpace(val)
+			labels[string(key)] = string(bytes.Trim(val, `"`))
 		}
-		key, val := bytes.TrimSpace(fields[0]), bytes.TrimSpace(fields[1])
-		labels[string(key)] = string(bytes.Trim(val, `"`))
 	}
 
 	con, _ := NewContext(labels["file"])
 	con["level"] = fmt.Sprintf("s0:c%d,c%d", maxCategory-2, maxCategory-1)
 	privContainerMountLabel = con.get()
-	reserveLabel(privContainerMountLabel)
-}
+	_ = reserveLabel(privContainerMountLabel)
+	return labels
+})
 
 func label(key string) string {
-	loadLabelsOnce.Do(func() {
-		loadLabels()
-	})
-	return labels[key]
+	return loadLabels()[key]
 }
 
 // kvmContainerLabels returns the default processLabel and mountLabel to be used
@@ -968,6 +1011,15 @@ func kvmContainerLabels() (string, string) {
 	return addMcs(processLabel, label("file"))
 }
 
+func kvmContainerLabel() (string, error) {
+	processLabel := label("kvm_process")
+	if processLabel == "" {
+		processLabel = label("process")
+	}
+	pLabel, _, err := addMcsProc(processLabel)
+	return pLabel, err
+}
+
 // initContainerLabels returns the default processLabel and file labels to be
 // used for containers running an init system like systemd by the calling process.
 func initContainerLabels() (string, string) {
@@ -977,6 +1029,16 @@ func initContainerLabels() (string, string) {
 	}
 
 	return addMcs(processLabel, label("file"))
+}
+
+func initContainerLabel() (string, error) {
+	processLabel := label("init_process")
+	if processLabel == "" {
+		processLabel = label("process")
+	}
+
+	pLabel, _, err := addMcsProc(processLabel)
+	return pLabel, err
 }
 
 // containerLabels returns an allocated processLabel and fileLabel to be used for
@@ -1001,13 +1063,24 @@ func containerLabels() (processLabel string, fileLabel string) {
 	return addMcs(processLabel, fileLabel)
 }
 
-func addMcs(processLabel, fileLabel string) (string, string) {
-	scon, _ := NewContext(processLabel)
+func addMcsProc(processLabel string) (string, string, error) {
+	var mcs string
+	scon, err := NewContext(processLabel)
+	if err != nil {
+		return "", "", err
+	}
 	if scon["level"] != "" {
-		mcs := uniqMcs(CategoryRange)
+		mcs = uniqMcs(CategoryRange)
 		scon["level"] = mcs
 		processLabel = scon.Get()
-		scon, _ = NewContext(fileLabel)
+	}
+	return processLabel, mcs, nil
+}
+
+func addMcs(processLabel, fileLabel string) (string, string) {
+	processLabel, mcs, _ := addMcsProc(processLabel)
+	if mcs != "" {
+		scon, _ := NewContext(fileLabel)
 		scon["level"] = mcs
 		fileLabel = scon.Get()
 	}
@@ -1016,8 +1089,7 @@ func addMcs(processLabel, fileLabel string) (string, string) {
 
 // securityCheckContext validates that the SELinux label is understood by the kernel
 func securityCheckContext(val string) error {
-	//nolint:gosec // ignore G306: permissions to be 0600 or less.
-	return os.WriteFile(filepath.Join(getSelinuxMountPoint(), "context"), []byte(val), 0o644)
+	return os.WriteFile(filepath.Join(getSelinuxMountPoint(), "context"), []byte(val), 0)
 }
 
 // copyLevel returns a label with the MLS/MCS level from src label replaced on
@@ -1134,7 +1206,7 @@ func rchcon(fpath, label string) error { //revive:disable:cognitive-complexity
 	}
 	return pwalkdir.Walk(fpath, func(p string, _ fs.DirEntry, _ error) error {
 		if fastMode {
-			if cLabel, err := lFileLabel(fpath); err == nil && cLabel == label {
+			if cLabel, err := lFileLabel(p); err == nil && cLabel == label {
 				return nil
 			}
 		}
@@ -1173,6 +1245,111 @@ func dupSecOpt(src string) ([]string, error) {
 	}
 
 	return dup, nil
+}
+
+// checkGroup returns true if group's GID is in the list of GIDs gids.
+func checkGroup(group string, gids []string, lookupGroup func(string) (*user.Group, error)) bool {
+	grp, err := lookupGroup(group)
+	if err != nil {
+		return false
+	}
+
+	return slices.Contains(gids, grp.Gid)
+}
+
+// getSeUserFromReader reads the seusers file: https://www.man7.org/linux/man-pages/man5/seusers.5.html
+func getSeUserFromReader(username string, gids []string, r io.Reader, lookupGroup func(string) (*user.Group, error)) (seUser string, level string, err error) {
+	var defaultSeUser, defaultLevel string
+	var groupSeUser, groupLevel string
+
+	lineNum := -1
+	scanner := bufio.NewScanner(r)
+	for scanner.Scan() {
+		rawLine := scanner.Text()
+		lineNum++
+
+		// remove any trailing comments, then extra whitespace
+		line, _, _ := strings.Cut(rawLine, "#")
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+
+		userField, rest, ok := strings.Cut(line, ":")
+		if !ok {
+			return "", "", fmt.Errorf("line %d: malformed line", lineNum)
+		}
+		if userField == "" {
+			return "", "", fmt.Errorf("line %d: user_id or group_id is empty", lineNum)
+		}
+		seUserField, rest, ok := strings.Cut(rest, ":")
+		if seUserField == "" {
+			return "", "", fmt.Errorf("line %d: seuser_id is empty", lineNum)
+		}
+		var levelField string
+		// level is optional
+		if ok {
+			levelField = rest
+		}
+
+		// we found a match, return it
+		if userField == username {
+			return seUserField, levelField, nil
+		}
+
+		// if the first field starts with '%' it's a group, check if
+		// the user is a member of that group and set the group
+		// SELinux user and level if so
+		if userField[0] == '%' && groupSeUser == "" {
+			if checkGroup(userField[1:], gids, lookupGroup) {
+				groupSeUser = seUserField
+				groupLevel = levelField
+			}
+		} else if userField == "__default__" && defaultSeUser == "" {
+			defaultSeUser = seUserField
+			defaultLevel = levelField
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return "", "", fmt.Errorf("failed to read seusers file: %w", err)
+	}
+
+	if groupSeUser != "" {
+		return groupSeUser, groupLevel, nil
+	}
+	if defaultSeUser != "" {
+		return defaultSeUser, defaultLevel, nil
+	}
+
+	return "", "", fmt.Errorf("could not find SELinux user for %q login", username)
+}
+
+// getSeUserByName returns an SELinux user and MLS level that is
+// mapped to a given Linux user.
+func getSeUserByName(username string) (string, string, error) {
+	seUsersConf := filepath.Join(policyRoot(), "seusers")
+	confFile, err := os.Open(seUsersConf)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to open seusers file: %w", err)
+	}
+	defer confFile.Close()
+
+	usr, err := user.Lookup(username)
+	if err != nil {
+		return "", "", err
+	}
+	gids, err := usr.GroupIds()
+	if err != nil {
+		return "", "", err
+	}
+	gids = append([]string{usr.Gid}, gids...)
+
+	seUser, level, err := getSeUserFromReader(username, gids, confFile, user.LookupGroup)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to parse seusers file: %w", err)
+	}
+
+	return seUser, level, nil
 }
 
 // findUserInContext scans the reader for a valid SELinux context
@@ -1232,6 +1409,33 @@ func findUserInContext(context Context, r io.Reader, verifier func(string) error
 	return "", nil
 }
 
+// getFailsafeContext returns the context in the failsafe_context file:
+// https://www.man7.org/linux/man-pages/man5/failsafe_context.5.html
+func getFailsafeContext(context Context, r io.Reader, verifier func(string) error) (string, error) {
+	conn := make([]byte, 256)
+	limReader := io.LimitReader(r, int64(len(conn)))
+	_, err := limReader.Read(conn)
+	if err != nil {
+		return "", fmt.Errorf("failed to read failsafe context: %w", err)
+	}
+
+	conn = bytes.TrimSpace(conn)
+	toConns := strings.SplitN(string(conn), ":", 4)
+	if len(toConns) != 3 {
+		return "", nil
+	}
+
+	context["role"] = toConns[0]
+	context["type"] = toConns[1]
+
+	outConn := context.get()
+	if err := verifier(outConn); err != nil {
+		return "", err
+	}
+
+	return outConn, nil
+}
+
 func getDefaultContextFromReaders(c *defaultSECtx) (string, error) {
 	if c.verifier == nil {
 		return "", ErrVerifierNil
@@ -1246,18 +1450,45 @@ func getDefaultContextFromReaders(c *defaultSECtx) (string, error) {
 	context["user"] = c.user
 	context["level"] = c.level
 
-	conn, err := findUserInContext(context, c.userRdr, c.verifier)
+	userRdr, err := c.openUserRdr()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to open user context file: %w", err)
+	}
+	defer userRdr.Close()
+
+	conn, err := findUserInContext(context, userRdr, c.verifier)
+	if err != nil {
+		return "", fmt.Errorf("failed to read %q's user context file: %w", c.user, err)
 	}
 
 	if conn != "" {
 		return conn, nil
 	}
 
-	conn, err = findUserInContext(context, c.defaultRdr, c.verifier)
+	defaultRdr, err := c.openDefaultRdr()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to open default context file: %w", err)
+	}
+	defer defaultRdr.Close()
+
+	conn, err = findUserInContext(context, defaultRdr, c.verifier)
+	if err != nil {
+		return "", fmt.Errorf("failed to read default user context file: %w", err)
+	}
+
+	if conn != "" {
+		return conn, nil
+	}
+
+	failsafeRdr, err := c.openFailsafeRdr()
+	if err != nil {
+		return "", fmt.Errorf("failed to open failsafe context file: %w", err)
+	}
+	defer failsafeRdr.Close()
+
+	conn, err = getFailsafeContext(context, failsafeRdr, c.verifier)
+	if err != nil {
+		return "", fmt.Errorf("failed to read failsafe_context: %w", err)
 	}
 
 	if conn != "" {
@@ -1269,27 +1500,61 @@ func getDefaultContextFromReaders(c *defaultSECtx) (string, error) {
 
 func getDefaultContextWithLevel(user, level, scon string) (string, error) {
 	userPath := filepath.Join(policyRoot(), selinuxUsersDir, user)
-	fu, err := os.Open(userPath)
-	if err != nil {
-		return "", err
-	}
-	defer fu.Close()
-
 	defaultPath := filepath.Join(policyRoot(), defaultContexts)
-	fd, err := os.Open(defaultPath)
-	if err != nil {
-		return "", err
-	}
-	defer fd.Close()
+	failsafePath := filepath.Join(policyRoot(), failsafeContext)
 
 	c := defaultSECtx{
-		user:       user,
-		level:      level,
-		scon:       scon,
-		userRdr:    fu,
-		defaultRdr: fd,
-		verifier:   securityCheckContext,
+		user:            user,
+		level:           level,
+		scon:            scon,
+		openUserRdr:     createOpener(userPath),
+		openDefaultRdr:  createOpener(defaultPath),
+		openFailsafeRdr: createOpener(failsafePath),
+		verifier:        securityCheckContext,
 	}
 
 	return getDefaultContextFromReaders(&c)
+}
+
+func (k ProcessKind) keys() (primary, fallback string, ok bool) {
+	switch k {
+	case ProcessKindRegular:
+		return "process", "", true
+	case ProcessKindInit:
+		return "init_process", "process", true
+	case ProcessKindKVM:
+		return "kvm_process", "process", true
+	}
+	return "", "", false
+}
+
+func setProcessKind(cLabel string, k ProcessKind) (string, error) {
+	if cLabel == "" {
+		return "", nil
+	}
+	primary, fallback, ok := k.keys()
+	if !ok {
+		return "", fmt.Errorf("selinux.SetProcessKind: invalid ProcessKind %d", k)
+	}
+
+	src := label(primary)
+	if src == "" && fallback != "" {
+		src = label(fallback)
+	}
+	if src == "" {
+		return cLabel, nil
+	}
+
+	// Replace cLabel type with one from src.
+	srcCtx, err := newContext(src)
+	if err != nil {
+		return "", fmt.Errorf("selinux.SetProcessKind: invalid %s label %s: %w", primary, src, err)
+	}
+	dstCtx, err := newContext(cLabel)
+	if err != nil {
+		return "", fmt.Errorf("selinux.SetProcessKind: invalid label %s: %w", cLabel, err)
+	}
+
+	dstCtx["type"] = srcCtx["type"]
+	return dstCtx.get(), nil
 }

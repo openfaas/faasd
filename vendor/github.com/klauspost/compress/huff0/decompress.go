@@ -54,6 +54,10 @@ func ReadTable(in []byte, s *Scratch) (s2 *Scratch, remain []byte, err error) {
 		if len(in) < int(iSize) {
 			return s, nil, fmt.Errorf("input too small for table, want %d bytes, have %d", iSize, len(in))
 		}
+		// The low nibble is the weights' FSE tableLog - 5, which the format limits to 6.
+		if in[0]&15+5 > 6 {
+			return s, nil, errors.New("corrupt input: weights tableLog too big")
+		}
 		// FSE compressed weights
 		s.fse.DecompressLimit = 255
 		hw := s.huffWeight[:]
@@ -70,17 +74,32 @@ func ReadTable(in []byte, s *Scratch) (s2 *Scratch, remain []byte, err error) {
 		in = in[iSize:]
 	}
 
-	// collect weight stats
+	// collect weight stats. Weights repeat, so four histograms keep each
+	// increment from waiting on the previous store to the same counter.
+	var hist [4][16]uint32
+	var seen uint8
+	w := s.huffWeight[:s.symbolLen]
+	for ; len(w) >= 4; w = w[4:] {
+		hist[0][w[0]&15]++
+		hist[1][w[1]&15]++
+		hist[2][w[2]&15]++
+		hist[3][w[3]&15]++
+		seen |= w[0] | w[1] | w[2] | w[3]
+	}
+	for _, v := range w {
+		hist[0][v&15]++
+		seen |= v
+	}
 	var rankStats [16]uint32
 	weightTotal := uint32(0)
-	for _, v := range s.huffWeight[:s.symbolLen] {
-		if v > tableLogMax {
-			return s, nil, errors.New("corrupt input: weight too large")
-		}
-		v2 := v & 15
-		rankStats[v2]++
-		// (1 << (v2-1)) is slower since the compiler cannot prove that v2 isn't 0.
-		weightTotal += (1 << v2) >> 1
+	for i := range rankStats {
+		rankStats[i] = hist[0][i] + hist[1][i] + hist[2][i] + hist[3][i]
+	}
+	for i := 1; i < len(rankStats); i++ {
+		weightTotal += rankStats[i] << (i - 1)
+	}
+	if seen > 15 || rankStats[tableLogMax+1]|rankStats[tableLogMax+2]|rankStats[tableLogMax+3]|rankStats[tableLogMax+4] != 0 {
+		return s, nil, errors.New("corrupt input: weight too large")
 	}
 	if weightTotal == 0 {
 		return s, nil, errors.New("corrupt input: weights zero")
@@ -158,9 +177,17 @@ func ReadTable(in []byte, s *Scratch) (s2 *Scratch, remain []byte, err error) {
 			nBits: uint8(d.entry),
 		}
 
+		// length is a power of two; runs of 4 or more are filled 4 at a time.
 		single := s.dt.single[*rank : *rank+length]
-		for i := range single {
-			single[i] = d
+		if length >= 4 {
+			for i := 0; i < len(single); i += 4 {
+				s4 := single[i : i+4 : i+4]
+				s4[0], s4[1], s4[2], s4[3] = d, d, d, d
+			}
+		} else {
+			for i := range single {
+				single[i] = d
+			}
 		}
 		*rank += length
 	}
@@ -626,7 +653,7 @@ func (d *Decoder) decompress4X8bit(dst, src []byte) ([]byte, error) {
 
 	var br [4]bitReaderBytes
 	start := 6
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		length := int(src[i*2]) | (int(src[i*2+1]) << 8)
 		if start+length >= len(src) {
 			return nil, errors.New("truncated input (or invalid offset)")
@@ -798,10 +825,7 @@ func (d *Decoder) decompress4X8bit(dst, src []byte) ([]byte, error) {
 	remainBytes := dstEvery - (decoded / 4)
 	for i := range br {
 		offset := dstEvery * i
-		endsAt := offset + remainBytes
-		if endsAt > len(out) {
-			endsAt = len(out)
-		}
+		endsAt := min(offset+remainBytes, len(out))
 		br := &br[i]
 		bitsLeft := br.remaining()
 		for bitsLeft > 0 {
@@ -864,7 +888,7 @@ func (d *Decoder) decompress4X8bit(dst, src []byte) ([]byte, error) {
 func (d *Decoder) decompress4X8bitExactly(dst, src []byte) ([]byte, error) {
 	var br [4]bitReaderBytes
 	start := 6
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		length := int(src[i*2]) | (int(src[i*2+1]) << 8)
 		if start+length >= len(src) {
 			return nil, errors.New("truncated input (or invalid offset)")
@@ -1035,10 +1059,7 @@ func (d *Decoder) decompress4X8bitExactly(dst, src []byte) ([]byte, error) {
 	remainBytes := dstEvery - (decoded / 4)
 	for i := range br {
 		offset := dstEvery * i
-		endsAt := offset + remainBytes
-		if endsAt > len(out) {
-			endsAt = len(out)
-		}
+		endsAt := min(offset+remainBytes, len(out))
 		br := &br[i]
 		bitsLeft := br.remaining()
 		for bitsLeft > 0 {
@@ -1136,7 +1157,7 @@ func (s *Scratch) matches(ct cTable, w io.Writer) {
 			errs++
 		}
 		if errs > 0 {
-			fmt.Fprintf(w, "%d errros in base, stopping\n", errs)
+			fmt.Fprintf(w, "%d errors in base, stopping\n", errs)
 			continue
 		}
 		// Ensure that all combinations are covered.
@@ -1152,7 +1173,7 @@ func (s *Scratch) matches(ct cTable, w io.Writer) {
 				errs++
 			}
 			if errs > 20 {
-				fmt.Fprintf(w, "%d errros, stopping\n", errs)
+				fmt.Fprintf(w, "%d errors, stopping\n", errs)
 				break
 			}
 		}

@@ -4,7 +4,6 @@
 // the predefined NewLogHandlerFunc. See the example folder for a minimal log provider implementation.
 //
 // The Requester is where the actual specific logic for connecting to and querying the log system should be implemented.
-//
 package logs
 
 import (

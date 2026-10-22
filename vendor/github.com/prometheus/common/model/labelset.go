@@ -14,12 +14,10 @@
 package model
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"slices"
+	"maps"
 	"sort"
-	"strconv"
 )
 
 // A LabelSet is a collection of LabelName and LabelValue pairs.  The LabelSet
@@ -110,48 +108,19 @@ func (ls LabelSet) Before(o LabelSet) bool {
 // Clone returns a copy of the label set.
 func (ls LabelSet) Clone() LabelSet {
 	lsn := make(LabelSet, len(ls))
-	for ln, lv := range ls {
-		lsn[ln] = lv
-	}
+	maps.Copy(lsn, ls)
 	return lsn
 }
 
 // Merge is a helper function to non-destructively merge two label sets.
-func (l LabelSet) Merge(other LabelSet) LabelSet {
-	result := make(LabelSet, len(l))
+func (ls LabelSet) Merge(other LabelSet) LabelSet {
+	result := make(LabelSet, len(ls))
 
-	for k, v := range l {
-		result[k] = v
-	}
+	maps.Copy(result, ls)
 
-	for k, v := range other {
-		result[k] = v
-	}
+	maps.Copy(result, other)
 
 	return result
-}
-
-// String will look like `{foo="bar", more="less"}`. Names are sorted alphabetically.
-func (l LabelSet) String() string {
-	var lna [32]LabelName // On stack to avoid memory allocation for sorting names.
-	labelNames := lna[:0]
-	for name := range l {
-		labelNames = append(labelNames, name)
-	}
-	slices.Sort(labelNames)
-	var bytea [1024]byte // On stack to avoid memory allocation while building the output.
-	b := bytes.NewBuffer(bytea[:0])
-	b.WriteByte('{')
-	for i, name := range labelNames {
-		if i > 0 {
-			b.WriteString(", ")
-		}
-		b.WriteString(string(name))
-		b.WriteByte('=')
-		b.Write(strconv.AppendQuote(b.AvailableBuffer(), string(l[name])))
-	}
-	b.WriteByte('}')
-	return b.String()
 }
 
 // Fingerprint returns the LabelSet's fingerprint.
@@ -166,7 +135,7 @@ func (ls LabelSet) FastFingerprint() Fingerprint {
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
-func (l *LabelSet) UnmarshalJSON(b []byte) error {
+func (ls *LabelSet) UnmarshalJSON(b []byte) error {
 	var m map[LabelName]LabelValue
 	if err := json.Unmarshal(b, &m); err != nil {
 		return err
@@ -179,6 +148,6 @@ func (l *LabelSet) UnmarshalJSON(b []byte) error {
 			return fmt.Errorf("%q is not a valid label name", ln)
 		}
 	}
-	*l = LabelSet(m)
+	*ls = LabelSet(m)
 	return nil
 }

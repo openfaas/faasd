@@ -11,12 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build go1.17
-// +build go1.17
-
 package prometheus
 
 import (
+	"fmt"
 	"math"
 	"runtime"
 	"runtime/metrics"
@@ -26,7 +24,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus/internal"
 
 	dto "github.com/prometheus/client_model/go"
-	"google.golang.org/protobuf/proto"
 )
 
 const (
@@ -97,7 +94,7 @@ type goCollector struct {
 	// snapshot is always produced by Collect.
 	mu sync.Mutex
 
-	// Contains all samples that has to retrieved from runtime/metrics (not all of them will be exposed).
+	// Contains all samples that have to be retrieved from runtime/metrics (not all of them will be exposed).
 	sampleBuf []metrics.Sample
 	// sampleMap allows lookup for MemStats metrics and runtime/metrics histograms for exact sums.
 	sampleMap map[string]*metrics.Sample
@@ -153,7 +150,8 @@ func defaultGoCollectorOptions() internal.GoCollectorOptions {
 			"/gc/heap/frees-by-size:bytes":  goGCHeapFreesBytes,
 		},
 		RuntimeMetricRules: []internal.GoCollectorRule{
-			//{Matcher: regexp.MustCompile("")},
+			// Recommended metrics we want by default from runtime/metrics.
+			{Matcher: internal.GoCollectorDefaultRuntimeMetrics},
 		},
 	}
 }
@@ -203,20 +201,31 @@ func NewGoCollector(opts ...func(o *internal.GoCollectorOptions)) Collector {
 			// to fail here. This condition is tested in TestExpectedRuntimeMetrics.
 			continue
 		}
+		help := attachOriginalName(d.Description.Description, d.Name)
 
 		sampleBuf = append(sampleBuf, metrics.Sample{Name: d.Name})
 		sampleMap[d.Name] = &sampleBuf[len(sampleBuf)-1]
 
+		// Extract unit from the runtime/metrics name (e.g., "/gc/heap/allocs:bytes" -> "bytes")
+		// and sanitize to match Prometheus naming conventions (e.g., "cpu-seconds" -> "cpu_seconds")
+		var unit string
+		if idx := strings.IndexRune(d.Name, ':'); idx >= 0 {
+			unit = d.Name[idx+1:]
+			unit = strings.ReplaceAll(unit, "-", "_")
+			unit = strings.ReplaceAll(unit, "*", "_")
+			unit = strings.ReplaceAll(unit, "/", "_per_")
+		}
+
 		var m collectorMetric
 		if d.Kind == metrics.KindFloat64Histogram {
 			_, hasSum := opt.RuntimeMetricSumForHist[d.Name]
-			unit := d.Name[strings.IndexRune(d.Name, ':')+1:]
 			m = newBatchHistogram(
-				NewDesc(
+				V2.NewDesc(
 					BuildFQName(namespace, subsystem, name),
-					d.Description.Description,
+					help,
+					UnconstrainedLabels(nil),
 					nil,
-					nil,
+					WithUnit(unit),
 				),
 				internal.RuntimeMetricsBucketsForUnit(bucketsMap[d.Name], unit),
 				hasSum,
@@ -226,7 +235,8 @@ func NewGoCollector(opts ...func(o *internal.GoCollectorOptions)) Collector {
 				Namespace: namespace,
 				Subsystem: subsystem,
 				Name:      name,
-				Help:      d.Description.Description,
+				Help:      help,
+				Unit:      unit,
 			},
 			)
 		} else {
@@ -234,7 +244,8 @@ func NewGoCollector(opts ...func(o *internal.GoCollectorOptions)) Collector {
 				Namespace: namespace,
 				Subsystem: subsystem,
 				Name:      name,
-				Help:      d.Description.Description,
+				Help:      help,
+				Unit:      unit,
 			})
 		}
 		metricSet = append(metricSet, m)
@@ -282,6 +293,10 @@ func NewGoCollector(opts ...func(o *internal.GoCollectorOptions)) Collector {
 		msMetrics:            msMetrics,
 		msMetricsEnabled:     !opt.DisableMemStatsLikeMetrics,
 	}
+}
+
+func attachOriginalName(desc, origName string) string {
+	return fmt.Sprintf("%s Sourced from %s.", desc, origName)
 }
 
 // Describe returns all descriptions of the collector.
@@ -376,13 +391,13 @@ func unwrapScalarRMValue(v metrics.Value) float64 {
 		//
 		// This should never happen because we always populate our metric
 		// set from the runtime/metrics package.
-		panic("unexpected unsupported metric")
+		panic("unexpected bad kind metric")
 	default:
 		// Unsupported metric kind.
 		//
 		// This should never happen because we check for this during initialization
 		// and flag and filter metrics whose kinds we don't understand.
-		panic("unexpected unsupported metric kind")
+		panic(fmt.Sprintf("unexpected unsupported metric: %v", v.Kind()))
 	}
 }
 
@@ -554,14 +569,14 @@ func (h *batchHistogram) Write(out *dto.Metric) error {
 		// by obtaining the next float64 value down, in order.
 		upperBound := math.Nextafter(h.buckets[i+1], h.buckets[i])
 		dtoBuckets = append(dtoBuckets, &dto.Bucket{
-			CumulativeCount: proto.Uint64(totalCount),
-			UpperBound:      proto.Float64(upperBound),
+			CumulativeCount: new(totalCount),
+			UpperBound:      new(upperBound),
 		})
 	}
 	out.Histogram = &dto.Histogram{
 		Bucket:      dtoBuckets,
-		SampleCount: proto.Uint64(totalCount),
-		SampleSum:   proto.Float64(sum),
+		SampleCount: new(totalCount),
+		SampleSum:   new(sum),
 	}
 	return nil
 }

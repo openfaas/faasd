@@ -69,7 +69,6 @@ var llBitsTable = [maxLLCode + 1]byte{
 func llCode(litLength uint32) uint8 {
 	const llDeltaCode = 19
 	if litLength <= 63 {
-		// Compiler insists on bounds check (Go 1.12)
 		return llCodeTable[litLength&63]
 	}
 	return uint8(highBit(litLength)) + llDeltaCode
@@ -102,7 +101,6 @@ var mlBitsTable = [maxMLCode + 1]byte{
 func mlCode(mlBase uint32) uint8 {
 	const mlDeltaCode = 36
 	if mlBase <= 127 {
-		// Compiler insists on bounds check (Go 1.12)
 		return mlCodeTable[mlBase&127]
 	}
 	return uint8(highBit(mlBase)) + mlDeltaCode
@@ -111,4 +109,51 @@ func mlCode(mlBase uint32) uint8 {
 func ofCode(offset uint32) uint8 {
 	// A valid offset will always be > 0.
 	return uint8(bits.Len32(offset) - 1)
+}
+
+// newDictSeqEncoder builds an encoder for a dictionary sequence table.
+// Returns nil if the table is missing or unusable.
+func newDictSeqEncoder(src *fseDecoder, t tableIndex) *fseEncoder {
+	if src == nil || src.symbolLen == 0 {
+		return nil
+	}
+	var e fseEncoder
+	e.norm = src.norm
+	e.symbolLen = src.symbolLen
+	e.actualTableLog = src.actualTableLog
+	if e.buildCTable() != nil {
+		return nil
+	}
+	e.setBits(bitTables[t])
+	return &e
+}
+
+// seedPrevFromDict loads the dictionary sequence tables as the "previous"
+// encoders, so the first block can use repeat mode.
+func (s *seqCoders) seedPrevFromDict(d *dict) {
+	seed := func(dst, src *fseEncoder) {
+		if src == nil {
+			return
+		}
+		ct := dst.ct
+		dst.symbolLen = src.symbolLen
+		dst.actualTableLog = src.actualTableLog
+		dst.maxBits = src.maxBits
+		dst.zeroBits = src.zeroBits
+		dst.useRLE = false
+		dst.preDefined = false
+		dst.reUsed = true
+		dst.norm = src.norm
+		// tableSymbol is only used while building, so it is not copied.
+		ct.stateTable = append(ct.stateTable[:0], src.ct.stateTable...)
+		if cap(ct.symbolTT) < len(src.ct.symbolTT) {
+			ct.symbolTT = make([]symbolTransform, len(src.ct.symbolTT))
+		}
+		ct.symbolTT = ct.symbolTT[:len(src.ct.symbolTT)]
+		copy(ct.symbolTT, src.ct.symbolTT[:src.symbolLen])
+		dst.ct = ct
+	}
+	seed(s.llPrev, d.llEnc)
+	seed(s.mlPrev, d.mlEnc)
+	seed(s.ofPrev, d.ofEnc)
 }

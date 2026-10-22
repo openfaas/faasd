@@ -1,19 +1,44 @@
-version: "3.9"
-
+name: full_example_project_name
 services:
-  foo:
 
+  bar:
+    build:
+      dockerfile_inline: |
+        FROM alpine
+        RUN echo "hello" > /world.txt
+
+  foo:
+    annotations:
+      - com.example.foo=bar
     build:
       context: ./dir
       dockerfile: Dockerfile
       args:
         foo: bar
+      ssh:
+        - default
       target: foo
       network: foo
       cache_from:
         - foo
         - bar
       labels: [FOO=BAR]
+      additional_contexts:
+        foo: ./bar
+      secrets:
+        - secret1
+        - source: secret2
+          target: my_secret
+          uid: '103'
+          gid: '103'
+          mode: 0440
+      tags:
+        - foo:v1.0.0
+        - docker.io/username/foo:my-other-tag
+        - ${COMPOSE_PROJECT_NAME}:1.0.0
+      platforms:
+        - linux/amd64
+        - linux/arm64
 
 
     cap_add:
@@ -87,6 +112,10 @@ services:
           - spread: node.labels.az
       endpoint_mode: dnsrr
 
+    device_cgroup_rules:
+      - "c 1:3 mr"
+      - "a 7:* rmw"
+
     devices:
       - "/dev/ttyUSB0:/dev/ttyUSB0"
 
@@ -141,8 +170,8 @@ services:
     #   somehost: "162.242.195.82"
     #   otherhost: "50.31.209.229"
     extra_hosts:
-      - "somehost:162.242.195.82"
       - "otherhost:50.31.209.229"
+      - "somehost:162.242.195.82"
 
     hostname: foo
 
@@ -152,6 +181,7 @@ services:
       timeout: 1s
       retries: 5
       start_period: 15s
+      start_interval: 5s
 
     # Any valid image reference - repo, tag, id, sha
     image: redis
@@ -162,6 +192,8 @@ services:
     # image: busybox@sha256:38a203e1986cf79639cfb9b2e1d6e773de84002feea2d4eb006b52004ee8502d
 
     ipc: host
+
+    uts: host
 
     # Mapping or list
     # Mapping values can be strings, numbers or null
@@ -203,6 +235,7 @@ services:
       other-network:
         ipv4_address: 172.16.238.10
         ipv6_address: 2001:3984:3989::10
+        mac_address: 02:42:72:98:65:08
       other-other-network:
 
     pid: "host"
@@ -270,7 +303,7 @@ services:
       - .:/code
       - ./static:/var/www/html
       # User-relative path
-      - ~/configs:/etc/configs/:ro
+      - ~/configs:/etc/configs:ro
       # Named volume
       - datavolume:/var/lib/mysql
       - type: bind
@@ -307,10 +340,15 @@ networks:
       #   com.docker.network.enable_ipv6: "true"
       #   com.docker.network.numeric_value: 1
       config:
-      - subnet: 172.16.238.0/24
-        # gateway: 172.16.238.1
+      - subnet: 172.28.0.0/16
+        ip_range: 172.28.5.0/24
+        gateway: 172.28.5.254
+        aux_addresses:
+          host1: 172.28.1.5
+          host2: 172.28.1.6
+          host3: 172.28.1.7
       - subnet: 2001:3984:3989::/64
-        # gateway: 2001:3984:3989::1
+        gateway: 2001:3984:3989::1
 
     labels:
       foo: bar
@@ -385,6 +423,7 @@ configs:
     external: true
   config4:
     name: foo
+    file: ~/config_data
     x-bar: baz
     x-foo: bar
 
@@ -400,8 +439,11 @@ secrets:
     external: true
   secret4:
     name: bar
+    environment: BAR
     x-bar: baz
     x-foo: bar
+  secret5:
+    file: /abs/secret_data
 x-bar: baz
 x-foo: bar
 x-nested:

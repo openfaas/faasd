@@ -1,18 +1,7 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package metric // import "go.opentelemetry.io/otel/metric"
+package metric
 
 import (
 	"context"
@@ -61,6 +50,9 @@ type Int64ObservableCounterConfig struct {
 func NewInt64ObservableCounterConfig(opts ...Int64ObservableCounterOption) Int64ObservableCounterConfig {
 	var config Int64ObservableCounterConfig
 	for _, o := range opts {
+		if _, ok := o.(experimentalOption); ok {
+			continue
+		}
 		config = o.applyInt64ObservableCounter(config)
 	}
 	return config
@@ -116,9 +108,14 @@ type Int64ObservableUpDownCounterConfig struct {
 
 // NewInt64ObservableUpDownCounterConfig returns a new
 // [Int64ObservableUpDownCounterConfig] with all opts applied.
-func NewInt64ObservableUpDownCounterConfig(opts ...Int64ObservableUpDownCounterOption) Int64ObservableUpDownCounterConfig {
+func NewInt64ObservableUpDownCounterConfig(
+	opts ...Int64ObservableUpDownCounterOption,
+) Int64ObservableUpDownCounterConfig {
 	var config Int64ObservableUpDownCounterConfig
 	for _, o := range opts {
+		if _, ok := o.(experimentalOption); ok {
+			continue
+		}
 		config = o.applyInt64ObservableUpDownCounter(config)
 	}
 	return config
@@ -176,6 +173,9 @@ type Int64ObservableGaugeConfig struct {
 func NewInt64ObservableGaugeConfig(opts ...Int64ObservableGaugeOption) Int64ObservableGaugeConfig {
 	var config Int64ObservableGaugeConfig
 	for _, o := range opts {
+		if _, ok := o.(experimentalOption); ok {
+			continue
+		}
 		config = o.applyInt64ObservableGauge(config)
 	}
 	return config
@@ -219,11 +219,14 @@ type Int64Observer interface {
 	//
 	// Use the WithAttributeSet (or, if performance is not a concern,
 	// the WithAttributes) option to include measurement attributes.
+	//
+	// Implementations of this method need to be safe for a user to call
+	// concurrently.
 	Observe(value int64, options ...ObserveOption)
 }
 
 // Int64Callback is a function registered with a Meter that makes observations
-// for an Int64Observerable instrument it is registered with. Calls to the
+// for an Int64Observable instrument it is registered with. Calls to the
 // Int64Observer record measurement values for the Int64Observable.
 //
 // The function needs to complete in a finite amount of time and the deadline
@@ -234,7 +237,11 @@ type Int64Observer interface {
 // attributes as another Int64Callbacks also registered for the same
 // instrument.
 //
-// The function needs to be concurrent safe.
+// The function needs to be reentrant and concurrent safe.
+//
+// Note that Go's mutexes are not reentrant, and locking a mutex takes
+// an indefinite amount of time. It is therefore advised to avoid
+// using mutexes inside callbacks.
 type Int64Callback func(context.Context, Int64Observer) error
 
 // Int64ObservableOption applies options to int64 Observer instruments.
@@ -253,7 +260,9 @@ func (o int64CallbackOpt) applyInt64ObservableCounter(cfg Int64ObservableCounter
 	return cfg
 }
 
-func (o int64CallbackOpt) applyInt64ObservableUpDownCounter(cfg Int64ObservableUpDownCounterConfig) Int64ObservableUpDownCounterConfig {
+func (o int64CallbackOpt) applyInt64ObservableUpDownCounter(
+	cfg Int64ObservableUpDownCounterConfig,
+) Int64ObservableUpDownCounterConfig {
 	cfg.callbacks = append(cfg.callbacks, o.cback)
 	return cfg
 }

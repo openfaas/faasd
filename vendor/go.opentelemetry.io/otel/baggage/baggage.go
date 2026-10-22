@@ -1,47 +1,29 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package baggage // import "go.opentelemetry.io/otel/baggage"
+package baggage
 
 import (
 	"errors"
 	"fmt"
 	"net/url"
-	"regexp"
 	"strings"
+	"unicode/utf8"
 
 	"go.opentelemetry.io/otel/internal/baggage"
 )
 
 const (
-	maxMembers               = 180
-	maxBytesPerMembers       = 4096
+	maxParseErrors = 5
+
+	// W3C Baggage specification limits.
+	// https://www.w3.org/TR/baggage/#limits
+	maxMembers               = 64
 	maxBytesPerBaggageString = 8192
 
 	listDelimiter     = ","
 	keyValueDelimiter = "="
 	propertyDelimiter = ";"
-
-	keyDef      = `([\x21\x23-\x27\x2A\x2B\x2D\x2E\x30-\x39\x41-\x5a\x5e-\x7a\x7c\x7e]+)`
-	valueDef    = `([\x21\x23-\x2b\x2d-\x3a\x3c-\x5B\x5D-\x7e]*)`
-	keyValueDef = `\s*` + keyDef + `\s*` + keyValueDelimiter + `\s*` + valueDef + `\s*`
-)
-
-var (
-	keyRe      = regexp.MustCompile(`^` + keyDef + `$`)
-	valueRe    = regexp.MustCompile(`^` + valueDef + `$`)
-	propertyRe = regexp.MustCompile(`^(?:\s*` + keyDef + `\s*|` + keyValueDef + `)$`)
 )
 
 var (
@@ -50,7 +32,6 @@ var (
 	errInvalidProperty = errors.New("invalid baggage list-member property")
 	errInvalidMember   = errors.New("invalid baggage list-member")
 	errMemberNumber    = errors.New("too many list-members in baggage-string")
-	errMemberBytes     = errors.New("list-member too large")
 	errBaggageBytes    = errors.New("baggage-string too large")
 )
 
@@ -65,9 +46,15 @@ type Property struct {
 
 // NewKeyProperty returns a new Property for key.
 //
+// The passed key must be valid, non-empty UTF-8 string.
 // If key is invalid, an error will be returned.
+// However, the specific Propagators that are used to transmit baggage entries across
+// component boundaries may impose their own restrictions on Property key.
+// For example, the W3C Baggage specification restricts the Property keys to strings that
+// satisfy the token definition from RFC7230, Section 3.2.6.
+// For maximum compatibility, alphanumeric value are strongly recommended to be used as Property key.
 func NewKeyProperty(key string) (Property, error) {
-	if !keyRe.MatchString(key) {
+	if !validateBaggageName(key) {
 		return newInvalidProperty(), fmt.Errorf("%w: %q", errInvalidKey, key)
 	}
 
@@ -77,12 +64,40 @@ func NewKeyProperty(key string) (Property, error) {
 
 // NewKeyValueProperty returns a new Property for key with value.
 //
-// If key or value are invalid, an error will be returned.
+// The passed key must be compliant with W3C Baggage specification.
+// The passed value must be percent-encoded as defined in W3C Baggage specification.
+//
+// Notice: Consider using [NewKeyValuePropertyRaw] instead
+// that does not require percent-encoding of the value.
 func NewKeyValueProperty(key, value string) (Property, error) {
-	if !keyRe.MatchString(key) {
+	if !validateKey(key) {
 		return newInvalidProperty(), fmt.Errorf("%w: %q", errInvalidKey, key)
 	}
-	if !valueRe.MatchString(value) {
+
+	if !validateValue(value) {
+		return newInvalidProperty(), fmt.Errorf("%w: %q", errInvalidValue, value)
+	}
+	decodedValue, err := url.PathUnescape(value)
+	if err != nil {
+		return newInvalidProperty(), fmt.Errorf("%w: %q", errInvalidValue, value)
+	}
+	return NewKeyValuePropertyRaw(key, decodedValue)
+}
+
+// NewKeyValuePropertyRaw returns a new Property for key with value.
+//
+// The passed key must be valid, non-empty UTF-8 string.
+// The passed value must be valid UTF-8 string.
+// However, the specific Propagators that are used to transmit baggage entries across
+// component boundaries may impose their own restrictions on Property key.
+// For example, the W3C Baggage specification restricts the Property keys to strings that
+// satisfy the token definition from RFC7230, Section 3.2.6.
+// For maximum compatibility, alphanumeric value are strongly recommended to be used as Property key.
+func NewKeyValuePropertyRaw(key, value string) (Property, error) {
+	if !validateBaggageName(key) {
+		return newInvalidProperty(), fmt.Errorf("%w: %q", errInvalidKey, key)
+	}
+	if !validateBaggageValue(value) {
 		return newInvalidProperty(), fmt.Errorf("%w: %q", errInvalidValue, value)
 	}
 
@@ -106,18 +121,9 @@ func parseProperty(property string) (Property, error) {
 		return newInvalidProperty(), nil
 	}
 
-	match := propertyRe.FindStringSubmatch(property)
-	if len(match) != 4 {
+	p, ok := parsePropertyInternal(property)
+	if !ok {
 		return newInvalidProperty(), fmt.Errorf("%w: %q", errInvalidProperty, property)
-	}
-
-	var p Property
-	if match[1] != "" {
-		p.key = match[1]
-	} else {
-		p.key = match[2]
-		p.value = match[3]
-		p.hasValue = true
 	}
 
 	return p, nil
@@ -130,14 +136,14 @@ func (p Property) validate() error {
 		return fmt.Errorf("invalid property: %w", err)
 	}
 
-	if !keyRe.MatchString(p.key) {
+	if !validateBaggageName(p.key) {
 		return errFunc(fmt.Errorf("%w: %q", errInvalidKey, p.key))
-	}
-	if p.hasValue && !valueRe.MatchString(p.value) {
-		return errFunc(fmt.Errorf("%w: %q", errInvalidValue, p.value))
 	}
 	if !p.hasValue && p.value != "" {
 		return errFunc(errors.New("inconsistent value"))
+	}
+	if p.hasValue && !validateBaggageValue(p.value) {
+		return errFunc(fmt.Errorf("%w: %q", errInvalidValue, p.value))
 	}
 	return nil
 }
@@ -154,11 +160,19 @@ func (p Property) Value() (string, bool) {
 	return p.value, p.hasValue
 }
 
-// String encodes Property into a string compliant with the W3C Baggage
+// String encodes Property into a header string compliant with the W3C Baggage
 // specification.
+// It would return empty string if the key is invalid with the W3C Baggage
+// specification. This could happen for a UTF-8 key, as it may contain
+// invalid characters.
 func (p Property) String() string {
+	//  W3C Baggage specification does not allow percent-encoded keys.
+	if !validateKey(p.key) {
+		return ""
+	}
+
 	if p.hasValue {
-		return fmt.Sprintf("%s%s%v", p.key, keyValueDelimiter, p.value)
+		return fmt.Sprintf("%s%s%v", p.key, keyValueDelimiter, valueEscape(p.value))
 	}
 	return p.key
 }
@@ -218,20 +232,93 @@ func (p properties) validate() error {
 	return nil
 }
 
-// String encodes properties into a string compliant with the W3C Baggage
+// String encodes properties into a header string compliant with the W3C Baggage
 // specification.
 func (p properties) String() string {
-	props := make([]string, len(p))
-	for i, prop := range p {
-		props[i] = prop.String()
+	props := make([]string, 0, len(p))
+	for _, prop := range p {
+		s := prop.String()
+
+		// Ignored empty properties.
+		if s != "" {
+			props = append(props, s)
+		}
 	}
 	return strings.Join(props, propertyDelimiter)
+}
+
+// validateMetadata validates non-empty W3C property elements without decoding
+// or materializing Property values. Empty elements are accepted to preserve
+// existing parsing behavior.
+func validateMetadata(raw string) (string, bool) {
+	start := 0
+	for end := 0; end <= len(raw); end++ {
+		if end != len(raw) && raw[end] != propertyDelimiter[0] {
+			continue
+		}
+
+		if start != end {
+			if _, ok := parsePropertyFields(raw[start:end]); !ok {
+				return raw[start:end], false
+			}
+		}
+		start = end + 1
+	}
+	return "", true
+}
+
+// normalizeMetadata removes empty property elements while preserving the raw
+// representation of all non-empty elements.
+func normalizeMetadata(metadata string) string {
+	if metadata == "" ||
+		(metadata[0] != propertyDelimiter[0] &&
+			metadata[len(metadata)-1] != propertyDelimiter[0] &&
+			!strings.Contains(metadata, propertyDelimiter+propertyDelimiter)) {
+		return metadata
+	}
+
+	var normalized strings.Builder
+	normalized.Grow(len(metadata))
+	for property := range strings.SplitSeq(metadata, propertyDelimiter) {
+		if property == "" {
+			continue
+		}
+		if normalized.Len() > 0 {
+			_, _ = normalized.WriteString(propertyDelimiter)
+		}
+		_, _ = normalized.WriteString(property)
+	}
+	return normalized.String()
+}
+
+func propertiesFromMetadata(metadata string) properties {
+	if metadata == "" {
+		return nil
+	}
+
+	props := make(properties, 0, strings.Count(metadata, propertyDelimiter)+1)
+	for pStr := range strings.SplitSeq(metadata, propertyDelimiter) {
+		if pStr == "" {
+			continue
+		}
+		p, err := parseProperty(pStr)
+		if err != nil {
+			return nil
+		}
+		props = append(props, p)
+	}
+	return props
 }
 
 // Member is a list-member of a baggage-string as defined by the W3C Baggage
 // specification.
 type Member struct {
 	key, value string
+
+	// metadata contains the opaque W3C property suffix extracted from the wire
+	// without the leading semicolon. properties contains API-created
+	// properties. The fields are mutually exclusive.
+	metadata   string
 	properties properties
 
 	// hasData indicates whether the created property contains data or not.
@@ -240,11 +327,38 @@ type Member struct {
 	hasData bool
 }
 
-// NewMember returns a new Member from the passed arguments. The key will be
-// used directly while the value will be url decoded after validation. An error
-// is returned if the created Member would be invalid according to the W3C
-// Baggage specification.
+// NewMember returns a new Member from the passed arguments.
+//
+// The passed key must be compliant with W3C Baggage specification.
+// The passed value must be percent-encoded as defined in W3C Baggage specification.
+//
+// Notice: Consider using [NewMemberRaw] instead
+// that does not require percent-encoding of the value.
 func NewMember(key, value string, props ...Property) (Member, error) {
+	if !validateKey(key) {
+		return newInvalidMember(), fmt.Errorf("%w: %q", errInvalidKey, key)
+	}
+
+	if !validateValue(value) {
+		return newInvalidMember(), fmt.Errorf("%w: %q", errInvalidValue, value)
+	}
+	decodedValue, err := url.PathUnescape(value)
+	if err != nil {
+		return newInvalidMember(), fmt.Errorf("%w: %q", errInvalidValue, value)
+	}
+	return NewMemberRaw(key, decodedValue, props...)
+}
+
+// NewMemberRaw returns a new Member from the passed arguments.
+//
+// The passed key must be valid, non-empty UTF-8 string.
+// The passed value must be valid UTF-8 string.
+// However, the specific Propagators that are used to transmit baggage entries across
+// component boundaries may impose their own restrictions on baggage key.
+// For example, the W3C Baggage specification restricts the baggage keys to strings that
+// satisfy the token definition from RFC7230, Section 3.2.6.
+// For maximum compatibility, alphanumeric value are strongly recommended to be used as baggage key.
+func NewMemberRaw(key, value string, props ...Property) (Member, error) {
 	m := Member{
 		key:        key,
 		value:      value,
@@ -254,11 +368,6 @@ func NewMember(key, value string, props ...Property) (Member, error) {
 	if err := m.validate(); err != nil {
 		return newInvalidMember(), err
 	}
-	decodedValue, err := url.PathUnescape(value)
-	if err != nil {
-		return newInvalidMember(), fmt.Errorf("%w: %q", errInvalidValue, value)
-	}
-	m.value = decodedValue
 	return m, nil
 }
 
@@ -266,29 +375,16 @@ func newInvalidMember() Member {
 	return Member{}
 }
 
-// parseMember attempts to decode a Member from the passed string. It returns
-// an error if the input is invalid according to the W3C Baggage
-// specification.
+// parseMember attempts to decode a Member from the passed string. Property
+// metadata grammar is validated without decoding or materializing properties.
 func parseMember(member string) (Member, error) {
-	if n := len(member); n > maxBytesPerMembers {
-		return newInvalidMember(), fmt.Errorf("%w: %d", errMemberBytes, n)
-	}
-
-	var (
-		key, value string
-		props      properties
-	)
-
-	keyValue, properties, found := strings.Cut(member, propertyDelimiter)
+	var metadata string
+	keyValue, rawMetadata, found := strings.Cut(member, propertyDelimiter)
 	if found {
-		// Parse the member properties.
-		for _, pStr := range strings.Split(properties, propertyDelimiter) {
-			p, err := parseProperty(pStr)
-			if err != nil {
-				return newInvalidMember(), err
-			}
-			props = append(props, p)
+		if invalid, ok := validateMetadata(rawMetadata); !ok {
+			return newInvalidMember(), fmt.Errorf("%w: %q", errInvalidProperty, invalid)
 		}
+		metadata = normalizeMetadata(rawMetadata)
 	}
 	// Parse the member key/value pair.
 
@@ -299,34 +395,61 @@ func parseMember(member string) (Member, error) {
 	}
 	// "Leading and trailing whitespaces are allowed but MUST be trimmed
 	// when converting the header into a data structure."
-	key = strings.TrimSpace(k)
-	var err error
-	value, err = url.PathUnescape(strings.TrimSpace(v))
-	if err != nil {
-		return newInvalidMember(), fmt.Errorf("%w: %q", err, value)
-	}
-	if !keyRe.MatchString(key) {
+	key := strings.TrimSpace(k)
+	if !validateKey(key) {
 		return newInvalidMember(), fmt.Errorf("%w: %q", errInvalidKey, key)
 	}
-	if !valueRe.MatchString(value) {
-		return newInvalidMember(), fmt.Errorf("%w: %q", errInvalidValue, value)
+
+	rawVal := strings.TrimSpace(v)
+	if !validateValue(rawVal) {
+		return newInvalidMember(), fmt.Errorf("%w: %q", errInvalidValue, v)
 	}
 
-	return Member{key: key, value: value, properties: props, hasData: true}, nil
+	// Decode a percent-encoded value.
+	unescapeVal, err := url.PathUnescape(rawVal)
+	if err != nil {
+		return newInvalidMember(), fmt.Errorf("%w: %w", errInvalidValue, err)
+	}
+
+	value := replaceInvalidUTF8Sequences(len(rawVal), unescapeVal)
+	return Member{key: key, value: value, metadata: metadata, hasData: true}, nil
+}
+
+// replaceInvalidUTF8Sequences replaces invalid UTF-8 sequences with '�'.
+func replaceInvalidUTF8Sequences(c int, unescapeVal string) string {
+	if utf8.ValidString(unescapeVal) {
+		return unescapeVal
+	}
+	// W3C baggage spec:
+	// https://github.com/w3c/baggage/blob/8c215efbeebd3fa4b1aceb937a747e56444f22f3/baggage/HTTP_HEADER_FORMAT.md?plain=1#L69
+
+	var b strings.Builder
+	b.Grow(c)
+	for i := 0; i < len(unescapeVal); {
+		r, size := utf8.DecodeRuneInString(unescapeVal[i:])
+		if r == utf8.RuneError && size == 1 {
+			// Invalid UTF-8 sequence found, replace it with '�'
+			_, _ = b.WriteString("�")
+		} else {
+			_, _ = b.WriteRune(r)
+		}
+		i += size
+	}
+
+	return b.String()
 }
 
 // validate ensures m conforms to the W3C Baggage specification.
-// A key is just an ASCII string, but a value must be URL encoded UTF-8,
-// returning an error otherwise.
+// A key must be an ASCII string, returning an error otherwise.
 func (m Member) validate() error {
 	if !m.hasData {
 		return fmt.Errorf("%w: %q", errInvalidMember, m)
 	}
 
-	if !keyRe.MatchString(m.key) {
+	if !validateBaggageName(m.key) {
 		return fmt.Errorf("%w: %q", errInvalidKey, m.key)
 	}
-	if !valueRe.MatchString(m.value) {
+	if !validateBaggageValue(m.value) {
 		return fmt.Errorf("%w: %q", errInvalidValue, m.value)
 	}
 	return m.properties.validate()
@@ -339,17 +462,47 @@ func (m Member) Key() string { return m.key }
 func (m Member) Value() string { return m.value }
 
 // Properties returns a copy of the Member properties.
-func (m Member) Properties() []Property { return m.properties.Copy() }
+func (m Member) Properties() []Property {
+	if m.metadata != "" {
+		return propertiesFromMetadata(m.metadata)
+	}
+	return m.properties.Copy()
+}
 
-// String encodes Member into a string compliant with the W3C Baggage
-// specification.
+// String encodes Member into a baggage header string.
+// It would return empty string if the key is invalid with the W3C Baggage
+// specification. This could happen for a UTF-8 key, as it may contain
+// invalid characters.
 func (m Member) String() string {
-	// A key is just an ASCII string, but a value is URL encoded UTF-8.
-	s := fmt.Sprintf("%s%s%s", m.key, keyValueDelimiter, url.QueryEscape(m.value))
-	if len(m.properties) > 0 {
-		s = fmt.Sprintf("%s%s%s", s, propertyDelimiter, m.properties.String())
+	//  W3C Baggage specification does not allow percent-encoded keys.
+	if !validateKey(m.key) {
+		return ""
+	}
+
+	s := m.key + keyValueDelimiter + valueEscape(m.value)
+	if m.metadata != "" {
+		s += propertyDelimiter + m.metadata
+	} else if len(m.properties) > 0 {
+		s += propertyDelimiter + m.properties.String()
 	}
 	return s
+}
+
+func memberFromItem(key string, item baggage.Item) Member {
+	return Member{
+		key:        key,
+		value:      item.Value(),
+		metadata:   item.Metadata(),
+		properties: fromInternalProperties(item.Properties()),
+		hasData:    true,
+	}
+}
+
+func itemFromMember(member Member) baggage.Item {
+	if member.metadata != "" {
+		return baggage.NewItemWithMetadata(member.value, member.metadata)
+	}
+	return baggage.NewItemWithProperties(member.value, member.properties.asInternal())
 }
 
 // Baggage is a list of baggage members representing the baggage-string as
@@ -360,6 +513,10 @@ type Baggage struct { //nolint:golint
 
 // New returns a new valid Baggage. It returns an error if it results in a
 // Baggage exceeding limits set in that specification.
+//
+// If the resulting Baggage exceeds the maximum allowed members or bytes,
+// members are dropped until the limits are satisfied and an error is returned
+// along with the partial result.
 //
 // It expects all the provided members to have already been validated.
 func New(members ...Member) (Baggage, error) {
@@ -372,25 +529,42 @@ func New(members ...Member) (Baggage, error) {
 		if !m.hasData {
 			return Baggage{}, errInvalidMember
 		}
-
 		// OpenTelemetry resolves duplicates by last-one-wins.
-		b[m.key] = baggage.Item{
-			Value:      m.value,
-			Properties: m.properties.asInternal(),
+		b[m.key] = itemFromMember(m)
+	}
+
+	var truncateErr error
+
+	// Check member count after deduplication.
+	if len(b) > maxMembers {
+		truncateErr = errors.Join(truncateErr, errMemberNumber)
+		for k := range b {
+			if len(b) <= maxMembers {
+				break
+			}
+			delete(b, k)
 		}
 	}
 
-	// Check member numbers after deduplication.
-	if len(b) > maxMembers {
-		return Baggage{}, errMemberNumber
+	// Check byte size and drop members if necessary.
+	totalBytes := 0
+	first := true
+	for k := range b {
+		m := memberFromItem(k, b[k])
+		memberSize := len(m.String())
+		if !first {
+			memberSize++ // comma separator
+		}
+		if totalBytes+memberSize > maxBytesPerBaggageString {
+			truncateErr = errors.Join(truncateErr, fmt.Errorf("%w: %d", errBaggageBytes, totalBytes+memberSize))
+			delete(b, k)
+			continue
+		}
+		totalBytes += memberSize
+		first = false
 	}
 
-	bag := Baggage{b}
-	if n := len(bag.String()); n > maxBytesPerBaggageString {
-		return Baggage{}, fmt.Errorf("%w: %d", errBaggageBytes, n)
-	}
-
-	return bag, nil
+	return Baggage{b}, truncateErr
 }
 
 // Parse attempts to decode a baggage-string from the passed string. It
@@ -401,6 +575,19 @@ func New(members ...Member) (Baggage, error) {
 // defined (reading left-to-right) will be the only one kept. This diverges
 // from the W3C Baggage specification which allows duplicate list-members, but
 // conforms to the OpenTelemetry Baggage specification.
+//
+// If the raw baggage-string exceeds the maximum allowed bytes (8192), an
+// empty Baggage and an error are returned.
+//
+// Otherwise, members are parsed left-to-right and accumulated until one of
+// the following conditions is reached, at which point parsing stops and an
+// error is returned alongside the partial result:
+//   - accepting the next member would cause the encoded baggage to exceed
+//     8192 bytes, or
+//   - the baggage already contains 64 distinct keys.
+//
+// Invalid members are skipped and the error is returned along with the
+// partial result containing the valid members.
 func Parse(bStr string) (Baggage, error) {
 	if bStr == "" {
 		return Baggage{}, nil
@@ -411,26 +598,63 @@ func Parse(bStr string) (Baggage, error) {
 	}
 
 	b := make(baggage.List)
-	for _, memberStr := range strings.Split(bStr, listDelimiter) {
+	sizes := make(map[string]int) // Track per-key byte sizes
+	var totalBytes int
+	var parseErrors int
+	var truncateErr error
+	for memberStr := range strings.SplitSeq(bStr, listDelimiter) {
+		// Check member count limit.
+		if len(b) >= maxMembers {
+			truncateErr = errors.Join(truncateErr, errMemberNumber)
+			break
+		}
+
 		m, err := parseMember(memberStr)
 		if err != nil {
-			return Baggage{}, err
+			parseErrors++
+			if parseErrors <= maxParseErrors {
+				truncateErr = errors.Join(truncateErr, err)
+			}
+			continue // skip invalid member, keep processing
 		}
+
+		// Check byte size limit.
+		// Account for comma separator between members.
+		memberBytes := len(m.String())
+		_, existingKey := b[m.key]
+		if !existingKey && len(b) > 0 {
+			memberBytes++ // comma separator only for new keys
+		}
+
+		// Calculate new totalBytes if we add/overwrite this key
+		var newTotalBytes int
+		if oldSize, exists := sizes[m.key]; exists {
+			// Overwriting existing key: subtract old size, add new size
+			newTotalBytes = totalBytes - oldSize + memberBytes
+		} else {
+			// New key
+			newTotalBytes = totalBytes + memberBytes
+		}
+
+		if newTotalBytes > maxBytesPerBaggageString {
+			truncateErr = errors.Join(truncateErr, errBaggageBytes)
+			break
+		}
+
 		// OpenTelemetry resolves duplicates by last-one-wins.
-		b[m.key] = baggage.Item{
-			Value:      m.value,
-			Properties: m.properties.asInternal(),
-		}
+		b[m.key] = itemFromMember(m)
+		sizes[m.key] = memberBytes
+		totalBytes = newTotalBytes
 	}
 
-	// OpenTelemetry does not allow for duplicate list-members, but the W3C
-	// specification does. Now that we have deduplicated, ensure the baggage
-	// does not exceed list-member limits.
-	if len(b) > maxMembers {
-		return Baggage{}, errMemberNumber
+	if dropped := parseErrors - maxParseErrors; dropped > 0 {
+		truncateErr = errors.Join(truncateErr, fmt.Errorf("and %d more invalid member(s)", dropped))
 	}
 
-	return Baggage{b}, nil
+	if len(b) == 0 {
+		return Baggage{}, truncateErr
+	}
+	return Baggage{b}, truncateErr
 }
 
 // Member returns the baggage list-member identified by key.
@@ -449,16 +673,11 @@ func (b Baggage) Member(key string) Member {
 		return newInvalidMember()
 	}
 
-	return Member{
-		key:        key,
-		value:      v.Value,
-		properties: fromInternalProperties(v.Properties),
-		hasData:    true,
-	}
+	return memberFromItem(key, v)
 }
 
 // Members returns all the baggage list-members.
-// The order of the returned list-members does not have significance.
+// The order of the returned list-members is not significant.
 //
 // The returned members are not validated, as we assume the validation happened
 // when they were added to the Baggage.
@@ -469,18 +688,13 @@ func (b Baggage) Members() []Member {
 
 	members := make([]Member, 0, len(b.list))
 	for k, v := range b.list {
-		members = append(members, Member{
-			key:        k,
-			value:      v.Value,
-			properties: fromInternalProperties(v.Properties),
-			hasData:    true,
-		})
+		members = append(members, memberFromItem(k, v))
 	}
 	return members
 }
 
-// SetMember returns a copy the Baggage with the member included. If the
-// baggage contains a Member with the same key the existing Member is
+// SetMember returns a copy of the Baggage with the member included. If the
+// baggage contains a Member with the same key, the existing Member is
 // replaced.
 //
 // If member is invalid according to the W3C Baggage specification, an error
@@ -504,10 +718,7 @@ func (b Baggage) SetMember(member Member) (Baggage, error) {
 		list[k] = v
 	}
 
-	list[member.key] = baggage.Item{
-		Value:      member.value,
-		Properties: member.properties.asInternal(),
-	}
+	list[member.key] = itemFromMember(member)
 
 	return Baggage{list: list}, nil
 }
@@ -536,17 +747,450 @@ func (b Baggage) Len() int {
 	return len(b.list)
 }
 
-// String encodes Baggage into a string compliant with the W3C Baggage
-// specification. The returned string will be invalid if the Baggage contains
-// any invalid list-members.
+// String encodes Baggage into a header string compliant with the W3C Baggage
+// specification.
+// It would ignore members where the member key is invalid with the W3C Baggage
+// specification. This could happen for a UTF-8 key, as it may contain
+// invalid characters.
 func (b Baggage) String() string {
 	members := make([]string, 0, len(b.list))
 	for k, v := range b.list {
-		members = append(members, Member{
-			key:        k,
-			value:      v.Value,
-			properties: fromInternalProperties(v.Properties),
-		}.String())
+		s := memberFromItem(k, v).String()
+
+		// Ignored empty members.
+		if s != "" {
+			members = append(members, s)
+		}
 	}
 	return strings.Join(members, listDelimiter)
+}
+
+type propertyFields struct {
+	key, rawValue string
+	hasValue      bool
+}
+
+// parsePropertyFields validates and locates a property's fields without
+// decoding or allocating them.
+func parsePropertyFields(s string) (fields propertyFields, ok bool) {
+	// For the entire function we will use "   key    =    value  " as an example.
+	// Attempting to parse the key.
+	// First skip spaces at the beginning "<   >key    =    value  " (they could be empty).
+	index := skipSpace(s, 0)
+
+	// Parse the key: "   <key>    =    value  ".
+	keyStart := index
+	keyEnd := index
+	for _, c := range s[keyStart:] {
+		if !validateKeyChar(c) {
+			break
+		}
+		keyEnd++
+	}
+
+	// If we couldn't find any valid key character,
+	// it means the key is either empty or invalid.
+	if keyStart == keyEnd {
+		return fields, ok
+	}
+
+	// Skip spaces after the key: "   key<    >=    value  ".
+	index = skipSpace(s, keyEnd)
+
+	if index == len(s) {
+		// A key can have no value, like: "   key    ".
+		fields.key = s[keyStart:keyEnd]
+		return fields, true
+	}
+
+	// If we have not reached the end and we can't find the '=' delimiter,
+	// it means the property is invalid.
+	if s[index] != keyValueDelimiter[0] {
+		return fields, ok
+	}
+
+	// Attempting to parse the value.
+	// Match: "   key    =<    >value  ".
+	index = skipSpace(s, index+1)
+
+	// Match the value string: "   key    =    <value>  ".
+	// A valid property can be: "   key    =".
+	// Therefore, we don't have to check if the value is empty.
+	valueStart := index
+	valueEnd := index
+	for _, c := range s[valueStart:] {
+		if !validateValueChar(c) {
+			break
+		}
+		valueEnd++
+	}
+
+	// Skip all trailing whitespaces: "   key    =    value<  >".
+	index = skipSpace(s, valueEnd)
+
+	// If after looking for the value and skipping whitespaces
+	// we have not reached the end, it means the property is
+	// invalid, something like: "   key    =    value  value1".
+	if index != len(s) {
+		return fields, ok
+	}
+	rawVal := s[valueStart:valueEnd]
+	if !validPercentEncoding(rawVal) {
+		return fields, ok
+	}
+
+	fields.key = s[keyStart:keyEnd]
+	fields.rawValue = rawVal
+	fields.hasValue = true
+	return fields, true
+}
+
+func validPercentEncoding(s string) bool {
+	for i := 0; i < len(s); i++ {
+		if s[i] != '%' {
+			continue
+		}
+		if i+2 >= len(s) || !isHex(s[i+1]) || !isHex(s[i+2]) {
+			return false
+		}
+		i += 2
+	}
+	return true
+}
+
+func isHex(c byte) bool {
+	return '0' <= c && c <= '9' || 'a' <= c && c <= 'f' || 'A' <= c && c <= 'F'
+}
+
+// parsePropertyInternal attempts to decode a Property from the passed string.
+// It follows the spec at https://www.w3.org/TR/baggage/#definition.
+func parsePropertyInternal(s string) (p Property, ok bool) {
+	fields, ok := parsePropertyFields(s)
+	if !ok {
+		return p, false
+	}
+	if !fields.hasValue {
+		p.key = fields.key
+		return p, true
+	}
+
+	// Decode a percent-encoded value.
+	unescapeVal, err := url.PathUnescape(fields.rawValue)
+	if err != nil {
+		return p, false
+	}
+	value := replaceInvalidUTF8Sequences(len(fields.rawValue), unescapeVal)
+
+	p.key = fields.key
+	p.hasValue = true
+	p.value = value
+	return p, true
+}
+
+func skipSpace(s string, offset int) int {
+	i := offset
+	for ; i < len(s); i++ {
+		c := s[i]
+		if c != ' ' && c != '\t' {
+			break
+		}
+	}
+	return i
+}
+
+var safeKeyCharset = [utf8.RuneSelf]bool{
+	// 0x23 to 0x27
+	'#':  true,
+	'$':  true,
+	'%':  true,
+	'&':  true,
+	'\'': true,
+
+	// 0x30 to 0x39
+	'0': true,
+	'1': true,
+	'2': true,
+	'3': true,
+	'4': true,
+	'5': true,
+	'6': true,
+	'7': true,
+	'8': true,
+	'9': true,
+
+	// 0x41 to 0x5a
+	'A': true,
+	'B': true,
+	'C': true,
+	'D': true,
+	'E': true,
+	'F': true,
+	'G': true,
+	'H': true,
+	'I': true,
+	'J': true,
+	'K': true,
+	'L': true,
+	'M': true,
+	'N': true,
+	'O': true,
+	'P': true,
+	'Q': true,
+	'R': true,
+	'S': true,
+	'T': true,
+	'U': true,
+	'V': true,
+	'W': true,
+	'X': true,
+	'Y': true,
+	'Z': true,
+
+	// 0x5e to 0x7a
+	'^': true,
+	'_': true,
+	'`': true,
+	'a': true,
+	'b': true,
+	'c': true,
+	'd': true,
+	'e': true,
+	'f': true,
+	'g': true,
+	'h': true,
+	'i': true,
+	'j': true,
+	'k': true,
+	'l': true,
+	'm': true,
+	'n': true,
+	'o': true,
+	'p': true,
+	'q': true,
+	'r': true,
+	's': true,
+	't': true,
+	'u': true,
+	'v': true,
+	'w': true,
+	'x': true,
+	'y': true,
+	'z': true,
+
+	// remainder
+	'!': true,
+	'*': true,
+	'+': true,
+	'-': true,
+	'.': true,
+	'|': true,
+	'~': true,
+}
+
+// validateBaggageName checks if the string is a valid OpenTelemetry Baggage name.
+// Baggage name is a valid, non-empty UTF-8 string.
+func validateBaggageName(s string) bool {
+	if s == "" {
+		return false
+	}
+
+	return utf8.ValidString(s)
+}
+
+// validateBaggageValue checks if the string is a valid OpenTelemetry Baggage value.
+// Baggage value is a valid UTF-8 strings.
+// Empty string is also a valid UTF-8 string.
+func validateBaggageValue(s string) bool {
+	return utf8.ValidString(s)
+}
+
+// validateKey checks if the string is a valid W3C Baggage key.
+func validateKey(s string) bool {
+	if s == "" {
+		return false
+	}
+
+	for _, c := range s {
+		if !validateKeyChar(c) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func validateKeyChar(c int32) bool {
+	return c >= 0 && c < int32(utf8.RuneSelf) && safeKeyCharset[c]
+}
+
+// validateValue checks if the string is a valid W3C Baggage value.
+func validateValue(s string) bool {
+	for _, c := range s {
+		if !validateValueChar(c) {
+			return false
+		}
+	}
+
+	return true
+}
+
+var safeValueCharset = [utf8.RuneSelf]bool{
+	'!': true, // 0x21
+
+	// 0x23 to 0x2b
+	'#':  true,
+	'$':  true,
+	'%':  true,
+	'&':  true,
+	'\'': true,
+	'(':  true,
+	')':  true,
+	'*':  true,
+	'+':  true,
+
+	// 0x2d to 0x3a
+	'-': true,
+	'.': true,
+	'/': true,
+	'0': true,
+	'1': true,
+	'2': true,
+	'3': true,
+	'4': true,
+	'5': true,
+	'6': true,
+	'7': true,
+	'8': true,
+	'9': true,
+	':': true,
+
+	// 0x3c to 0x5b
+	'<': true, // 0x3C
+	'=': true, // 0x3D
+	'>': true, // 0x3E
+	'?': true, // 0x3F
+	'@': true, // 0x40
+	'A': true, // 0x41
+	'B': true, // 0x42
+	'C': true, // 0x43
+	'D': true, // 0x44
+	'E': true, // 0x45
+	'F': true, // 0x46
+	'G': true, // 0x47
+	'H': true, // 0x48
+	'I': true, // 0x49
+	'J': true, // 0x4A
+	'K': true, // 0x4B
+	'L': true, // 0x4C
+	'M': true, // 0x4D
+	'N': true, // 0x4E
+	'O': true, // 0x4F
+	'P': true, // 0x50
+	'Q': true, // 0x51
+	'R': true, // 0x52
+	'S': true, // 0x53
+	'T': true, // 0x54
+	'U': true, // 0x55
+	'V': true, // 0x56
+	'W': true, // 0x57
+	'X': true, // 0x58
+	'Y': true, // 0x59
+	'Z': true, // 0x5A
+	'[': true, // 0x5B
+
+	// 0x5d to 0x7e
+	']': true, // 0x5D
+	'^': true, // 0x5E
+	'_': true, // 0x5F
+	'`': true, // 0x60
+	'a': true, // 0x61
+	'b': true, // 0x62
+	'c': true, // 0x63
+	'd': true, // 0x64
+	'e': true, // 0x65
+	'f': true, // 0x66
+	'g': true, // 0x67
+	'h': true, // 0x68
+	'i': true, // 0x69
+	'j': true, // 0x6A
+	'k': true, // 0x6B
+	'l': true, // 0x6C
+	'm': true, // 0x6D
+	'n': true, // 0x6E
+	'o': true, // 0x6F
+	'p': true, // 0x70
+	'q': true, // 0x71
+	'r': true, // 0x72
+	's': true, // 0x73
+	't': true, // 0x74
+	'u': true, // 0x75
+	'v': true, // 0x76
+	'w': true, // 0x77
+	'x': true, // 0x78
+	'y': true, // 0x79
+	'z': true, // 0x7A
+	'{': true, // 0x7B
+	'|': true, // 0x7C
+	'}': true, // 0x7D
+	'~': true, // 0x7E
+}
+
+func validateValueChar(c int32) bool {
+	return c >= 0 && c < int32(utf8.RuneSelf) && safeValueCharset[c]
+}
+
+// valueEscape escapes the string so it can be safely placed inside a baggage value,
+// replacing special characters with %XX sequences as needed.
+//
+// The implementation is based on:
+// https://github.com/golang/go/blob/f6509cf5cdbb5787061b784973782933c47f1782/src/net/url/url.go#L285.
+func valueEscape(s string) string {
+	hexCount := 0
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if shouldEscape(c) {
+			hexCount++
+		}
+	}
+
+	if hexCount == 0 {
+		return s
+	}
+
+	var buf [64]byte
+	var t []byte
+
+	required := len(s) + 2*hexCount
+	if required <= len(buf) {
+		t = buf[:required]
+	} else {
+		t = make([]byte, required)
+	}
+
+	j := 0
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if shouldEscape(s[i]) {
+			const upperhex = "0123456789ABCDEF"
+			t[j] = '%'
+			t[j+1] = upperhex[c>>4]
+			t[j+2] = upperhex[c&15]
+			j += 3
+		} else {
+			t[j] = c
+			j++
+		}
+	}
+
+	return string(t)
+}
+
+// shouldEscape returns true if the specified byte should be escaped when
+// appearing in a baggage value string.
+func shouldEscape(c byte) bool {
+	if c == '%' {
+		// The percent character must be encoded so that percent-encoding can work.
+		return true
+	}
+	return !validateValueChar(int32(c))
 }
