@@ -10,8 +10,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@master
-      - uses: alexellis/setup-arkade@v3
+      - uses: actions/checkout@v7
+      - uses: alexellis/setup-arkade@v4
       - name: Verify chart images
         id: verify_images
         run: |

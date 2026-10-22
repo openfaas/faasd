@@ -16,7 +16,7 @@ eth1`
 
 	err := os.WriteFile(fullPath, []byte(body), 0700)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 	defer func() {
 		os.Remove(fullPath)
@@ -24,7 +24,7 @@ eth1`
 
 	got, err := isCNIResultForPID(fullPath, container, PID)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 
 	want := true
@@ -43,7 +43,7 @@ eth1`
 
 	err := os.WriteFile(fullPath, []byte(body), 0700)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 	defer func() {
 		os.Remove(fullPath)
@@ -51,7 +51,7 @@ eth1`
 
 	got, err := isCNIResultForPID(fullPath, container, PID)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 
 	want := false
