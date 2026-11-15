@@ -74,6 +74,7 @@ func TestDeleteNamespaceRequiresPersistedOpenFaaSLabel(t *testing.T) {
 	store.Create(context.Background(), "foreign-ns", map[string]string{"team": "platform"})
 	store.Create(context.Background(), "wrong-value", map[string]string{"openfaas": "0"})
 	store.Create(context.Background(), "openfaas-ns", map[string]string{"openfaas": "1"})
+	store.Create(context.Background(), "legacy-openfaas-ns", map[string]string{"openfaas": "true"})
 
 	tests := []struct {
 		name      string
@@ -86,6 +87,7 @@ func TestDeleteNamespaceRequiresPersistedOpenFaaSLabel(t *testing.T) {
 		{name: "wrong OpenFaaS label is not deleted", namespace: "wrong-value", status: http.StatusBadRequest},
 		{name: "missing namespace is not deleted", namespace: "missing", status: http.StatusNotFound},
 		{name: "OpenFaaS namespace is deleted", namespace: "openfaas-ns", status: http.StatusAccepted, deleted: true},
+		{name: "legacy OpenFaaS namespace is deleted", namespace: "legacy-openfaas-ns", status: http.StatusAccepted, deleted: true},
 	}
 
 	for _, tc := range tests {

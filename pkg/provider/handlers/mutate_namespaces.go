@@ -119,7 +119,7 @@ func deleteNamespace(store namespaces.Store, w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	if !hasOpenFaaSLabel(labels) {
+	if !hasPersistedOpenFaaSLabel(labels) {
 		http.Error(w, fmt.Sprintf("namespace %s is not an openfaas namespace", req.Name), http.StatusBadRequest)
 		return
 	}
@@ -293,6 +293,14 @@ func parseNamespaceRequest(r *http.Request) (types.FunctionNamespace, error) {
 
 func hasOpenFaaSLabel(labels map[string]string) bool {
 	if v, ok := labels["openfaas"]; ok && v == "1" {
+		return true
+	}
+
+	return false
+}
+
+func hasPersistedOpenFaaSLabel(labels map[string]string) bool {
+	if v, ok := labels["openfaas"]; ok && (v == "1" || v == "true") {
 		return true
 	}
 
