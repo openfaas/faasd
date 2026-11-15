@@ -39,6 +39,21 @@ func getNamespaceSecretMountPath(userSecretPath string, namespace string) (strin
 	return mountPath, nil
 }
 
+func getSecretMountPath(namespaceSecretPath string, secret string) (string, error) {
+	if err := validateSecretName(secret); err != nil {
+		return "", err
+	}
+
+	secretPath := path.Join(namespaceSecretPath, secret)
+	cleanedRoot := path.Clean(namespaceSecretPath)
+	cleanedPath := path.Clean(secretPath)
+	if cleanedPath == cleanedRoot || !strings.HasPrefix(cleanedPath, cleanedRoot+string(os.PathSeparator)) {
+		return "", fmt.Errorf("secret %q escapes the namespace secrets directory %q", secret, namespaceSecretPath)
+	}
+
+	return secretPath, nil
+}
+
 func validateNamespace(namespace string) error {
 	if namespace == "" {
 		return fmt.Errorf("non-empty namespace is required")

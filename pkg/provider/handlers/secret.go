@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"path"
 	"strings"
 
 	"github.com/openfaas/faas-provider/types"
@@ -121,6 +120,11 @@ func createSecret(w http.ResponseWriter, r *http.Request, mountPath string) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	secretPath, err := getSecretMountPath(mountPath, secret.Name)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	err = os.MkdirAll(mountPath, secretDirPermission)
 	if err != nil {
@@ -134,7 +138,7 @@ func createSecret(w http.ResponseWriter, r *http.Request, mountPath string) {
 		data = []byte(secret.Value)
 	}
 
-	err = os.WriteFile(path.Join(mountPath, secret.Name), data, secretFilePermission)
+	err = os.WriteFile(secretPath, data, secretFilePermission)
 
 	if err != nil {
 		log.Printf("[secret] error %s", err.Error())
@@ -168,8 +172,13 @@ func deleteSecret(w http.ResponseWriter, r *http.Request, mountPath string) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	secretPath, err := getSecretMountPath(mountPath, secret.Name)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
-	err = os.Remove(path.Join(mountPath, secret.Name))
+	err = os.Remove(secretPath)
 
 	if err != nil {
 		log.Printf("[secret] error %s", err.Error())
@@ -201,10 +210,14 @@ func isTraversal(name string) bool {
 }
 
 func validateSecret(secret types.Secret) error {
-	if strings.TrimSpace(secret.Name) == "" {
+	return validateSecretName(secret.Name)
+}
+
+func validateSecretName(name string) error {
+	if strings.TrimSpace(name) == "" {
 		return fmt.Errorf("non-empty name is required")
 	}
-	if isTraversal(secret.Name) {
+	if isTraversal(name) {
 		return fmt.Errorf(traverseErrorSt)
 	}
 	return nil
