@@ -32,8 +32,8 @@ func Router() *mux.Router {
 	return r
 }
 
-// Serve load your handlers into the correct OpenFaaS route spec. This function is blocking.
-func Serve(ctx context.Context, handlers *types.FaaSHandlers, config *types.FaaSConfig) {
+// MakeHandler configures handlers for the OpenFaaS route specification.
+func MakeHandler(handlers *types.FaaSHandlers, config *types.FaaSConfig) http.Handler {
 
 	if config.EnableBasicAuth {
 		reader := auth.ReadBasicAuthFromDisk{
@@ -114,6 +114,13 @@ func Serve(ctx context.Context, handlers *types.FaaSHandlers, config *types.FaaS
 
 	r.HandleFunc("/metrics", promhttp.Handler().ServeHTTP)
 
+	return r
+}
+
+// Serve loads handlers into the OpenFaaS route specification. This function is blocking.
+func Serve(ctx context.Context, handlers *types.FaaSHandlers, config *types.FaaSConfig) {
+	handler := MakeHandler(handlers, config)
+
 	readTimeout := config.ReadTimeout
 	writeTimeout := config.WriteTimeout
 
@@ -127,7 +134,7 @@ func Serve(ctx context.Context, handlers *types.FaaSHandlers, config *types.FaaS
 		ReadTimeout:    readTimeout,
 		WriteTimeout:   writeTimeout,
 		MaxHeaderBytes: http.DefaultMaxHeaderBytes, // 1MB - can be overridden by setting Server.MaxHeaderBytes.
-		Handler:        r,
+		Handler:        handler,
 	}
 
 	// Start server in a goroutine

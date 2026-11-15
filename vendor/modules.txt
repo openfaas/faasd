@@ -334,7 +334,7 @@ github.com/opencontainers/runtime-spec/specs-go
 github.com/opencontainers/selinux/go-selinux
 github.com/opencontainers/selinux/go-selinux/label
 github.com/opencontainers/selinux/pkg/pwalkdir
-# github.com/openfaas/faas-provider v0.25.14-0.20261115135240-f9e06f3ef69b
+# github.com/openfaas/faas-provider v0.25.14-0.20261115142237-279a8b4ab08d
 ## explicit; go 1.26.0
 github.com/openfaas/faas-provider
 github.com/openfaas/faas-provider/auth
