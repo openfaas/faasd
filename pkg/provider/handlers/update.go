@@ -41,6 +41,10 @@ func MakeUpdateHandler(client *containerd.Client, cni gocni.CNI, secretMountPath
 
 		name := req.Service
 		namespace := getRequestNamespace(req.Namespace)
+		if err := validateNamespace(namespace); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 
 		// Check if namespace exists, and it has the openfaas label
 		valid, err := validNamespace(client.NamespaceService(), namespace)
@@ -60,7 +64,11 @@ func MakeUpdateHandler(client *containerd.Client, cni gocni.CNI, secretMountPath
 			return
 		}
 
-		namespaceSecretMountPath := getNamespaceSecretMountPath(secretMountPath, namespace)
+		namespaceSecretMountPath, err := getNamespaceSecretMountPath(secretMountPath, namespace)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 
 		function, err := GetFunction(client, name, namespace)
 		if err != nil {

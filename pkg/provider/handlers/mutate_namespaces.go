@@ -10,11 +10,13 @@ import (
 	"strings"
 
 	"github.com/containerd/containerd"
+	"github.com/containerd/containerd/namespaces"
 	"github.com/gorilla/mux"
 	"github.com/openfaas/faas-provider/types"
 )
 
 func MakeMutateNamespace(client *containerd.Client) func(w http.ResponseWriter, r *http.Request) {
+	store := client.NamespaceService()
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Body != nil {
 			defer r.Body.Close()
@@ -22,13 +24,13 @@ func MakeMutateNamespace(client *containerd.Client) func(w http.ResponseWriter, 
 
 		switch r.Method {
 		case http.MethodPost:
-			createNamespace(client, w, r)
+			createNamespace(store, w, r)
 		case http.MethodGet:
-			getNamespace(client, w, r)
+			getNamespace(store, w, r)
 		case http.MethodDelete:
-			deleteNamespace(client, w, r)
+			deleteNamespace(store, w, r)
 		case http.MethodPut:
-			updateNamespace(client, w, r)
+			updateNamespace(store, w, r)
 
 		default:
 			w.WriteHeader(http.StatusMethodNotAllowed)
@@ -36,14 +38,14 @@ func MakeMutateNamespace(client *containerd.Client) func(w http.ResponseWriter, 
 	}
 }
 
-func updateNamespace(client *containerd.Client, w http.ResponseWriter, r *http.Request) {
+func updateNamespace(store namespaces.Store, w http.ResponseWriter, r *http.Request) {
 	req, err := parseNamespaceRequest(r)
 	if err != nil {
 		http.Error(w, err.Error(), err.(*HttpError).Status)
 		return
 	}
 
-	namespaceExists, err := namespaceExists(r.Context(), client, req.Name)
+	namespaceExists, err := namespaceExists(r.Context(), store, req.Name)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -54,7 +56,7 @@ func updateNamespace(client *containerd.Client, w http.ResponseWriter, r *http.R
 		return
 	}
 
-	originalLabels, err := client.NamespaceService().Labels(r.Context(), req.Name)
+	originalLabels, err := store.Labels(r.Context(), req.Name)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -68,7 +70,7 @@ func updateNamespace(client *containerd.Client, w http.ResponseWriter, r *http.R
 	var exclusions []string
 
 	// build exclusions
-	for key, _ := range originalLabels {
+	for key := range originalLabels {
 		if _, ok := req.Labels[key]; !ok {
 			exclusions = append(exclusions, key)
 		}
@@ -76,7 +78,7 @@ func updateNamespace(client *containerd.Client, w http.ResponseWriter, r *http.R
 
 	// Call SetLabel with empty string if label is to be removed
 	for _, key := range exclusions {
-		if err := client.NamespaceService().SetLabel(r.Context(), req.Name, key, ""); err != nil {
+		if err := store.SetLabel(r.Context(), req.Name, key, ""); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -84,7 +86,7 @@ func updateNamespace(client *containerd.Client, w http.ResponseWriter, r *http.R
 
 	// Now add the new labels
 	for key, value := range req.Labels {
-		if err := client.NamespaceService().SetLabel(r.Context(), req.Name, key, value); err != nil {
+		if err := store.SetLabel(r.Context(), req.Name, key, value); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -93,14 +95,36 @@ func updateNamespace(client *containerd.Client, w http.ResponseWriter, r *http.R
 	w.WriteHeader(http.StatusAccepted)
 }
 
-func deleteNamespace(client *containerd.Client, w http.ResponseWriter, r *http.Request) {
+func deleteNamespace(store namespaces.Store, w http.ResponseWriter, r *http.Request) {
 	req, err := parseNamespaceRequest(r)
 	if err != nil {
 		http.Error(w, err.Error(), err.(*HttpError).Status)
 		return
 	}
 
-	if err := client.NamespaceService().Delete(r.Context(), req.Name); err != nil {
+	namespaceExists, err := namespaceExists(r.Context(), store, req.Name)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if !namespaceExists {
+		http.Error(w, fmt.Sprintf("namespace %s not found", req.Name), http.StatusNotFound)
+		return
+	}
+
+	labels, err := store.Labels(r.Context(), req.Name)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if !hasOpenFaaSLabel(labels) {
+		http.Error(w, fmt.Sprintf("namespace %s is not an openfaas namespace", req.Name), http.StatusBadRequest)
+		return
+	}
+
+	if err := store.Delete(r.Context(), req.Name); err != nil {
 		if strings.Contains(err.Error(), "not found") {
 			http.Error(w, fmt.Sprintf("namespace %s not found", req.Name), http.StatusNotFound)
 			return
@@ -113,8 +137,8 @@ func deleteNamespace(client *containerd.Client, w http.ResponseWriter, r *http.R
 	w.WriteHeader(http.StatusAccepted)
 }
 
-func namespaceExists(ctx context.Context, client *containerd.Client, name string) (bool, error) {
-	ns, err := client.NamespaceService().List(ctx)
+func namespaceExists(ctx context.Context, store namespaces.Store, name string) (bool, error) {
+	ns, err := store.List(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -130,14 +154,14 @@ func namespaceExists(ctx context.Context, client *containerd.Client, name string
 	return found, nil
 }
 
-func getNamespace(client *containerd.Client, w http.ResponseWriter, r *http.Request) {
+func getNamespace(store namespaces.Store, w http.ResponseWriter, r *http.Request) {
 	req, err := parseNamespaceRequest(r)
 	if err != nil {
 		http.Error(w, err.Error(), err.(*HttpError).Status)
 		return
 	}
 
-	namespaceExists, err := namespaceExists(r.Context(), client, req.Name)
+	namespaceExists, err := namespaceExists(r.Context(), store, req.Name)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -148,7 +172,7 @@ func getNamespace(client *containerd.Client, w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	labels, err := client.NamespaceService().Labels(r.Context(), req.Name)
+	labels, err := store.Labels(r.Context(), req.Name)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -171,7 +195,7 @@ func getNamespace(client *containerd.Client, w http.ResponseWriter, r *http.Requ
 	}
 }
 
-func createNamespace(client *containerd.Client, w http.ResponseWriter, r *http.Request) {
+func createNamespace(store namespaces.Store, w http.ResponseWriter, r *http.Request) {
 	req, err := parseNamespaceRequest(r)
 	if err != nil {
 		http.Error(w, err.Error(), err.(*HttpError).Status)
@@ -179,7 +203,7 @@ func createNamespace(client *containerd.Client, w http.ResponseWriter, r *http.R
 	}
 
 	// Check if namespace exists, and it has the openfaas label
-	namespaces, err := client.NamespaceService().List(r.Context())
+	namespaces, err := store.List(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -198,7 +222,7 @@ func createNamespace(client *containerd.Client, w http.ResponseWriter, r *http.R
 		return
 	}
 
-	if err := client.NamespaceService().Create(r.Context(), req.Name, req.Labels); err != nil {
+	if err := store.Create(r.Context(), req.Name, req.Labels); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}

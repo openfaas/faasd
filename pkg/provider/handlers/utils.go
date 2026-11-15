@@ -2,9 +2,13 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"os"
 	"path"
+	"strings"
 
+	"github.com/containerd/containerd/identifiers"
 	"github.com/openfaas/faasd/pkg"
 	faasd "github.com/openfaas/faasd/pkg"
 	provider "github.com/openfaas/faasd/pkg/provider"
@@ -23,8 +27,28 @@ func readNamespaceFromQuery(r *http.Request) string {
 	return q.Get("namespace")
 }
 
-func getNamespaceSecretMountPath(userSecretPath string, namespace string) string {
-	return path.Join(userSecretPath, namespace)
+func getNamespaceSecretMountPath(userSecretPath string, namespace string) (string, error) {
+	mountPath := path.Join(userSecretPath, namespace)
+
+	cleanedRoot := path.Clean(userSecretPath)
+	cleanedPath := path.Clean(mountPath)
+	if cleanedPath != cleanedRoot && !strings.HasPrefix(cleanedPath, cleanedRoot+string(os.PathSeparator)) {
+		return "", fmt.Errorf("namespace %q escapes the secrets root %q", namespace, userSecretPath)
+	}
+
+	return mountPath, nil
+}
+
+func validateNamespace(namespace string) error {
+	if namespace == "" {
+		return fmt.Errorf("non-empty namespace is required")
+	}
+
+	if err := identifiers.Validate(namespace); err != nil {
+		return fmt.Errorf("invalid namespace %q: %s", namespace, err.Error())
+	}
+
+	return nil
 }
 
 // validNamespace indicates whether the namespace is eligable to be
