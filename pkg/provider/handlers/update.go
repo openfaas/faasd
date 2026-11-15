@@ -81,6 +81,7 @@ func MakeUpdateHandler(client *containerd.Client, cni gocni.CNI, secretMountPath
 		err = validateSecrets(namespaceSecretMountPath, req.Secrets)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
 		}
 
 		ctx := namespaces.WithNamespace(context.Background(), namespace)
