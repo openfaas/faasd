@@ -10,6 +10,7 @@ import (
 
 	"github.com/containerd/containerd"
 	bootstrap "github.com/openfaas/faas-provider"
+	"github.com/openfaas/faas-provider/auth"
 	"github.com/openfaas/faas-provider/logs"
 	"github.com/openfaas/faas-provider/proxy"
 	"github.com/openfaas/faas-provider/types"
@@ -99,9 +100,28 @@ nameserver 8.8.4.4`), workingDirectoryPermission); err != nil {
 		MutateNamespace: httpHeaderMiddleware(handlers.MakeMutateNamespace(client)),
 	}
 
+	authReader := auth.ReadBasicAuthFromDisk{
+		SecretMountPath: config.SecretMountPath,
+	}
+	credentials, err := authReader.Read()
+	if err != nil {
+		return fmt.Errorf("failed to read basic auth credentials: %w", err)
+	}
+	protectNamespaceHandlers(&bootstrapHandlers, credentials)
+
 	log.Printf("Listening on: 0.0.0.0:%d", *config.TCPPort)
 	bootstrap.Serve(cmd.Context(), &bootstrapHandlers, config)
 	return nil
+}
+
+func protectNamespaceHandlers(handlers *types.FaaSHandlers, credentials *auth.BasicAuthCredentials) {
+	if handlers.ListNamespaces != nil {
+		handlers.ListNamespaces = auth.DecorateWithBasicAuth(handlers.ListNamespaces, credentials)
+	}
+
+	if handlers.MutateNamespace != nil {
+		handlers.MutateNamespace = auth.DecorateWithBasicAuth(handlers.MutateNamespace, credentials)
+	}
 }
 
 /*
