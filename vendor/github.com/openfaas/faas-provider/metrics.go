@@ -22,14 +22,16 @@ type httpMetrics struct {
 
 // newHttpMetrics initialises a new httpMetrics struct for
 // recording R.E.D. metrics for system endpoint calls
-func newHttpMetrics() *httpMetrics {
+func newHttpMetrics(registerer prometheus.Registerer) *httpMetrics {
+	factory := promauto.With(registerer)
+
 	return &httpMetrics{
-		RequestsTotal: promauto.NewCounterVec(prometheus.CounterOpts{
+		RequestsTotal: factory.NewCounterVec(prometheus.CounterOpts{
 			Subsystem: "provider",
 			Name:      "http_requests_total",
 			Help:      "Total number of HTTP requests.",
 		}, []string{"code", "method", "path"}),
-		RequestDurationHistogram: promauto.NewHistogramVec(prometheus.HistogramOpts{
+		RequestDurationHistogram: factory.NewHistogramVec(prometheus.HistogramOpts{
 			Subsystem: "provider",
 			Name:      "http_request_duration_seconds",
 			Help:      "Seconds spent serving HTTP requests.",

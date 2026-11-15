@@ -14,6 +14,7 @@ import (
 	"github.com/openfaas/faas-provider/auth"
 	"github.com/openfaas/faas-provider/types"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -34,6 +35,21 @@ func Router() *mux.Router {
 
 // MakeHandler configures handlers for the OpenFaaS route specification.
 func MakeHandler(handlers *types.FaaSHandlers, config *types.FaaSConfig) http.Handler {
+	registry := prometheus.NewRegistry()
+	return makeHandler(mux.NewRouter(), handlers, config, registry,
+		promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
+}
+
+func makeHandler(router *mux.Router, handlers *types.FaaSHandlers, config *types.FaaSConfig,
+	registerer prometheus.Registerer, metricsHandler http.Handler) http.Handler {
+	configuredHandlers := *handlers
+	handlers = &configuredHandlers
+
+	if handlers.ListNamespaces == nil {
+		handlers.ListNamespaces = func(w http.ResponseWriter, _ *http.Request) {
+			http.Error(w, "Feature not implemented in this version of OpenFaaS", http.StatusNotImplemented)
+		}
+	}
 
 	if config.EnableBasicAuth {
 		reader := auth.ReadBasicAuthFromDisk{
@@ -61,36 +77,36 @@ func MakeHandler(handlers *types.FaaSHandlers, config *types.FaaSConfig) http.Ha
 		}
 	}
 
-	hm := newHttpMetrics()
+	hm := newHttpMetrics(registerer)
 
 	// System (auth) endpoints
-	r.HandleFunc("/system/functions", hm.InstrumentHandler(handlers.FunctionLister, "")).Methods(http.MethodGet)
-	r.HandleFunc("/system/functions", hm.InstrumentHandler(handlers.DeployFunction, "")).Methods(http.MethodPost)
-	r.HandleFunc("/system/functions", hm.InstrumentHandler(handlers.DeleteFunction, "")).Methods(http.MethodDelete)
-	r.HandleFunc("/system/functions", hm.InstrumentHandler(handlers.UpdateFunction, "")).Methods(http.MethodPut)
+	router.HandleFunc("/system/functions", hm.InstrumentHandler(handlers.FunctionLister, "")).Methods(http.MethodGet)
+	router.HandleFunc("/system/functions", hm.InstrumentHandler(handlers.DeployFunction, "")).Methods(http.MethodPost)
+	router.HandleFunc("/system/functions", hm.InstrumentHandler(handlers.DeleteFunction, "")).Methods(http.MethodDelete)
+	router.HandleFunc("/system/functions", hm.InstrumentHandler(handlers.UpdateFunction, "")).Methods(http.MethodPut)
 
-	r.HandleFunc("/system/function/{name:["+NameExpression+"]+}",
+	router.HandleFunc("/system/function/{name:["+NameExpression+"]+}",
 		hm.InstrumentHandler(handlers.FunctionStatus, "/system/function")).Methods(http.MethodGet)
-	r.HandleFunc("/system/scale-function/{name:["+NameExpression+"]+}",
+	router.HandleFunc("/system/scale-function/{name:["+NameExpression+"]+}",
 		hm.InstrumentHandler(handlers.ScaleFunction, "/system/scale-function")).Methods(http.MethodPost)
 
-	r.HandleFunc("/system/info",
+	router.HandleFunc("/system/info",
 		hm.InstrumentHandler(handlers.Info, "")).Methods(http.MethodGet)
 
-	r.HandleFunc("/system/secrets",
+	router.HandleFunc("/system/secrets",
 		hm.InstrumentHandler(handlers.Secrets, "")).Methods(http.MethodGet, http.MethodPut, http.MethodPost, http.MethodDelete)
 
-	r.HandleFunc("/system/logs",
+	router.HandleFunc("/system/logs",
 		hm.InstrumentHandler(handlers.Logs, "")).Methods(http.MethodGet)
 
-	r.HandleFunc("/system/namespaces", hm.InstrumentHandler(handlers.ListNamespaces, "")).Methods(http.MethodGet)
+	router.HandleFunc("/system/namespaces", hm.InstrumentHandler(handlers.ListNamespaces, "")).Methods(http.MethodGet)
 
 	// Only register the mutate namespace handler if it is defined
 	if handlers.MutateNamespace != nil {
-		r.HandleFunc("/system/namespace/{name:["+NameExpression+"]*}",
+		router.HandleFunc("/system/namespace/{name:["+NameExpression+"]*}",
 			hm.InstrumentHandler(handlers.MutateNamespace, "")).Methods(http.MethodPost, http.MethodDelete, http.MethodPut, http.MethodGet)
 	} else {
-		r.HandleFunc("/system/namespace/{name:["+NameExpression+"]*}",
+		router.HandleFunc("/system/namespace/{name:["+NameExpression+"]*}",
 			hm.InstrumentHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "Feature not implemented in this version of OpenFaaS", http.StatusNotImplemented)
 			}), "")).Methods(http.MethodGet)
@@ -99,27 +115,27 @@ func MakeHandler(handlers *types.FaaSHandlers, config *types.FaaSConfig) http.Ha
 	proxyHandler := handlers.FunctionProxy
 
 	// Open endpoints
-	r.HandleFunc("/function/{name:["+NameExpression+"]+}", proxyHandler)
-	r.HandleFunc("/function/{name:["+NameExpression+"]+}/", proxyHandler)
-	r.HandleFunc("/function/{name:["+NameExpression+"]+}/{params:.*}", proxyHandler)
+	router.HandleFunc("/function/{name:["+NameExpression+"]+}", proxyHandler)
+	router.HandleFunc("/function/{name:["+NameExpression+"]+}/", proxyHandler)
+	router.HandleFunc("/function/{name:["+NameExpression+"]+}/{params:.*}", proxyHandler)
 
 	if handlers.Health != nil {
-		r.HandleFunc("/healthz", handlers.Health).
+		router.HandleFunc("/healthz", handlers.Health).
 			Methods(http.MethodGet, http.MethodHead)
 	}
 
 	if handlers.Telemetry != nil {
-		r.HandleFunc("/system/telemetry", hm.InstrumentHandler(handlers.Telemetry, "")).Methods(http.MethodGet)
+		router.HandleFunc("/system/telemetry", hm.InstrumentHandler(handlers.Telemetry, "")).Methods(http.MethodGet)
 	}
 
-	r.HandleFunc("/metrics", promhttp.Handler().ServeHTTP)
+	router.HandleFunc("/metrics", metricsHandler.ServeHTTP)
 
-	return r
+	return router
 }
 
 // Serve loads handlers into the OpenFaaS route specification. This function is blocking.
 func Serve(ctx context.Context, handlers *types.FaaSHandlers, config *types.FaaSConfig) {
-	handler := MakeHandler(handlers, config)
+	handler := makeHandler(r, handlers, config, prometheus.DefaultRegisterer, promhttp.Handler())
 
 	readTimeout := config.ReadTimeout
 	writeTimeout := config.WriteTimeout
