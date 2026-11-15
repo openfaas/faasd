@@ -163,6 +163,8 @@ github.com/openfaas/faas-provider v0.25.12 h1:1LsYf0jADlLjml+couJpdBz3ioBfq1iOAa
 github.com/openfaas/faas-provider v0.25.12/go.mod h1:rMXbj+AYVpn82UoHIOgWHiDeV118t0bSxyoC9d00jpc=
 github.com/openfaas/faas-provider v0.25.14-0.20261115135240-f9e06f3ef69b h1:Otkhqf+kw4lZXvq4+MdPybiJigt9h1b36LOyO6/XiLs=
 github.com/openfaas/faas-provider v0.25.14-0.20261115135240-f9e06f3ef69b/go.mod h1:wMaUSAUG5N1seKKoUhgwXdjVi9cBGKDUAKxrx7oKr2M=
+github.com/openfaas/faas-provider v0.25.14-0.20261115142237-279a8b4ab08d h1:LEZEeBSBcy16KfCeiOQ5dKxtAuHiokZ0jPh50A0RD18=
+github.com/openfaas/faas-provider v0.25.14-0.20261115142237-279a8b4ab08d/go.mod h1:wMaUSAUG5N1seKKoUhgwXdjVi9cBGKDUAKxrx7oKr2M=
 github.com/petermattis/goid v0.0.0-20250813065127-a731cc31b4fe/go.mod h1:pxMtw7cyUw6B2bRH0ZBANSPg+AoSud1I1iyJHI69jH4=
 github.com/petermattis/goid v0.0.0-20260918085751-abfca077860b h1:OzNsuVdSWGwXvWKTtChx9ve89k4cFJ6NxYM4Aw4/f+E=
 github.com/petermattis/goid v0.0.0-20260918085751-abfca077860b/go.mod h1:pxMtw7cyUw6B2bRH0ZBANSPg+AoSud1I1iyJHI69jH4=
