@@ -10,6 +10,7 @@ import (
 
 	bootstrap "github.com/openfaas/faas-provider"
 	"github.com/openfaas/faas-provider/types"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 func TestProviderNamespaceRoutesRequireBasicAuth(t *testing.T) {
@@ -45,7 +46,8 @@ func TestProviderNamespaceRoutesRequireBasicAuth(t *testing.T) {
 		SecretMountPath: secretMountPath,
 	}
 
-	server := httptest.NewServer(bootstrap.MakeHandler(&handlers, &config))
+	registry := prometheus.NewRegistry()
+	server := httptest.NewServer(bootstrap.MakeHandler(&handlers, &config, registry, registry))
 	t.Cleanup(server.Close)
 	client := server.Client()
 	baseURL := server.URL

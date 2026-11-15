@@ -33,11 +33,12 @@ func Router() *mux.Router {
 	return r
 }
 
-// MakeHandler configures handlers for the OpenFaaS route specification.
-func MakeHandler(handlers *types.FaaSHandlers, config *types.FaaSConfig) http.Handler {
-	registry := prometheus.NewRegistry()
-	return makeHandler(mux.NewRouter(), handlers, config, registry,
-		promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
+// MakeHandler configures handlers for the OpenFaaS route specification using
+// the supplied Prometheus registerer and gatherer.
+func MakeHandler(handlers *types.FaaSHandlers, config *types.FaaSConfig,
+	registerer prometheus.Registerer, gatherer prometheus.Gatherer) http.Handler {
+	return makeHandler(mux.NewRouter(), handlers, config, registerer,
+		promhttp.HandlerFor(gatherer, promhttp.HandlerOpts{}))
 }
 
 func makeHandler(router *mux.Router, handlers *types.FaaSHandlers, config *types.FaaSConfig,
