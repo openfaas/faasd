@@ -54,6 +54,7 @@ func Serve(ctx context.Context, handlers *types.FaaSHandlers, config *types.FaaS
 		handlers.Info = auth.DecorateWithBasicAuth(handlers.Info, credentials)
 		handlers.Secrets = auth.DecorateWithBasicAuth(handlers.Secrets, credentials)
 		handlers.Logs = auth.DecorateWithBasicAuth(handlers.Logs, credentials)
+		decorateNamespaceHandlersWithBasicAuth(handlers, credentials)
 
 		if handlers.Telemetry != nil {
 			handlers.Telemetry = auth.DecorateWithBasicAuth(handlers.Telemetry, credentials)
@@ -140,5 +141,15 @@ func Serve(ctx context.Context, handlers *types.FaaSHandlers, config *types.FaaS
 	<-ctx.Done()
 	if err := s.Shutdown(context.Background()); err != nil {
 		log.Printf("Failed to shut down provider gracefully: %s", err)
+	}
+}
+
+func decorateNamespaceHandlersWithBasicAuth(handlers *types.FaaSHandlers, credentials *auth.BasicAuthCredentials) {
+	if handlers.ListNamespaces != nil {
+		handlers.ListNamespaces = auth.DecorateWithBasicAuth(handlers.ListNamespaces, credentials)
+	}
+
+	if handlers.MutateNamespace != nil {
+		handlers.MutateNamespace = auth.DecorateWithBasicAuth(handlers.MutateNamespace, credentials)
 	}
 }

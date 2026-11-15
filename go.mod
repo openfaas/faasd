@@ -16,7 +16,7 @@ require (
 	github.com/gorilla/mux v1.8.1
 	github.com/morikuni/aec v1.1.0
 	github.com/opencontainers/runtime-spec v1.2.1
-	github.com/openfaas/faas-provider v0.25.12
+	github.com/openfaas/faas-provider v0.25.14-0.20261115135240-f9e06f3ef69b
 	github.com/pkg/errors v0.9.1
 	github.com/sethvargo/go-password v0.4.0
 	github.com/spf13/cobra v1.10.2
@@ -76,7 +76,7 @@ require (
 	github.com/prometheus/client_golang v1.25.0 // indirect
 	github.com/prometheus/client_model v0.6.3 // indirect
 	github.com/prometheus/common v0.72.1 // indirect
-	github.com/prometheus/procfs v0.22.0 // indirect
+	github.com/prometheus/procfs v0.23.0 // indirect
 	github.com/sasha-s/go-deadlock v0.3.9 // indirect
 	github.com/sirupsen/logrus v1.10.2 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
