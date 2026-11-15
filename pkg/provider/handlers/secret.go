@@ -49,6 +49,11 @@ func MakeSecretHandler(store provider.Labeller, mountPath string) func(w http.Re
 func listSecrets(store provider.Labeller, w http.ResponseWriter, r *http.Request, mountPath string) {
 
 	lookupNamespace := getRequestNamespace(readNamespaceFromQuery(r))
+	if err := validateNamespace(lookupNamespace); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	// Check if namespace exists, and it has the openfaas label
 	valid, err := validNamespace(store, lookupNamespace)
 	if err != nil {
@@ -61,7 +66,11 @@ func listSecrets(store provider.Labeller, w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	mountPath = getNamespaceSecretMountPath(mountPath, lookupNamespace)
+	mountPath, err = getNamespaceSecretMountPath(mountPath, lookupNamespace)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	files, err := os.ReadDir(mountPath)
 	if os.IsNotExist(err) {
@@ -102,7 +111,16 @@ func createSecret(w http.ResponseWriter, r *http.Request, mountPath string) {
 
 	log.Printf("[secret] is valid: %q", secret.Name)
 	namespace := getRequestNamespace(secret.Namespace)
-	mountPath = getNamespaceSecretMountPath(mountPath, namespace)
+	if err := validateNamespace(namespace); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	mountPath, err = getNamespaceSecretMountPath(mountPath, namespace)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	err = os.MkdirAll(mountPath, secretDirPermission)
 	if err != nil {
@@ -133,8 +151,23 @@ func deleteSecret(w http.ResponseWriter, r *http.Request, mountPath string) {
 		return
 	}
 
+	if err := validateSecret(secret); err != nil {
+		log.Printf("[secret] error %s", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	namespace := getRequestNamespace(readNamespaceFromQuery(r))
-	mountPath = getNamespaceSecretMountPath(mountPath, namespace)
+	if err := validateNamespace(namespace); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	mountPath, err = getNamespaceSecretMountPath(mountPath, namespace)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	err = os.Remove(path.Join(mountPath, secret.Name))
 

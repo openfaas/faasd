@@ -35,16 +35,65 @@ func Test_getNamespaceSecretMountPath(t *testing.T) {
 		name               string
 		requestNamespace   string
 		expectedSecretPath string
+		expError           bool
 	}{
 		{name: "Default Namespace is provided", requestNamespace: faasd.DefaultFunctionNamespace, expectedSecretPath: "/var/openfaas/secrets/" + faasd.DefaultFunctionNamespace},
 		{name: "User Namespace is provided", requestNamespace: "user-namespace", expectedSecretPath: "/var/openfaas/secrets/user-namespace"},
+		{name: "Namespace with traversal is rejected", requestNamespace: "../../../../tmp/escape", expError: true},
 	}
 
 	for _, tc := range tables {
 		t.Run(tc.name, func(t *testing.T) {
-			actualNamespace := getNamespaceSecretMountPath(userSecretPath, tc.requestNamespace)
+			actualNamespace, err := getNamespaceSecretMountPath(userSecretPath, tc.requestNamespace)
+			if tc.expError {
+				if err == nil {
+					t.Fatalf("expected error for namespace: %s, got nil", tc.requestNamespace)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("unexpected error: %s", err)
+			}
+
 			if actualNamespace != tc.expectedSecretPath {
 				t.Errorf("Want: %s, got: %s", actualNamespace, tc.expectedSecretPath)
+			}
+		})
+	}
+}
+
+func TestValidateNamespace(t *testing.T) {
+	tables := []struct {
+		name      string
+		namespace string
+		expError  bool
+	}{
+		{name: "Default namespace is valid", namespace: faasd.DefaultFunctionNamespace},
+		{name: "User namespace is valid", namespace: "user-namespace"},
+		{name: "Namespace with a dot is valid", namespace: "user.namespace"},
+		{name: "Empty namespace is invalid", namespace: "", expError: true},
+		{name: "Namespace with a path separator is invalid", namespace: "a/b", expError: true},
+		{name: "Namespace with traversal is invalid", namespace: "../..", expError: true},
+		{name: "Namespace with deep traversal is invalid", namespace: "../../../../tmp/escape", expError: true},
+		{name: "Namespace with a backslash is invalid", namespace: "..\\..\\tmp", expError: true},
+		{name: "Namespace with a leading dot is invalid", namespace: ".hidden", expError: true},
+		{name: "Namespace with a trailing dash is invalid", namespace: "user-", expError: true},
+		{name: "Namespace with spaces is invalid", namespace: "user namespace", expError: true},
+	}
+
+	for _, tc := range tables {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validateNamespace(tc.namespace)
+			if tc.expError {
+				if err == nil {
+					t.Fatalf("expected error for namespace: %q, got nil", tc.namespace)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("unexpected error for namespace %q: %s", tc.namespace, err)
 			}
 		})
 	}

@@ -167,6 +167,91 @@ func TestSecretCreation(t *testing.T) {
 	}
 }
 
+func TestSecretNamespaceTraversalRejected(t *testing.T) {
+	mountPath := t.TempDir()
+	testRoot := filepath.Dir(mountPath)
+	escapeDir := filepath.Join(testRoot, "faasd-namespace-escape")
+	traversalNamespace := "../faasd-namespace-escape"
+
+	labelStore := provider.NewFakeLabeller(map[string]string{
+		pkg.NamespaceLabel: "true",
+	})
+	handler := MakeSecretHandler(labelStore, mountPath)
+
+	tests := []struct {
+		name    string
+		method  string
+		url     string
+		payload string
+	}{
+		{
+			name:    "create rejects traversal in body namespace",
+			method:  http.MethodPost,
+			url:     "http://example.com/system/secrets",
+			payload: fmt.Sprintf(`{"name":"owned","namespace":"%s","value":"canary"}`, traversalNamespace),
+		},
+		{
+			name:   "list rejects traversal in query namespace",
+			method: http.MethodGet,
+			url:    fmt.Sprintf("http://example.com/system/secrets?namespace=%s", traversalNamespace),
+		},
+		{
+			name:    "delete rejects traversal in query namespace",
+			method:  http.MethodDelete,
+			url:     fmt.Sprintf("http://example.com/system/secrets?namespace=%s", traversalNamespace),
+			payload: `{"name":"owned"}`,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var body io.Reader
+			if tc.payload != "" {
+				body = strings.NewReader(tc.payload)
+			}
+
+			req := httptest.NewRequest(tc.method, tc.url, body)
+			response := httptest.NewRecorder()
+			handler(response, req)
+
+			if response.Code != http.StatusBadRequest {
+				t.Fatalf("want status %d, got %d: %s", http.StatusBadRequest, response.Code, response.Body.String())
+			}
+			if _, err := os.Stat(escapeDir); !os.IsNotExist(err) {
+				t.Fatalf("expected no path outside the secrets root, stat error: %v", err)
+			}
+		})
+	}
+}
+
+func TestDeleteSecretValidatesName(t *testing.T) {
+	handler := MakeSecretHandler(nil, t.TempDir())
+
+	tests := []struct {
+		name    string
+		payload string
+		error   string
+	}{
+		{name: "traversal", payload: `{"name":"../blocked"}`, error: "directory traversal found in name\n"},
+		{name: "empty", payload: `{}`, error: "non-empty name is required\n"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodDelete, "http://example.com/system/secrets", strings.NewReader(tc.payload))
+			response := httptest.NewRecorder()
+			handler(response, req)
+
+			if response.Code != http.StatusBadRequest {
+				t.Fatalf("want status %d, got %d", http.StatusBadRequest, response.Code)
+			}
+			if response.Body.String() != tc.error {
+				t.Fatalf("want error %q, got %q", tc.error, response.Body.String())
+			}
+		})
+	}
+}
+
 func TestListSecrets(t *testing.T) {
 	mountPath, err := os.MkdirTemp("", "test_secret_creation")
 	if err != nil {
