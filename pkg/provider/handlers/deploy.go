@@ -141,10 +141,15 @@ func deploy(ctx context.Context, req types.FunctionDeployment, client *container
 	mounts := getOSMounts()
 
 	for _, secret := range req.Secrets {
+		secretPath, err := getSecretMountPath(secretMountPath, secret)
+		if err != nil {
+			return err
+		}
+
 		mounts = append(mounts, specs.Mount{
 			Destination: path.Join("/var/openfaas/secrets", secret),
 			Type:        "bind",
-			Source:      path.Join(secretMountPath, secret),
+			Source:      secretPath,
 			Options:     []string{"rbind", "ro"},
 		})
 	}
@@ -321,7 +326,11 @@ func getOSMounts() []specs.Mount {
 
 func validateSecrets(secretMountPath string, secrets []string) error {
 	for _, secret := range secrets {
-		if _, err := os.Stat(path.Join(secretMountPath, secret)); err != nil {
+		secretPath, err := getSecretMountPath(secretMountPath, secret)
+		if err != nil {
+			return fmt.Errorf("invalid secret %q: %w", secret, err)
+		}
+		if _, err := os.Stat(secretPath); err != nil {
 			return fmt.Errorf("unable to find secret: %s", secret)
 		}
 	}

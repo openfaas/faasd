@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -74,4 +76,41 @@ func Test_BuildLabels_WithAnnotationCollision(t *testing.T) {
 		t.Errorf("Expected an error, got %d values", len(val))
 	}
 
+}
+
+func TestValidateSecretsConfinesNames(t *testing.T) {
+	root := t.TempDir()
+	secretMountPath := filepath.Join(root, "secrets", "openfaas-fn")
+	if err := os.MkdirAll(secretMountPath, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(secretMountPath, "api-key"), []byte("value"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "outside"), []byte("host data"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		name    string
+		secret  string
+		wantErr bool
+	}{
+		{name: "valid secret", secret: "api-key"},
+		{name: "empty secret", secret: "", wantErr: true},
+		{name: "nested secret", secret: "nested/name", wantErr: true},
+		{name: "traversal to existing file", secret: "../../outside", wantErr: true},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validateSecrets(secretMountPath, []string{tc.secret})
+			if tc.wantErr && err == nil {
+				t.Fatalf("expected error for secret %q", tc.secret)
+			}
+			if !tc.wantErr && err != nil {
+				t.Fatalf("unexpected error for secret %q: %v", tc.secret, err)
+			}
+		})
+	}
 }
